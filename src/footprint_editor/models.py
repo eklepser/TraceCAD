@@ -25,8 +25,18 @@ class Pad:
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
 
 @dataclass
+class Line:
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+    width: float = 0.15
+    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+
+@dataclass
 class Footprint:
     name: str
     reference: str = "REF**"
     value: str = ""
     pads: List[Pad] = field(default_factory=list)
+    lines: List[Line] = field(default_factory=list)

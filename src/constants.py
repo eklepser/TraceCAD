@@ -4,3 +4,8 @@ VK_S = 0x53
 VK_D = 0x44
 
 PAN_KEYS = (VK_W, VK_A, VK_S, VK_D)
+
+class Tool:
+    SELECT = "select"
+    ADD_PAD = "add_pad"
+    ADD_LINE = "add_line"

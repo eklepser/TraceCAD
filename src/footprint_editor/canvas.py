@@ -1,10 +1,12 @@
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene
-from PySide6.QtCore import Qt, QPointF, QRectF, Signal, QTimer
-from PySide6.QtGui import QPen, QColor, QWheelEvent, QMouseEvent, QPainter, QKeyEvent
+from PySide6.QtCore import Qt, QPointF, Signal, QTimer
+from PySide6.QtGui import QPen, QColor, QWheelEvent, QMouseEvent, QPainter
 from constants import VK_W, VK_A, VK_S, VK_D, PAN_KEYS
 
 class FootprintCanvas(QGraphicsView):
     zoom_changed = Signal(float)
+    canvas_clicked = Signal(float, float)
+    finish_drawing = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -16,14 +18,14 @@ class FootprintCanvas(QGraphicsView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         
-        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setMouseTracking(True)
+        self.viewport().setMouseTracking(True)
         
         self.grid_size = 1.27
         self.grid_color = QColor(80, 80, 80)
         self.background_color = QColor(30, 30, 30)
         
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
-        self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
         self.setBackgroundBrush(self.background_color)
         
         self.base_scale = 50.0
@@ -34,10 +36,15 @@ class FootprintCanvas(QGraphicsView):
         self.zoom_level = 1.0
         
         self.pressed_keys = set()
-        self.pan_speed_mm = 0.05
+        self.pan_speed_px = 7.5
         self.pan_timer = QTimer(self)
         self.pan_timer.setInterval(16)
         self.pan_timer.timeout.connect(self._pan_step)
+        
+        self._scroll_acc_px_x = 0.0
+        self._scroll_acc_px_y = 0.0
+
+        self._snap_pos = None
 
     def set_grid_size(self, size_mm):
         self.grid_size = size_mm
@@ -63,20 +70,15 @@ class FootprintCanvas(QGraphicsView):
         bottom = int(rect.bottom() // self.grid_size) * self.grid_size
         
         draw_step = self.grid_size
-        max_points_per_axis = 300
-        width = right - left
-        height = bottom - top
+        max_points_per_axis = 150
         
-        if width > 0 and width / draw_step > max_points_per_axis:
+        if (right - left) / draw_step > max_points_per_axis:
             factor = 2
-            while width / (draw_step * factor) > max_points_per_axis:
-                factor *= 2
+            while (right - left) / (draw_step * factor) > max_points_per_axis: factor *= 2
             draw_step = self.grid_size * factor
-            
-        if height > 0 and height / draw_step > max_points_per_axis:
+        if (bottom - top) / draw_step > max_points_per_axis:
             factor = 2
-            while height / (draw_step * factor) > max_points_per_axis:
-                factor *= 2
+            while (bottom - top) / (draw_step * factor) > max_points_per_axis: factor *= 2
             draw_step = self.grid_size * factor
 
         pen = QPen(self.grid_color, 0)
@@ -90,62 +92,69 @@ class FootprintCanvas(QGraphicsView):
                 y += draw_step
             x += draw_step
 
+    def drawForeground(self, painter, rect):
+        super().drawForeground(painter, rect)
+        scale = self.transform().m11()
+        cross_size = 8.0 / scale
+
+        if self._snap_pos:
+            pen = QPen(QColor(255, 255, 255, 150), 0)
+            pen.setCosmetic(True)
+            painter.setPen(pen)
+            x, y = self._snap_pos.x(), self._snap_pos.y()
+            painter.drawLine(QPointF(x - cross_size, y), QPointF(x + cross_size, y))
+            painter.drawLine(QPointF(x, y - cross_size), QPointF(x, y + cross_size))
+
     def wheelEvent(self, event: QWheelEvent):
         if event.angleDelta().y() > 0:
-            if self.zoom_index < len(self.zoom_steps) - 1:
-                self.zoom_index += 1
+            if self.zoom_index < len(self.zoom_steps) - 1: self.zoom_index += 1
         else:
-            if self.zoom_index > 0:
-                self.zoom_index -= 1
+            if self.zoom_index > 0: self.zoom_index -= 1
                 
         new_zoom = self.zoom_steps[self.zoom_index]
-        new_real_scale = self.base_scale * new_zoom
-        current_real_scale = self.transform().m11()
-        factor = new_real_scale / current_real_scale
+        factor = (self.base_scale * new_zoom) / self.transform().m11()
         self.scale(factor, factor)
         self.zoom_level = new_zoom
         self.zoom_changed.emit(self.zoom_level)
 
     def mousePressEvent(self, event: QMouseEvent):
-        self.setFocus()
+        if event.button() == Qt.MouseButton.LeftButton:
+            scene_pos = self.mapToScene(event.position().toPoint())
+            snapped_pos = self.snap_to_grid(scene_pos.x(), scene_pos.y())
+            self.canvas_clicked.emit(snapped_pos.x(), snapped_pos.y())
         super().mousePressEvent(event)
 
-    def keyPressEvent(self, event: QKeyEvent):
-        vk = event.nativeVirtualKey()
-        if vk in PAN_KEYS:
-            self.pressed_keys.add(vk)
-            if not self.pan_timer.isActive():
-                self.pan_timer.start()
-        else:
-            super().keyPressEvent(event)
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.RightButton:
+            self.finish_drawing.emit()
+        super().mouseReleaseEvent(event)
 
-    def keyReleaseEvent(self, event: QKeyEvent):
-        vk = event.nativeVirtualKey()
-        if vk in PAN_KEYS:
-            self.pressed_keys.discard(vk)
-            if not self.pressed_keys:
-                self.pan_timer.stop()
-        else:
-            super().keyReleaseEvent(event)
+    def mouseMoveEvent(self, event: QMouseEvent):
+        scene_pos = self.mapToScene(event.position().toPoint())
+        snapped_pos = self.snap_to_grid(scene_pos.x(), scene_pos.y())
+        self._snap_pos = QPointF(snapped_pos.x(), snapped_pos.y())
+        self.viewport().update()
+        super().mouseMoveEvent(event)
 
     def _pan_step(self):
-        dx_mm = 0
-        dy_mm = 0
-        if VK_W in self.pressed_keys:
-            dy_mm -= self.pan_speed_mm
-        if VK_S in self.pressed_keys:
-            dy_mm += self.pan_speed_mm
-        if VK_A in self.pressed_keys:
-            dx_mm -= self.pan_speed_mm
-        if VK_D in self.pressed_keys:
-            dx_mm += self.pan_speed_mm
+        dx_dir = 0
+        dy_dir = 0
+        if VK_W in self.pressed_keys: dy_dir -= 1
+        if VK_S in self.pressed_keys: dy_dir += 1
+        if VK_A in self.pressed_keys: dx_dir -= 1
+        if VK_D in self.pressed_keys: dx_dir += 1
             
-        if dx_mm == 0 and dy_mm == 0:
-            return
+        if dx_dir == 0 and dy_dir == 0: return
             
-        scale_factor = self.transform().m11()
-        dx_px = int(dx_mm * scale_factor)
-        dy_px = int(dy_mm * scale_factor)
+        self._scroll_acc_px_x += dx_dir * self.pan_speed_px
+        self._scroll_acc_px_y += dy_dir * self.pan_speed_px
         
-        self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + dx_px)
-        self.verticalScrollBar().setValue(self.verticalScrollBar().value() + dy_px)
+        dx_px_int = int(self._scroll_acc_px_x)
+        dy_px_int = int(self._scroll_acc_px_y)
+        
+        self._scroll_acc_px_x -= dx_px_int
+        self._scroll_acc_px_y -= dy_px_int
+        
+        if dx_px_int != 0 or dy_px_int != 0:
+            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + dx_px_int)
+            self.verticalScrollBar().setValue(self.verticalScrollBar().value() + dy_px_int)
