@@ -3,32 +3,37 @@ import uuid
 import math
 from PySide6.QtWidgets import (QMainWindow, QDockWidget, QWidget, QVBoxLayout, QHBoxLayout,
                                QLabel, QToolBar, QStatusBar, QComboBox, QApplication, QGraphicsView, 
-                               QDialog, QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, 
-                               QCheckBox, QPushButton)
-from PySide6.QtCore import Qt, QEvent, QObject, QPointF
-from PySide6.QtGui import QKeyEvent
-from constants import Tool, PAN_KEYS
-from footprint_editor.models import Footprint, Pad, PadShape, PadType, Line, Circle, Text
-from footprint_editor.canvas import FootprintCanvas
-from footprint_editor.pad_graphics import PadGraphicsItem
-from footprint_editor.line_graphics import LineGraphicsItem
-from footprint_editor.circle_graphics import CircleGraphicsItem
-from footprint_editor.text_graphics import TextGraphicsItem
-from footprint_editor.right_panel import RightPanel
+                               QDialog, QLineEdit, QDoubleSpinBox, QCheckBox, QPushButton, QMenuBar, QMenu)
+from PySide6.QtCore import Qt, QEvent, QObject, QPointF, Signal
+from PySide6.QtGui import QKeyEvent, QAction
+from constants import Tool, PAN_KEYS, Steps, Styles, VK_ESCAPE, VK_DELETE, VK_F1, VK_F2, VK_C, VK_V
+from footprint_editor.core.models import Footprint, Pad, PadShape, PadType, Line, Circle, Text
+from footprint_editor.core.manager import FootprintManager
+from footprint_editor.ui.canvas import FootprintCanvas
+from footprint_editor.graphics.pad_item import PadGraphicsItem
+from footprint_editor.graphics.line_item import LineGraphicsItem
+from footprint_editor.graphics.circle_item import CircleGraphicsItem
+from footprint_editor.graphics.text_item import TextGraphicsItem
+from footprint_editor.ui.right_panel import RightPanel
 
 class TextDialog(QDialog):
+    text_changed = Signal(str)
+    size_changed = Signal(float)
+    visible_changed = Signal(bool)
+    
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground, False)
-        self.setStyleSheet("background-color: #2b2b2b; color: #a9b7c6; border: 1px solid #555555;")
+        self.setStyleSheet(Styles.DIALOG_BG)
         
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
         
         self.text_input = QLineEdit()
         self.text_input.setPlaceholderText("Введите текст...")
-        self.text_input.setStyleSheet("background-color: #3c3f41; color: white; border: 1px solid #555555; padding: 5px;")
+        self.text_input.setStyleSheet(Styles.INPUT_BG)
+        self.text_input.textChanged.connect(self.text_changed.emit)
         layout.addWidget(self.text_input)
         
         size_layout = QHBoxLayout()
@@ -38,24 +43,26 @@ class TextDialog(QDialog):
         self.size_spin.setSingleStep(0.1)
         self.size_spin.setDecimals(1)
         self.size_spin.setValue(1.0)
-        self.size_spin.setStyleSheet("background-color: #3c3f41; color: white; border: 1px solid #555555;")
+        self.size_spin.setStyleSheet(Styles.INPUT_BG)
+        self.size_spin.valueChanged.connect(self.size_changed.emit)
         size_layout.addWidget(self.size_spin)
         layout.addLayout(size_layout)
         
         self.visible_check = QCheckBox("Видимый")
         self.visible_check.setChecked(True)
         self.visible_check.setStyleSheet("color: #a9b7c6;")
+        self.visible_check.stateChanged.connect(lambda state: self.visible_changed.emit(state == Qt.CheckState.Checked.value))
         layout.addWidget(self.visible_check)
         
         btn_layout = QHBoxLayout()
         self.btn_ok = QPushButton("OK")
         self.btn_ok.setFixedSize(60, 30)
-        self.btn_ok.setStyleSheet("background-color: #365880; color: white; border: none;")
+        self.btn_ok.setStyleSheet(Styles.BUTTON_OK)
         self.btn_ok.clicked.connect(self.accept)
         
         self.btn_cancel = QPushButton("Cancel")
         self.btn_cancel.setFixedSize(60, 30)
-        self.btn_cancel.setStyleSheet("background-color: #555555; color: white; border: none;")
+        self.btn_cancel.setStyleSheet(Styles.BUTTON_CANCEL)
         self.btn_cancel.clicked.connect(self.reject)
         
         btn_layout.addWidget(self.btn_ok)
@@ -81,7 +88,7 @@ class GlobalKeyFilter(QObject):
     def eventFilter(self, obj, event):
         if event.type() in (QEvent.Type.KeyPress, QEvent.Type.KeyRelease):
             focus_widget = QApplication.focusWidget()
-            if focus_widget and isinstance(focus_widget, (QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox)):
+            if focus_widget and isinstance(focus_widget, (QLineEdit, QDoubleSpinBox)):
                 return super().eventFilter(obj, event)
             return self.window.handle_global_key(event)
         return super().eventFilter(obj, event)
@@ -95,11 +102,13 @@ class FootprintEditorWindow(QMainWindow):
         self.resize(1000, 700)
         
         self.current_tool = Tool.SELECT
-        self.graphics_items = {}
         self.line_start_point = None
         self.circle_center_point = None
+        self.text_position = None
         self.clipboard = []
         self._current_mouse_scene_pos = QPointF(0, 0)
+        
+        self._init_menu()
         
         self.canvas = FootprintCanvas(self)
         self.setCentralWidget(self.canvas)
@@ -109,8 +118,10 @@ class FootprintEditorWindow(QMainWindow):
         self.canvas.finish_drawing.connect(self._finish_drawing)
         self.canvas.scene.selectionChanged.connect(self._on_selection_changed)
         
+        self.manager = FootprintManager(self.footprint, self.canvas.scene, self.canvas)
+        
         self.log_label = QLabel("Готово.", self)
-        self.log_label.setStyleSheet("background-color: rgba(40, 40, 40, 220); color: #a9b7c6; padding: 5px; border-radius: 3px;")
+        self.log_label.setStyleSheet(Styles.LOG_LABEL)
         self.log_label.adjustSize()
         self.log_label.raise_()
         
@@ -121,6 +132,19 @@ class FootprintEditorWindow(QMainWindow):
         self._init_toolbars()
         self._init_statusbar()
         self._connect_right_panel()
+
+    def _init_menu(self):
+        menubar = self.menuBar()
+        
+        file_menu = menubar.addMenu("Файл")
+        file_menu.addAction("Выбрать библиотеку").setEnabled(False)
+        file_menu.addAction("Создать библиотеку").setEnabled(False)
+        file_menu.addSeparator()
+        file_menu.addAction("Новый модуль").setEnabled(False)
+        file_menu.addAction("Сохранить модуль").setEnabled(False)
+        file_menu.addAction("Загрузить модуль из библиотеки").setEnabled(False)
+        file_menu.addSeparator()
+        file_menu.addAction("Свойства модуля").setEnabled(False)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -141,7 +165,7 @@ class FootprintEditorWindow(QMainWindow):
         self.properties_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         
         self.right_panel = RightPanel()
-        self.right_panel.setStyleSheet("background-color: #3c3f41; color: white;")
+        self.right_panel.setStyleSheet(Styles.RIGHT_PANEL)
         
         self.properties_dock.setWidget(self.right_panel)
         self.addDockWidget(Qt.RightDockWidgetArea, self.properties_dock)
@@ -163,9 +187,8 @@ class FootprintEditorWindow(QMainWindow):
         toolbar.addWidget(grid_label)
         
         self.grid_combo = QComboBox()
-        grid_steps = ["2.54", "1.27", "0.635", "0.3175", "0.15875", "0.079375"]
-        self.grid_combo.addItems(grid_steps)
-        self.grid_combo.setCurrentText("1.27")
+        self.grid_combo.addItems(Steps.GRID)
+        self.grid_combo.setCurrentText(Steps.DEFAULT_GRID)
         self.grid_combo.currentTextChanged.connect(self._on_grid_changed)
         toolbar.addWidget(self.grid_combo)
         
@@ -181,7 +204,8 @@ class FootprintEditorWindow(QMainWindow):
         self.coords_label = QLabel("X: 0.0000, Y: 0.0000")
         self.status_bar.addPermanentWidget(self.coords_label)
         
-        self.status_bar.showMessage("Инструмент: select")
+        self.tool_label = QLabel("Инструмент: select")
+        self.status_bar.addWidget(self.tool_label)
 
     def _on_tool_button_clicked(self, button):
         if button == self.right_panel.btn_select:
@@ -194,11 +218,15 @@ class FootprintEditorWindow(QMainWindow):
             self.current_tool = Tool.ADD_CIRCLE
         elif button == self.right_panel.btn_add_text:
             self.current_tool = Tool.ADD_TEXT
+        
+        self.right_panel.update_tool_buttons(button)
             
         self.line_start_point = None
         self.circle_center_point = None
+        self.text_position = None
         self.canvas.clear_ghost_line()
         self.canvas.clear_ghost_circle()
+        self.canvas.clear_ghost_text()
         
         if self.current_tool == Tool.SELECT:
             self.canvas.set_show_snap(False)
@@ -209,13 +237,15 @@ class FootprintEditorWindow(QMainWindow):
             self.canvas.set_interaction_enabled(False)
             self.canvas.set_drag_mode(QGraphicsView.DragMode.NoDrag)
             
-        self.status_bar.showMessage(f"Инструмент: {self.current_tool}")
+        self.tool_label.setText(f"Инструмент: {self.current_tool}")
 
     def _finish_drawing(self):
         self.line_start_point = None
         self.circle_center_point = None
+        self.text_position = None
         self.canvas.clear_ghost_line()
         self.canvas.clear_ghost_circle()
+        self.canvas.clear_ghost_text()
 
     def _on_grid_changed(self, text):
         self.canvas.set_grid_size(float(text))
@@ -233,13 +263,12 @@ class FootprintEditorWindow(QMainWindow):
 
     def _on_canvas_clicked(self, x, y):
         if self.current_tool == Tool.ADD_PAD:
-            new_pad = Pad(number="1", shape=PadShape.CIRCLE, pad_type=PadType.SMD, x=x, y=y, width=1.5, height=1.5)
+            next_num = self.manager.get_next_pad_number()
+            new_pad = Pad(number=next_num, shape=PadShape.CIRCLE, pad_type=PadType.SMD, x=x, y=y, width=1.5, height=1.5, drill=0.8)
             self.footprint.pads.append(new_pad)
-            graphics_item = PadGraphicsItem(new_pad, self.canvas)
-            self.canvas.scene.addItem(graphics_item)
-            self.graphics_items[new_pad.uid] = graphics_item
+            self.manager.add_model(new_pad)
             self.canvas.set_interaction_enabled(False)
-            self.show_log('элемент "площадка" установлен')
+            self.show_log(f'элемент "площадка" #{next_num} установлен')
             
         elif self.current_tool == Tool.ADD_LINE:
             if self.line_start_point is None:
@@ -249,12 +278,8 @@ class FootprintEditorWindow(QMainWindow):
                 start_x, start_y = self.line_start_point
                 new_line = Line(start_x, start_y, x, y)
                 self.footprint.lines.append(new_line)
-                
-                final_item = LineGraphicsItem(new_line, self.canvas)
-                self.canvas.scene.addItem(final_item)
-                self.graphics_items[new_line.uid] = final_item
+                self.manager.add_model(new_line)
                 self.canvas.set_interaction_enabled(False)
-                
                 self.line_start_point = (x, y)
                 self.canvas.set_ghost_line(x, y, x, y)
                 self.show_log('элемент "линия" установлен')
@@ -270,29 +295,36 @@ class FootprintEditorWindow(QMainWindow):
                 if r > 0:
                     new_circle = Circle(cx, cy, r)
                     self.footprint.circles.append(new_circle)
-                    final_item = CircleGraphicsItem(new_circle, self.canvas)
-                    self.canvas.scene.addItem(final_item)
-                    self.graphics_items[new_circle.uid] = final_item
+                    self.manager.add_model(new_circle)
                     self.canvas.set_interaction_enabled(False)
                     self.show_log('элемент "окружность" установлен')
-                
                 self.circle_center_point = None
                 self.canvas.clear_ghost_circle()
 
         elif self.current_tool == Tool.ADD_TEXT:
-            dialog = TextDialog(self)
-            if dialog.exec() == QDialog.Accepted:
-                text = dialog.get_text()
-                size = dialog.get_size()
-                visible = dialog.get_visible()
-                if text:
-                    new_text = Text(x, y, text, size, visible)
-                    self.footprint.texts.append(new_text)
-                    graphics_item = TextGraphicsItem(new_text, self.canvas)
-                    self.canvas.scene.addItem(graphics_item)
-                    self.graphics_items[new_text.uid] = graphics_item
-                    self.canvas.set_interaction_enabled(False)
-                    self.show_log('элемент "текст" установлен')
+            self.text_position = (x, y)
+            self.canvas.set_ghost_text(x, y, "", 0.2, True)
+            self._show_text_dialog()
+
+    def _show_text_dialog(self):
+        dialog = TextDialog(self)
+        dialog.text_changed.connect(lambda text: self.canvas.set_ghost_text(*self.text_position, text, dialog.get_size(), dialog.get_visible()))
+        dialog.size_changed.connect(lambda size: self.canvas.set_ghost_text(*self.text_position, dialog.get_text(), size, dialog.get_visible()))
+        dialog.visible_changed.connect(lambda visible: self.canvas.set_ghost_text(*self.text_position, dialog.get_text(), dialog.get_size(), visible))
+        
+        if dialog.exec() == QDialog.Accepted:
+            text = dialog.get_text()
+            size = dialog.get_size()
+            visible = dialog.get_visible()
+            if text:
+                new_text = Text(self.text_position[0], self.text_position[1], text, size, visible)
+                self.footprint.texts.append(new_text)
+                self.manager.add_model(new_text)
+                self.canvas.set_interaction_enabled(False)
+                self.show_log('элемент "текст" установлен')
+        
+        self.text_position = None
+        self.canvas.clear_ghost_text()
 
     def _on_mouse_moved(self, x, y):
         self._current_mouse_scene_pos = QPointF(x, y)
@@ -313,45 +345,35 @@ class FootprintEditorWindow(QMainWindow):
         selected_items = self.canvas.scene.selectedItems()
         has_selection = len(selected_items) > 0
         self.right_panel.btn_delete.setEnabled(has_selection)
+        
+        if len(selected_items) == 1:
+            item = selected_items[0]
+            if isinstance(item, (PadGraphicsItem, LineGraphicsItem, CircleGraphicsItem, TextGraphicsItem)):
+                self.right_panel.properties_panel.set_object(item.model)
+            else:
+                self.right_panel.properties_panel.clear_panel()
+        else:
+            self.right_panel.properties_panel.clear_panel()
 
     def _delete_selected(self):
         selected_items = self.canvas.scene.selectedItems()
         for item in selected_items:
-            if isinstance(item, PadGraphicsItem):
-                if item.pad in self.footprint.pads:
-                    self.footprint.pads.remove(item.pad)
-                self.graphics_items.pop(item.pad.uid, None)
-                self.canvas.scene.removeItem(item)
-            elif isinstance(item, LineGraphicsItem) and not item.is_preview:
-                if item.line_model in self.footprint.lines:
-                    self.footprint.lines.remove(item.line_model)
-                self.graphics_items.pop(item.line_model.uid, None)
-                self.canvas.scene.removeItem(item)
-            elif isinstance(item, CircleGraphicsItem) and not item.is_preview:
-                if item.circle_model in self.footprint.circles:
-                    self.footprint.circles.remove(item.circle_model)
-                self.graphics_items.pop(item.circle_model.uid, None)
-                self.canvas.scene.removeItem(item)
-            elif isinstance(item, TextGraphicsItem):
-                if item.text_model in self.footprint.texts:
-                    self.footprint.texts.remove(item.text_model)
-                self.graphics_items.pop(item.text_model.uid, None)
-                self.canvas.scene.removeItem(item)
+            if isinstance(item, (PadGraphicsItem, LineGraphicsItem, CircleGraphicsItem, TextGraphicsItem)):
+                self.footprint.pads.remove(item.model) if item.model in self.footprint.pads else None
+                self.footprint.lines.remove(item.model) if item.model in self.footprint.lines else None
+                self.footprint.circles.remove(item.model) if item.model in self.footprint.circles else None
+                self.footprint.texts.remove(item.model) if item.model in self.footprint.texts else None
+                self.manager.remove_model(item.model)
                 
         self.right_panel.btn_delete.setEnabled(False)
+        self.right_panel.properties_panel.clear_panel()
         self.show_log("элементы удалены")
 
     def _copy_selected(self):
         self.clipboard = []
         for item in self.canvas.scene.selectedItems():
-            if isinstance(item, PadGraphicsItem):
-                self.clipboard.append(copy.deepcopy(item.pad))
-            elif isinstance(item, LineGraphicsItem) and not item.is_preview:
-                self.clipboard.append(copy.deepcopy(item.line_model))
-            elif isinstance(item, CircleGraphicsItem) and not item.is_preview:
-                self.clipboard.append(copy.deepcopy(item.circle_model))
-            elif isinstance(item, TextGraphicsItem):
-                self.clipboard.append(copy.deepcopy(item.text_model))
+            if isinstance(item, (PadGraphicsItem, LineGraphicsItem, CircleGraphicsItem, TextGraphicsItem)):
+                self.clipboard.append(copy.deepcopy(item.model))
         if self.clipboard:
             self.show_log("(буфер обмена) элементы скопированы")
 
@@ -387,33 +409,25 @@ class FootprintEditorWindow(QMainWindow):
             
             if isinstance(new_model, Pad):
                 new_model.x += dx; new_model.y += dy
-                graphics_item = PadGraphicsItem(new_model, self.canvas)
-                self.footprint.pads.append(new_model)
-                self.canvas.scene.addItem(graphics_item)
-                self.graphics_items[new_model.uid] = graphics_item
-                graphics_item.setSelected(True)
             elif isinstance(new_model, Line):
                 new_model.x1 += dx; new_model.y1 += dy
                 new_model.x2 += dx; new_model.y2 += dy
-                graphics_item = LineGraphicsItem(new_model, self.canvas)
-                self.footprint.lines.append(new_model)
-                self.canvas.scene.addItem(graphics_item)
-                self.graphics_items[new_model.uid] = graphics_item
-                graphics_item.setSelected(True)
             elif isinstance(new_model, Circle):
                 new_model.x += dx; new_model.y += dy
-                graphics_item = CircleGraphicsItem(new_model, self.canvas)
-                self.footprint.circles.append(new_model)
-                self.canvas.scene.addItem(graphics_item)
-                self.graphics_items[new_model.uid] = graphics_item
-                graphics_item.setSelected(True)
             elif isinstance(new_model, Text):
                 new_model.x += dx; new_model.y += dy
-                graphics_item = TextGraphicsItem(new_model, self.canvas)
+            
+            if isinstance(new_model, Pad):
+                self.footprint.pads.append(new_model)
+            elif isinstance(new_model, Line):
+                self.footprint.lines.append(new_model)
+            elif isinstance(new_model, Circle):
+                self.footprint.circles.append(new_model)
+            elif isinstance(new_model, Text):
                 self.footprint.texts.append(new_model)
-                self.canvas.scene.addItem(graphics_item)
-                self.graphics_items[new_model.uid] = graphics_item
-                graphics_item.setSelected(True)
+            
+            item = self.manager.add_model(new_model)
+            item.setSelected(True)
                 
         self.show_log("(буфер обмена) элементы установлены")
 
@@ -427,25 +441,25 @@ class FootprintEditorWindow(QMainWindow):
                 if not self.canvas.pan_timer.isActive():
                     self.canvas.pan_timer.start()
                 return True
-            elif vk == 0x1B:
+            elif vk == VK_ESCAPE:
                 self._finish_drawing()
                 self.canvas.scene.clearSelection()
                 self.right_panel.btn_select.setChecked(True)
                 self._on_tool_button_clicked(self.right_panel.btn_select)
                 return True
-            elif vk == 0x2E:
+            elif vk == VK_DELETE:
                 self._delete_selected()
                 return True
-            elif vk == 0x70:
+            elif vk == VK_F1:
                 self._change_grid_step(-1)
                 return True
-            elif vk == 0x71:
+            elif vk == VK_F2:
                 self._change_grid_step(1)
                 return True
-            elif vk == 0x43 and (modifiers & Qt.KeyboardModifier.ControlModifier):
+            elif vk == VK_C and (modifiers & Qt.KeyboardModifier.ControlModifier):
                 self._copy_selected()
                 return True
-            elif vk == 0x56 and (modifiers & Qt.KeyboardModifier.ControlModifier):
+            elif vk == VK_V and (modifiers & Qt.KeyboardModifier.ControlModifier):
                 self._paste_from_clipboard()
                 return True
                 

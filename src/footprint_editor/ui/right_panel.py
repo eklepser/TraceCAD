@@ -1,4 +1,6 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QPushButton, QButtonGroup
+from footprint_editor.ui.properties_panel import PropertiesPanel
+from constants import Styles
 
 class RightPanel(QWidget):
     def __init__(self, parent=None):
@@ -13,25 +15,25 @@ class RightPanel(QWidget):
         self.btn_add_pad.setFixedSize(40, 40)
         self.btn_add_pad.setToolTip("Площадка")
         self.btn_add_pad.setCheckable(True)
-        self.btn_add_pad.setStyleSheet("font-size: 20px;")
+        self.btn_add_pad.setStyleSheet(Styles.TOOL_BUTTON_INACTIVE)
         
         self.btn_add_line = QPushButton("╱")
         self.btn_add_line.setFixedSize(40, 40)
         self.btn_add_line.setToolTip("Линия")
         self.btn_add_line.setCheckable(True)
-        self.btn_add_line.setStyleSheet("font-size: 20px;")
+        self.btn_add_line.setStyleSheet(Styles.TOOL_BUTTON_INACTIVE)
 
         self.btn_add_circle = QPushButton("◯")
         self.btn_add_circle.setFixedSize(40, 40)
         self.btn_add_circle.setToolTip("Окружность")
         self.btn_add_circle.setCheckable(True)
-        self.btn_add_circle.setStyleSheet("font-size: 20px;")
+        self.btn_add_circle.setStyleSheet(Styles.TOOL_BUTTON_INACTIVE)
 
         self.btn_add_text = QPushButton("Т")
         self.btn_add_text.setFixedSize(40, 40)
         self.btn_add_text.setToolTip("Текст")
         self.btn_add_text.setCheckable(True)
-        self.btn_add_text.setStyleSheet("font-size: 20px;")
+        self.btn_add_text.setStyleSheet(Styles.TOOL_BUTTON_INACTIVE)
         
         tool_layout.addWidget(self.btn_add_pad)
         tool_layout.addWidget(self.btn_add_line)
@@ -47,15 +49,25 @@ class RightPanel(QWidget):
         self.btn_select.setToolTip("Выделение")
         self.btn_select.setCheckable(True)
         self.btn_select.setChecked(True)
-        self.btn_select.setStyleSheet("font-size: 20px;")
+        self.btn_select.setStyleSheet(Styles.TOOL_BUTTON_ACTIVE)
         actions_layout.addWidget(self.btn_select)
         
         self.btn_delete = QPushButton("🗑")
         self.btn_delete.setFixedSize(40, 40)
         self.btn_delete.setToolTip("Удалить")
         self.btn_delete.setEnabled(False)
-        self.btn_delete.setStyleSheet("font-size: 20px;")
+        self.btn_delete.setStyleSheet("font-size: 20px; background-color: #555555; color: white; border: none;")
         actions_layout.addWidget(self.btn_delete)
         
         layout.addWidget(self.actions_group_box)
-        layout.addStretch()
+        
+        self.properties_panel = PropertiesPanel()
+        layout.addWidget(self.properties_panel, stretch=1)
+    
+    def update_tool_buttons(self, active_button):
+        buttons = [self.btn_add_pad, self.btn_add_line, self.btn_add_circle, self.btn_add_text, self.btn_select]
+        for btn in buttons:
+            if btn == active_button:
+                btn.setStyleSheet(Styles.TOOL_BUTTON_ACTIVE)
+            else:
+                btn.setStyleSheet(Styles.TOOL_BUTTON_INACTIVE)

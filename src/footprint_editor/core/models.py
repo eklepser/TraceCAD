@@ -42,7 +42,7 @@ class Line:
     y1: float
     x2: float
     y2: float
-    width: float = 0.075
+    width: float = 0.15
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     def __deepcopy__(self, memo):
@@ -61,7 +61,7 @@ class Circle:
     x: float
     y: float
     radius: float
-    width: float = 0.075
+    width: float = 0.15
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     def __deepcopy__(self, memo):

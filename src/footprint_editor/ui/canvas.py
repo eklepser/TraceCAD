@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem
 from PySide6.QtCore import Qt, QPointF, Signal, QTimer
-from PySide6.QtGui import QPen, QColor, QWheelEvent, QMouseEvent, QPainter
-from constants import VK_W, VK_A, VK_S, VK_D, PAN_KEYS
+from PySide6.QtGui import QPen, QColor, QWheelEvent, QMouseEvent, QPainter, QFont
+from constants import VK_W, VK_A, VK_S, VK_D, PAN_KEYS, Colors, Sizes, Steps
 
 class FootprintCanvas(QGraphicsView):
     zoom_changed = Signal(float)
@@ -24,25 +24,26 @@ class FootprintCanvas(QGraphicsView):
         
         self.setDragMode(QGraphicsView.DragMode.NoDrag)
         self.setRubberBandSelectionMode(Qt.ItemSelectionMode.IntersectsItemShape)
+        self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
         
-        self.grid_size = 1.27
-        self.grid_color = QColor(80, 80, 80)
-        self.background_color = QColor(30, 30, 30)
+        self.grid_size = float(Steps.DEFAULT_GRID)
+        self.grid_color = QColor(*Colors.GRID)
+        self.background_color = QColor(*Colors.BACKGROUND)
         
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.setBackgroundBrush(self.background_color)
         
-        self.base_scale = 50.0
+        self.base_scale = Sizes.BASE_SCALE
         self.scale(self.base_scale, self.base_scale)
         
-        self.zoom_steps = [0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0]
+        self.zoom_steps = Steps.ZOOM
         self.zoom_index = self.zoom_steps.index(1.0)
         self.zoom_level = 1.0
         
         self.pressed_keys = set()
-        self.pan_speed_px = 7.5
+        self.pan_speed_px = Sizes.PAN_SPEED_PX
         self.pan_timer = QTimer(self)
-        self.pan_timer.setInterval(16)
+        self.pan_timer.setInterval(Sizes.PAN_TIMER_INTERVAL)
         self.pan_timer.timeout.connect(self._pan_step)
         
         self._scroll_acc_px_x = 0.0
@@ -50,21 +51,22 @@ class FootprintCanvas(QGraphicsView):
 
         self._snap_pos = None
         self.show_snap = True
-        
         self._ghost_line_start = None
         self._ghost_line_end = None
-        
         self._ghost_circle_center = None
         self._ghost_circle_radius = 0.0
+        
+        self._ghost_text_pos = None
+        self._ghost_text_content = ""
+        self._ghost_text_size = 1.0
+        self._ghost_text_visible = True
 
     def set_grid_size(self, size_mm):
         self.grid_size = size_mm
         self.viewport().update()
 
     def snap_to_grid(self, x, y):
-        snapped_x = round(x / self.grid_size) * self.grid_size
-        snapped_y = round(y / self.grid_size) * self.grid_size
-        return QPointF(snapped_x, snapped_y)
+        return QPointF(round(x / self.grid_size) * self.grid_size, round(y / self.grid_size) * self.grid_size)
 
     def set_show_snap(self, show):
         self.show_snap = show
@@ -90,6 +92,20 @@ class FootprintCanvas(QGraphicsView):
         self._ghost_circle_radius = 0.0
         self.viewport().update()
 
+    def set_ghost_text(self, x, y, text, size, visible):
+        self._ghost_text_pos = QPointF(x, y)
+        self._ghost_text_content = text
+        self._ghost_text_size = size
+        self._ghost_text_visible = visible
+        self.viewport().update()
+
+    def clear_ghost_text(self):
+        self._ghost_text_pos = None
+        self._ghost_text_content = ""
+        self._ghost_text_size = 1.0
+        self._ghost_text_visible = True
+        self.viewport().update()
+
     def set_interaction_enabled(self, enabled):
         for item in self.scene.items():
             item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled)
@@ -101,11 +117,10 @@ class FootprintCanvas(QGraphicsView):
 
     def drawBackground(self, painter, rect):
         super().drawBackground(painter, rect)
-        
         scale_factor = self.transform().m11()
         cell_px = self.grid_size * scale_factor
         
-        if cell_px < 2.0:
+        if cell_px < Sizes.MIN_CELL_PX:
             return
 
         left = int(rect.left() // self.grid_size) * self.grid_size
@@ -114,15 +129,15 @@ class FootprintCanvas(QGraphicsView):
         bottom = int(rect.bottom() // self.grid_size) * self.grid_size
         
         draw_step = self.grid_size
-        max_points_per_axis = 150
+        max_points = Sizes.MAX_GRID_POINTS
         
-        if (right - left) / draw_step > max_points_per_axis:
+        if (right - left) / draw_step > max_points:
             factor = 2
-            while (right - left) / (draw_step * factor) > max_points_per_axis: factor *= 2
+            while (right - left) / (draw_step * factor) > max_points: factor *= 2
             draw_step = self.grid_size * factor
-        if (bottom - top) / draw_step > max_points_per_axis:
+        if (bottom - top) / draw_step > max_points:
             factor = 2
-            while (bottom - top) / (draw_step * factor) > max_points_per_axis: factor *= 2
+            while (bottom - top) / (draw_step * factor) > max_points: factor *= 2
             draw_step = self.grid_size * factor
 
         pen = QPen(self.grid_color, 0)
@@ -139,10 +154,16 @@ class FootprintCanvas(QGraphicsView):
     def drawForeground(self, painter, rect):
         super().drawForeground(painter, rect)
         scale = self.transform().m11()
-        cross_size = 8.0 / scale
+        cross_size = Sizes.CROSS_SIZE / scale
+
+        axis_pen = QPen(QColor(*Colors.AXIS), 0)
+        axis_pen.setCosmetic(True)
+        painter.setPen(axis_pen)
+        painter.drawLine(QPointF(rect.left(), 0), QPointF(rect.right(), 0))
+        painter.drawLine(QPointF(0, rect.top()), QPointF(0, rect.bottom()))
 
         if self._snap_pos and self.show_snap:
-            pen = QPen(QColor(255, 255, 255, 150), 0)
+            pen = QPen(QColor(*Colors.SNAP_CROSS), 0)
             pen.setCosmetic(True)
             painter.setPen(pen)
             x, y = self._snap_pos.x(), self._snap_pos.y()
@@ -150,19 +171,31 @@ class FootprintCanvas(QGraphicsView):
             painter.drawLine(QPointF(x, y - cross_size), QPointF(x, y + cross_size))
 
         if self._ghost_line_start and self._ghost_line_end:
-            pen = QPen(QColor(100, 200, 100, 255), 0)
+            pen = QPen(QColor(*Colors.GHOST_LINE), 0)
             pen.setCosmetic(True)
             pen.setStyle(Qt.PenStyle.DashLine)
             painter.setPen(pen)
             painter.drawLine(self._ghost_line_start, self._ghost_line_end)
 
         if self._ghost_circle_center and self._ghost_circle_radius > 0:
-            pen = QPen(QColor(100, 200, 100, 255), 0)
+            pen = QPen(QColor(*Colors.GHOST_LINE), 0)
             pen.setCosmetic(True)
             pen.setStyle(Qt.PenStyle.DashLine)
             painter.setPen(pen)
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawEllipse(self._ghost_circle_center, self._ghost_circle_radius, self._ghost_circle_radius)
+
+        if self._ghost_text_pos and self._ghost_text_content:
+            font = QFont()
+            font.setPointSizeF(self._ghost_text_size * Sizes.TEXT_FONT_MULTIPLIER)
+            painter.setFont(font)
+            
+            if self._ghost_text_visible:
+                painter.setPen(QColor(*Colors.GHOST_TEXT))
+            else:
+                painter.setPen(QColor(*Colors.GHOST_TEXT).lighter(50))
+            
+            painter.drawText(self._ghost_text_pos, self._ghost_text_content)
 
     def wheelEvent(self, event: QWheelEvent):
         if event.angleDelta().y() > 0:

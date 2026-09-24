@@ -4,8 +4,8 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 from PySide6.QtWidgets import QApplication
-from footprint_editor.window import FootprintEditorWindow
-from footprint_editor.models import Footprint
+from footprint_editor.ui.window import FootprintEditorWindow
+from footprint_editor.core.models import Footprint
 
 def main():
     app = QApplication(sys.argv)
