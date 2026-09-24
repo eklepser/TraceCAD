@@ -16,6 +16,14 @@ class PropertiesPanel(QWidget):
         
         self.current_object = None
         self._widgets = []
+        self.log_panel = None
+
+    def set_log_panel(self, log_panel):
+        self.log_panel = log_panel
+
+    def _notify_change(self, element_type):
+        if self.log_panel:
+            self.log_panel.show_message(f'элемент "{element_type}" изменен')
 
     def clear_panel(self):
         for widget, label in self._widgets:
@@ -67,25 +75,26 @@ class PropertiesPanel(QWidget):
         self._widgets.append((spin, label))
 
     def _on_pad_width_changed(self, val):
-        if self.current_object: self.current_object.width = val; self.current_object.graphics_item.update_geometry()
+        if self.current_object: self.current_object.width = val; self.current_object.graphics_item.update_geometry(); self._notify_change("площадка")
     def _on_pad_height_changed(self, val):
-        if self.current_object: self.current_object.height = val; self.current_object.graphics_item.update_geometry()
+        if self.current_object: self.current_object.height = val; self.current_object.graphics_item.update_geometry(); self._notify_change("площадка")
     def _on_pad_shape_changed(self, index):
         if self.current_object: 
             self.current_object.shape = [PadShape.RECT, PadShape.CIRCLE, PadShape.OVAL][index]
             self.current_object.graphics_item.update_geometry()
+            self._notify_change("площадка")
     def _on_pad_x_changed(self, val):
-        if self.current_object: self.current_object.x = val; self.current_object.graphics_item.update_geometry()
+        if self.current_object: self.current_object.x = val; self.current_object.graphics_item.update_geometry(); self._notify_change("площадка")
     def _on_pad_y_changed(self, val):
-        if self.current_object: self.current_object.y = val; self.current_object.graphics_item.update_geometry()
+        if self.current_object: self.current_object.y = val; self.current_object.graphics_item.update_geometry(); self._notify_change("площадка")
 
     def _on_line_width_changed(self, val):
-        if self.current_object: self.current_object.width = val; self.current_object.graphics_item.update_geometry()
+        if self.current_object: self.current_object.width = val; self.current_object.graphics_item.update_geometry(); self._notify_change("линия")
     def _on_line_x1_changed(self, val):
-        if self.current_object: self.current_object.x1 = val; self.current_object.graphics_item.update_geometry()
+        if self.current_object: self.current_object.x1 = val; self.current_object.graphics_item.update_geometry(); self._notify_change("линия")
     def _on_line_y1_changed(self, val):
-        if self.current_object: self.current_object.y1 = val; self.current_object.graphics_item.update_geometry()
+        if self.current_object: self.current_object.y1 = val; self.current_object.graphics_item.update_geometry(); self._notify_change("линия")
     def _on_line_x2_changed(self, val):
-        if self.current_object: self.current_object.x2 = val; self.current_object.graphics_item.update_geometry()
+        if self.current_object: self.current_object.x2 = val; self.current_object.graphics_item.update_geometry(); self._notify_change("линия")
     def _on_line_y2_changed(self, val):
-        if self.current_object: self.current_object.y2 = val; self.current_object.graphics_item.update_geometry()
+        if self.current_object: self.current_object.y2 = val; self.current_object.graphics_item.update_geometry(); self._notify_change("линия")

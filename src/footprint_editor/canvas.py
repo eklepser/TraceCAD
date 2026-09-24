@@ -22,6 +22,9 @@ class FootprintCanvas(QGraphicsView):
         self.setMouseTracking(True)
         self.viewport().setMouseTracking(True)
         
+        self.setDragMode(QGraphicsView.DragMode.NoDrag)
+        self.setRubberBandSelectionMode(Qt.ItemSelectionMode.IntersectsItemShape)
+        
         self.grid_size = 1.27
         self.grid_color = QColor(80, 80, 80)
         self.background_color = QColor(30, 30, 30)
@@ -50,6 +53,9 @@ class FootprintCanvas(QGraphicsView):
         
         self._ghost_line_start = None
         self._ghost_line_end = None
+        
+        self._ghost_circle_center = None
+        self._ghost_circle_radius = 0.0
 
     def set_grid_size(self, size_mm):
         self.grid_size = size_mm
@@ -74,11 +80,24 @@ class FootprintCanvas(QGraphicsView):
         self._ghost_line_end = None
         self.viewport().update()
 
+    def set_ghost_circle(self, cx, cy, r):
+        self._ghost_circle_center = QPointF(cx, cy)
+        self._ghost_circle_radius = r
+        self.viewport().update()
+
+    def clear_ghost_circle(self):
+        self._ghost_circle_center = None
+        self._ghost_circle_radius = 0.0
+        self.viewport().update()
+
     def set_interaction_enabled(self, enabled):
         for item in self.scene.items():
             item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled)
         if not enabled:
             self.scene.clearSelection()
+
+    def set_drag_mode(self, mode):
+        self.setDragMode(mode)
 
     def drawBackground(self, painter, rect):
         super().drawBackground(painter, rect)
@@ -137,6 +156,14 @@ class FootprintCanvas(QGraphicsView):
             painter.setPen(pen)
             painter.drawLine(self._ghost_line_start, self._ghost_line_end)
 
+        if self._ghost_circle_center and self._ghost_circle_radius > 0:
+            pen = QPen(QColor(100, 200, 100, 255), 0)
+            pen.setCosmetic(True)
+            pen.setStyle(Qt.PenStyle.DashLine)
+            painter.setPen(pen)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawEllipse(self._ghost_circle_center, self._ghost_circle_radius, self._ghost_circle_radius)
+
     def wheelEvent(self, event: QWheelEvent):
         if event.angleDelta().y() > 0:
             if self.zoom_index < len(self.zoom_steps) - 1: self.zoom_index += 1
@@ -151,6 +178,10 @@ class FootprintCanvas(QGraphicsView):
 
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:
+            item = self.itemAt(event.position().toPoint())
+            if item is not None and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+                item.setSelected(not item.isSelected())
+                return
             scene_pos = self.mapToScene(event.position().toPoint())
             snapped_pos = self.snap_to_grid(scene_pos.x(), scene_pos.y())
             self.canvas_clicked.emit(snapped_pos.x(), snapped_pos.y())
