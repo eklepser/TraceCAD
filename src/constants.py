@@ -10,3 +10,4 @@ class Tool:
     ADD_PAD = "add_pad"
     ADD_LINE = "add_line"
     ADD_CIRCLE = "add_circle"
+    ADD_TEXT = "add_text"

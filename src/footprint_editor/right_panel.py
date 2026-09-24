@@ -26,16 +26,23 @@ class RightPanel(QWidget):
         self.btn_add_circle.setToolTip("Окружность")
         self.btn_add_circle.setCheckable(True)
         self.btn_add_circle.setStyleSheet("font-size: 20px;")
+
+        self.btn_add_text = QPushButton("Т")
+        self.btn_add_text.setFixedSize(40, 40)
+        self.btn_add_text.setToolTip("Текст")
+        self.btn_add_text.setCheckable(True)
+        self.btn_add_text.setStyleSheet("font-size: 20px;")
         
         tool_layout.addWidget(self.btn_add_pad)
         tool_layout.addWidget(self.btn_add_line)
         tool_layout.addWidget(self.btn_add_circle)
+        tool_layout.addWidget(self.btn_add_text)
         layout.addWidget(self.tool_group_box)
         
         self.actions_group_box = QGroupBox("Действия")
-        actions_layout = QVBoxLayout(self.actions_group_box)
+        actions_layout = QHBoxLayout(self.actions_group_box)
         
-        self.btn_select = QPushButton("✥")
+        self.btn_select = QPushButton("■")
         self.btn_select.setFixedSize(40, 40)
         self.btn_select.setToolTip("Выделение")
         self.btn_select.setCheckable(True)

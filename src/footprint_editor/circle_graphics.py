@@ -63,6 +63,8 @@ class CircleGraphicsItem(QGraphicsItem):
                     self._group_drag_start[item] = ('line', item.line_model.x1, item.line_model.y1, item.line_model.x2, item.line_model.y2)
                 elif cls_name == 'CircleGraphicsItem':
                     self._group_drag_start[item] = ('circle', item.circle_model.x, item.circle_model.y)
+                elif cls_name == 'TextGraphicsItem':
+                    self._group_drag_start[item] = ('text', item.text_model.x, item.text_model.y)
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
@@ -88,6 +90,11 @@ class CircleGraphicsItem(QGraphicsItem):
                 elif start[0] == 'circle':
                     item.circle_model.x = start[1] + snapped_dx
                     item.circle_model.y = start[2] + snapped_dy
+                    item.prepareGeometryChange()
+                    item.update()
+                elif start[0] == 'text':
+                    item.text_model.x = start[1] + snapped_dx
+                    item.text_model.y = start[2] + snapped_dy
                     item.prepareGeometryChange()
                     item.update()
         else:

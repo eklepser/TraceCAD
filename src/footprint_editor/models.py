@@ -76,6 +76,26 @@ class Circle:
         return result
 
 @dataclass
+class Text:
+    x: float
+    y: float
+    text: str
+    size: float = 1.0
+    visible: bool = True
+    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == 'graphics_item':
+                setattr(result, k, None)
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+        return result
+
+@dataclass
 class Footprint:
     name: str
     reference: str = "REF**"
@@ -83,3 +103,4 @@ class Footprint:
     pads: List[Pad] = field(default_factory=list)
     lines: List[Line] = field(default_factory=list)
     circles: List[Circle] = field(default_factory=list)
+    texts: List[Text] = field(default_factory=list)
