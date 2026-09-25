@@ -40,6 +40,8 @@ class LineGraphicsItem(BaseGraphicsItem):
         painter.drawLine(QLineF(self.model.x1, self.model.y1, self.model.x2, self.model.y2))
 
     def apply_drag_delta(self, start, dx, dy):
+        if getattr(self.model, 'locked', False):
+            return
         self.model.x1 = start[1] + dx
         self.model.y1 = start[2] + dy
         self.model.x2 = start[3] + dx

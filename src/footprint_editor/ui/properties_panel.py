@@ -1,44 +1,44 @@
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, 
-                               QDoubleSpinBox, QComboBox, QLineEdit, QCheckBox, 
-                               QPushButton, QLabel)
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout,
+                               QDoubleSpinBox, QComboBox, QLineEdit, QCheckBox,
+                               QPushButton)
 from PySide6.QtCore import Qt
 from footprint_editor.core.models import Pad, Line, Circle, Text, PadShape
+from constants import Styles
+
 
 class PropertiesPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        
-        self.no_selection_label = QLabel("Выберите один объект")
-        self.main_layout.addWidget(self.no_selection_label)
-        
+
         self.form_layout = QFormLayout()
         self.main_layout.addLayout(self.form_layout)
-        
+
         self.btn_apply = QPushButton("Применить")
-        self.btn_apply.setStyleSheet("background-color: #365880; color: white; padding: 5px;")
+        self.btn_apply.setStyleSheet(Styles.APPLY_BUTTON)
         self.btn_apply.clicked.connect(self._apply_changes)
         self.main_layout.addWidget(self.btn_apply)
-        
+
         self.current_object = None
         self._widgets = {}
         self.btn_apply.hide()
 
+    def apply_theme(self):
+        self.btn_apply.setStyleSheet(Styles.APPLY_BUTTON)
+
     def clear_panel(self):
-        for widget in self._widgets.values():
-            self.form_layout.removeRow(widget)
+        while self.form_layout.rowCount() > 0:
+            self.form_layout.removeRow(0)
         self._widgets.clear()
         self.current_object = None
         self.btn_apply.hide()
-        self.no_selection_label.show()
-        
+
     def set_object(self, obj):
         self.clear_panel()
-        self.no_selection_label.hide()
         self.current_object = obj
         self.btn_apply.show()
-        
+
         if isinstance(obj, Pad):
             self._build_pad_ui(obj)
         elif isinstance(obj, Line):
@@ -51,15 +51,15 @@ class PropertiesPanel(QWidget):
     def _build_pad_ui(self, pad):
         self._add_spinbox("X (мм):", pad.x, -500.0, 500.0, 0.01, "x")
         self._add_spinbox("Y (мм):", pad.y, -500.0, 500.0, 0.01, "y")
-        
+
         text_input = QLineEdit(pad.number)
         self.form_layout.addRow("Номер:", text_input)
         self._widgets["number"] = text_input
-        
+
         self._add_spinbox("Размер X (мм):", pad.width, 0.1, 50.0, 0.01, "width")
         self._add_spinbox("Размер Y (мм):", pad.height, 0.1, 50.0, 0.01, "height")
         self._add_spinbox("Отверстие (мм):", pad.drill or 0.0, 0.0, 50.0, 0.01, "drill")
-        
+
         shape_combo = QComboBox()
         shape_combo.addItem("Круг", PadShape.CIRCLE)
         shape_combo.addItem("Квадрат", PadShape.RECT)
@@ -81,11 +81,11 @@ class PropertiesPanel(QWidget):
     def _build_text_ui(self, text):
         self._add_spinbox("X (мм):", text.x, -500.0, 500.0, 0.01, "x")
         self._add_spinbox("Y (мм):", text.y, -500.0, 500.0, 0.01, "y")
-        
+
         text_input = QLineEdit(text.text)
         self.form_layout.addRow("Текст:", text_input)
         self._widgets["text"] = text_input
-        
+
         visible_check = QCheckBox()
         visible_check.setChecked(text.visible)
         self.form_layout.addRow("Видимый:", visible_check)
@@ -103,9 +103,9 @@ class PropertiesPanel(QWidget):
     def _apply_changes(self):
         if not self.current_object:
             return
-            
+
         obj = self.current_object
-        
+
         if isinstance(obj, Pad):
             obj.x = self._widgets["x"].value()
             obj.y = self._widgets["y"].value()
@@ -128,5 +128,5 @@ class PropertiesPanel(QWidget):
             obj.y = self._widgets["y"].value()
             obj.text = self._widgets["text"].text()
             obj.visible = self._widgets["visible"].isChecked()
-        
+
         obj.graphics_item.update_geometry()

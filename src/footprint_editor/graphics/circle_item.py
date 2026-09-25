@@ -37,6 +37,8 @@ class CircleGraphicsItem(BaseGraphicsItem):
         painter.drawEllipse(QPointF(self.model.x, self.model.y), self.model.radius, self.model.radius)
 
     def apply_drag_delta(self, start, dx, dy):
+        if getattr(self.model, 'locked', False):
+            return
         self.model.x = start[1] + dx
         self.model.y = start[2] + dy
         self.prepareGeometryChange()

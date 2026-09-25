@@ -1,0 +1,2022 @@
+
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\collect.bat
+============================================================
+@echo off
+setlocal enabledelayedexpansion
+chcp 65001 >nul
+
+set "OUTPUT=project_code.txt"
+set "ROOT=%~dp0"
+
+:: Очистить/создать выходной файл
+> "%OUTPUT%" echo.
+
+:: Расширения файлов, которые нужно собрать (можно расширить)
+set "EXTS=.py .js .ts .jsx .tsx .html .css .scss .json .md .txt .java .c .cpp .h .hpp .cs .go .rs .php .rb .sql .yml .yaml .xml .sh .bat .cmd .ini .cfg .toml .vue .svelte"
+
+for /r "%ROOT%" %%F in (*) do (
+    set "FILE=%%F"
+    set "EXT=%%~xF"
+
+    :: Пропускаем сам выходной файл
+    if /I not "%%~nxF"=="%OUTPUT%" (
+
+        :: Пропускаем папки с мусором
+        set "SKIP="
+        echo !FILE! | findstr /I /C:"\node_modules\\" /C:"\.git\\" /C:"\venv\\" /C:"\.venv\\" /C:"\__pycache__\\" /C:"\dist\\" /C:"\build\\" /C:"\target\\" >nul && set "SKIP=1"
+
+        if not defined SKIP (
+            :: Проверяем расширение
+            echo !EXTS! | findstr /I /C:"!EXT!" >nul
+            if !errorlevel! == 0 (
+                echo ============================================================>> "%OUTPUT%"
+                echo FILE: %%F>> "%OUTPUT%"
+                echo ============================================================>> "%OUTPUT%"
+                type "%%F">> "%OUTPUT%"
+                echo.>> "%OUTPUT%"
+                echo.>> "%OUTPUT%"
+                echo [+] %%F
+            )
+        )
+    )
+)
+
+echo.
+echo Готово! Всё сохранено в: %OUTPUT%
+pause
+
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\main.py
+============================================================
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+
+from PySide6.QtWidgets import QApplication
+from footprint_editor.ui.window import FootprintEditorWindow
+from footprint_editor.core.models import Footprint
+
+def main():
+    app = QApplication(sys.argv)
+    app.setStyle("Fusion") 
+    
+    test_footprint = Footprint(name="My_First_Component")
+    window = FootprintEditorWindow(footprint=test_footprint)
+    window.show()
+    
+    sys.exit(app.exec())
+
+if __name__ == "__main__":
+    main()
+
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\project_dump.txt
+============================================================
+
+
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\requirements.txt
+============================================================
+PySide6>=6.5.0
+
+
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\.vscode\settings.json
+============================================================
+{
+    "python.analysis.extraPaths": [
+        "./src"
+    ],
+    "python.autoComplete.extraPaths": [
+        "./src"
+    ]
+}.
+.
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\src\constants.py
+============================================================
+VK_W = 0x57
+VK_A = 0x41
+VK_S = 0x53
+VK_D = 0x44
+
+VK_ESCAPE = 0x1B
+VK_DELETE = 0x2E
+VK_F1 = 0x70
+VK_F2 = 0x71
+VK_C = 0x43
+VK_V = 0x56
+
+PAN_KEYS = (VK_W, VK_A, VK_S, VK_D)
+
+class Tool:
+    SELECT = "select"
+    ADD_PAD = "add_pad"
+    ADD_LINE = "add_line"
+    ADD_CIRCLE = "add_circle"
+    ADD_TEXT = "add_text"
+
+class Colors:
+    GRID = (80, 80, 80)
+    BACKGROUND = (30, 30, 30)
+    PAD = (180, 160, 80)
+    SELECTED = (0, 150, 255)
+    AXIS = (255, 100, 100, 150)
+    GHOST_LINE = (100, 200, 100, 255)
+    SNAP_CROSS = (255, 255, 255, 150)
+    TEXT_VISIBLE = (200, 200, 200)
+    TEXT_HIDDEN = (200, 200, 200, 50)
+    PAD_NUMBER = (255, 255, 255)
+    GHOST_TEXT = (150, 150, 150, 180)
+
+class Sizes:
+    BASE_SCALE = 50.0
+    PAN_SPEED_PX = 15.0
+    PAN_TIMER_INTERVAL = 16
+    CROSS_SIZE = 8.0
+    MAX_GRID_POINTS = 150
+    MIN_CELL_PX = 2.0
+    TEXT_FONT_MULTIPLIER = 1.415
+    PAD_NUMBER_FONT_RATIO = 0.2
+
+class Steps:
+    ZOOM = [0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0]
+    GRID = ["5.000", "2.500", "1.000", "0.500", "0.250", "0.200", "0.100", "0.050", "0.025", "0.010"]
+    DEFAULT_GRID = "1.000"
+
+class Styles:
+    DIALOG_BG = "background-color: #2b2b2b; color: #a9b7c6; border: 1px solid #555555;"
+    INPUT_BG = "background-color: #3c3f41; color: white; border: 1px solid #555555; padding: 5px;"
+    BUTTON_OK = "background-color: #365880; color: white; border: none;"
+    BUTTON_CANCEL = "background-color: #555555; color: white; border: none;"
+    LOG_LABEL = "background-color: rgba(40, 40, 40, 220); color: #a9b7c6; padding: 5px; border-radius: 3px;"
+    RIGHT_PANEL = "background-color: #3c3f41; color: white;"
+    APPLY_BUTTON = "background-color: #365880; color: white; padding: 5px;"
+    TOOL_BUTTON = "font-size: 20px; border: 2px solid transparent;"
+    TOOL_BUTTON_ACTIVE = "font-size: 20px; border: 2px solid #0096ff; background-color: #2a4d6e;"
+    TOOL_BUTTON_INACTIVE = "font-size: 20px; border: 2px solid transparent; background-color: #3c3f41;".
+.
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\src\footprint_editor\core\kicad_parser.py
+============================================================
+import re
+from pathlib import Path
+from footprint_editor.core.models import (
+    Footprint, Pad, PadShape, PadType, Line, Circle, Text, TextType
+)
+
+KICAD_UNIT = 1000  # 1 unit = 1/1000 mm (mils)
+
+def kicad_to_mm(value):
+    return float(value) / KICAD_UNIT
+
+def parse_kicad_mod(filepath):
+    content = Path(filepath).read_text(encoding='utf-8', errors='ignore')
+    return parse_kicad_content(content)
+
+def parse_kicad_content(content):
+    footprints = []
+    modules = re.findall(r'\$MODULE\s+(\S+)(.*?)\$EndMODULE', content, re.DOTALL)
+    
+    for name, body in modules:
+        fp = parse_module(name, body)
+        footprints.append(fp)
+    
+    return footprints
+
+def parse_module(name, body):
+    fp = Footprint(name=name)
+    
+    t0_match = re.search(r'T0\s+(.*?)\n', body)
+    t1_match = re.search(r'T1\s+(.*?)\n', body)
+    
+    if t0_match:
+        ref_text = parse_text_line(t0_match.group(1), TextType.REFERENCE)
+        ref_text.locked = True
+        fp.texts.append(ref_text)
+        fp.reference = ref_text.text
+    
+    if t1_match:
+        val_text = parse_text_line(t1_match.group(1), TextType.VALUE)
+        val_text.locked = True
+        fp.texts.append(val_text)
+        fp.value = val_text.text
+    
+    for ds_match in re.finditer(r'DS\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\d+)', body):
+        x1, y1, x2, y2, thickness = ds_match.groups()
+        line = Line(
+            x1=kicad_to_mm(x1), y1=kicad_to_mm(y1),
+            x2=kicad_to_mm(x2), y2=kicad_to_mm(y2),
+            width=kicad_to_mm(thickness)
+        )
+        fp.lines.append(line)
+    
+    for dc_match in re.finditer(r'DC\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\d+)', body):
+        x, y, r, _, thickness = dc_match.groups()
+        circle = Circle(
+            x=kicad_to_mm(x), y=kicad_to_mm(y),
+            radius=kicad_to_mm(r),
+            width=kicad_to_mm(thickness)
+        )
+        fp.circles.append(circle)
+    
+    for da_match in re.finditer(r'DA\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\d+)\s+(\d+)', body):
+        x1, y1, x2, y2, angle, thickness = da_match.groups()
+        line = Line(
+            x1=kicad_to_mm(x1), y1=kicad_to_mm(y1),
+            x2=kicad_to_mm(x2), y2=kicad_to_mm(y2),
+            width=kicad_to_mm(thickness)
+        )
+        fp.lines.append(line)
+    
+    pads = re.findall(r'\$PAD(.*?)\$EndPAD', body, re.DOTALL)
+    for pad_body in pads:
+        pad = parse_pad(pad_body)
+        if pad:
+            fp.pads.append(pad)
+    
+    return fp
+
+def parse_text_line(text_str, text_type):
+    text_match = re.search(r'"([^"]*)"', text_str)
+    text = text_match.group(1) if text_match else ""
+    
+    params_str = text_str[:text_match.start()].strip() if text_match else text_str
+    params = params_str.split()
+    
+    x = kicad_to_mm(params[0]) if len(params) > 0 else 0
+    y = kicad_to_mm(params[1]) if len(params) > 1 else 0
+    w = kicad_to_mm(params[2]) if len(params) > 2 else 1
+    h = kicad_to_mm(params[3]) if len(params) > 3 else 1
+    size = max(w, h)
+    
+    visible = True
+    if len(params) > 7:
+        visible = params[7] != 'Y'
+    
+    return Text(
+        x=x, y=y, text=text, size=size,
+        visible=visible, text_type=text_type, locked=True
+    )
+
+def parse_pad(pad_body):
+    sh_match = re.search(r'Sh\s+"(\d+)"\s+(\w+)\s+(\d+)\s+(\d+)', pad_body)
+    dr_match = re.search(r'Dr\s+(\d+)', pad_body)
+    po_match = re.search(r'Po\s+(-?\d+)\s+(-?\d+)', pad_body)
+    at_match = re.search(r'At\s+(\w+)', pad_body)
+    
+    if not sh_match or not po_match:
+        return None
+    
+    number = sh_match.group(1)
+    shape_str = sh_match.group(2)
+    size_x = kicad_to_mm(sh_match.group(3))
+    size_y = kicad_to_mm(sh_match.group(4))
+    x = kicad_to_mm(po_match.group(1))
+    y = kicad_to_mm(po_match.group(2))
+    drill = kicad_to_mm(dr_match.group(1)) if dr_match else 0
+    
+    shape_map = {'R': PadShape.RECT, 'C': PadShape.CIRCLE, 'O': PadShape.OVAL}
+    shape = shape_map.get(shape_str, PadShape.CIRCLE)
+    
+    pad_type = PadType.SMD
+    if at_match:
+        attr = at_match.group(1)
+        if attr in ('STD', 'NPTH'):
+            pad_type = PadType.THT
+    
+    return Pad(
+        number=number, shape=shape, pad_type=pad_type,
+        x=x, y=y, width=size_x, height=size_y,
+        drill=drill if drill > 0 else None
+    ).
+.
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\src\footprint_editor\core\manager.py
+============================================================
+from footprint_editor.graphics.factory import GraphicsFactory
+
+class FootprintManager:
+    def __init__(self, footprint, scene, canvas):
+        self.footprint = footprint
+        self.scene = scene
+        self.canvas = canvas
+        self.items = {}
+
+    def add_model(self, model):
+        item = GraphicsFactory.create(model, self.canvas)
+        self.scene.addItem(item)
+        self.items[model.uid] = item
+        return item
+
+    def remove_model(self, model):
+        item = self.items.pop(model.uid, None)
+        if item:
+            self.scene.removeItem(item)
+
+    def get_next_pad_number(self):
+        numbers = []
+        for p in self.footprint.pads:
+            try:
+                numbers.append(int(p.number))
+            except (ValueError, TypeError):
+                pass
+        return str(max(numbers) + 1) if numbers else "1".
+.
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\src\footprint_editor\core\models.py
+============================================================
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import List, Optional
+import uuid
+import copy
+
+class PadShape(Enum):
+    CIRCLE = "circle"
+    RECT = "rect"
+    OVAL = "oval"
+
+class PadType(Enum):
+    SMD = "smd"
+    THT = "thru_hole"
+
+class TextType(Enum):
+    NORMAL = "normal"
+    REFERENCE = "reference"
+    VALUE = "value"
+
+@dataclass
+class Pad:
+    number: str
+    shape: PadShape
+    pad_type: PadType
+    x: float
+    y: float
+    width: float
+    height: float
+    drill: Optional[float] = None
+    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == 'graphics_item':
+                setattr(result, k, None)
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+        return result
+
+@dataclass
+class Line:
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+    width: float = 0.15
+    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == 'graphics_item':
+                setattr(result, k, None)
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+        return result
+
+@dataclass
+class Circle:
+    x: float
+    y: float
+    radius: float
+    width: float = 0.15
+    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == 'graphics_item':
+                setattr(result, k, None)
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+        return result
+
+@dataclass
+class Text:
+    x: float
+    y: float
+    text: str
+    size: float = 1.0
+    visible: bool = True
+    text_type: TextType = TextType.NORMAL
+    locked: bool = False
+    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == 'graphics_item':
+                setattr(result, k, None)
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+        return result
+
+@dataclass
+class Footprint:
+    name: str
+    reference: str = "REF**"
+    value: str = "VAL**"
+    pads: List[Pad] = field(default_factory=list)
+    lines: List[Line] = field(default_factory=list)
+    circles: List[Circle] = field(default_factory=list)
+    texts: List[Text] = field(default_factory=list).
+.
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\src\footprint_editor\graphics\base.py
+============================================================
+from PySide6.QtWidgets import QGraphicsItem
+from PySide6.QtCore import Qt
+
+class BaseGraphicsItem(QGraphicsItem):
+    def __init__(self, model, canvas, parent=None):
+        super().__init__(parent)
+        self.model = model
+        self.canvas = canvas
+        self.model.graphics_item = self
+        
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+        
+        self._drag_start_mouse = None
+        self._is_drag_leader = False
+        self._group_drag_start = {}
+
+    def _collect_selected_items(self):
+        self._group_drag_start = {}
+        for item in self.scene().selectedItems():
+            cls_name = type(item).__name__
+            if cls_name == 'PadGraphicsItem':
+                self._group_drag_start[item] = ('pad', item.model.x, item.model.y)
+            elif cls_name == 'LineGraphicsItem':
+                self._group_drag_start[item] = ('line', item.model.x1, item.model.y1, item.model.x2, item.model.y2)
+            elif cls_name == 'CircleGraphicsItem':
+                self._group_drag_start[item] = ('circle', item.model.x, item.model.y)
+            elif cls_name == 'TextGraphicsItem':
+                self._group_drag_start[item] = ('text', item.model.x, item.model.y)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton and self.isSelected():
+            self._drag_start_mouse = self.mapToScene(event.pos())
+            self._is_drag_leader = True
+            self._collect_selected_items()
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self._is_drag_leader and (event.buttons() & Qt.MouseButton.LeftButton):
+            current_mouse = self.mapToScene(event.pos())
+            delta = current_mouse - self._drag_start_mouse
+            grid = self.canvas.grid_size
+            snapped_dx = round(delta.x() / grid) * grid
+            snapped_dy = round(delta.y() / grid) * grid
+            
+            for item, start in self._group_drag_start.items():
+                item.apply_drag_delta(start, snapped_dx, snapped_dy)
+        else:
+            super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        self._is_drag_leader = False
+        self._group_drag_start = {}
+        super().mouseReleaseEvent(event)
+
+    def update_geometry(self):
+        self.prepareGeometryChange()
+        self.update()
+
+    def apply_drag_delta(self, start, dx, dy):
+        raise NotImplementedError.
+.
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\src\footprint_editor\graphics\circle_item.py
+============================================================
+from PySide6.QtWidgets import QGraphicsItem, QStyle
+from PySide6.QtGui import QPen, QColor, QPainterPath, QPainterPathStroker
+from PySide6.QtCore import QRectF, QPointF, Qt
+from footprint_editor.graphics.base import BaseGraphicsItem
+from constants import Colors
+
+class CircleGraphicsItem(BaseGraphicsItem):
+    def __init__(self, circle_model, canvas, is_preview=False, parent=None):
+        super().__init__(circle_model, canvas, parent)
+        self.is_preview = is_preview
+
+    def boundingRect(self):
+        r = self.model.radius
+        extra = 0.2
+        return QRectF(self.model.x - r, self.model.y - r, 2*r, 2*r).adjusted(-extra, -extra, extra, extra)
+
+    def shape(self):
+        path = QPainterPath()
+        path.addEllipse(QPointF(self.model.x, self.model.y), self.model.radius, self.model.radius)
+        stroker = QPainterPathStroker()
+        stroker.setWidth(0.3)
+        return stroker.createStroke(path)
+
+    def paint(self, painter, option, widget):
+        if option.state & QStyle.StateFlag.State_Selected:
+            color = QColor(*Colors.SELECTED)
+        else:
+            color = QColor(*Colors.TEXT_VISIBLE)
+        
+        pen = QPen(color, self.model.width if not self.is_preview else 0.05)
+        pen.setCosmetic(False)
+        if self.is_preview:
+            pen.setStyle(Qt.PenStyle.DashLine)
+        
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawEllipse(QPointF(self.model.x, self.model.y), self.model.radius, self.model.radius)
+
+    def apply_drag_delta(self, start, dx, dy):
+        self.model.x = start[1] + dx
+        self.model.y = start[2] + dy
+        self.prepareGeometryChange()
+        self.update().
+.
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\src\footprint_editor\graphics\factory.py
+============================================================
+from footprint_editor.core.models import Pad, Line, Circle, Text
+from footprint_editor.graphics.pad_item import PadGraphicsItem
+from footprint_editor.graphics.line_item import LineGraphicsItem
+from footprint_editor.graphics.circle_item import CircleGraphicsItem
+from footprint_editor.graphics.text_item import TextGraphicsItem
+
+class GraphicsFactory:
+    @staticmethod
+    def create(model, canvas, is_preview=False):
+        if isinstance(model, Pad):
+            return PadGraphicsItem(model, canvas)
+        elif isinstance(model, Line):
+            return LineGraphicsItem(model, canvas, is_preview)
+        elif isinstance(model, Circle):
+            return CircleGraphicsItem(model, canvas, is_preview)
+        elif isinstance(model, Text):
+            return TextGraphicsItem(model, canvas)
+        raise ValueError(f"Unknown model type: {type(model)}").
+.
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\src\footprint_editor\graphics\line_item.py
+============================================================
+from PySide6.QtWidgets import QGraphicsItem, QStyle
+from PySide6.QtGui import QPen, QColor, QPainterPath, QPainterPathStroker
+from PySide6.QtCore import QLineF, QRectF, QPointF, Qt
+from footprint_editor.graphics.base import BaseGraphicsItem
+from constants import Colors
+
+class LineGraphicsItem(BaseGraphicsItem):
+    def __init__(self, line_model, canvas, is_preview=False, parent=None):
+        super().__init__(line_model, canvas, parent)
+        self.is_preview = is_preview
+        if not is_preview:
+            self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
+
+    def boundingRect(self):
+        extra = 0.2
+        rect = QRectF(self.model.x1, self.model.y1, self.model.x2 - self.model.x1, self.model.y2 - self.model.y1)
+        return rect.normalized().adjusted(-extra, -extra, extra, extra)
+
+    def shape(self):
+        path = QPainterPath()
+        path.moveTo(self.model.x1, self.model.y1)
+        path.lineTo(self.model.x2, self.model.y2)
+        stroker = QPainterPathStroker()
+        stroker.setWidth(0.3)
+        return stroker.createStroke(path)
+
+    def paint(self, painter, option, widget):
+        if option.state & QStyle.StateFlag.State_Selected:
+            color = QColor(*Colors.SELECTED)
+        else:
+            color = QColor(*Colors.TEXT_VISIBLE)
+        
+        pen = QPen(color, self.model.width if not self.is_preview else 0.05)
+        pen.setCosmetic(False)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        if self.is_preview:
+            pen.setStyle(Qt.PenStyle.DashLine)
+        
+        painter.setPen(pen)
+        painter.drawLine(QLineF(self.model.x1, self.model.y1, self.model.x2, self.model.y2))
+
+    def apply_drag_delta(self, start, dx, dy):
+        self.model.x1 = start[1] + dx
+        self.model.y1 = start[2] + dy
+        self.model.x2 = start[3] + dx
+        self.model.y2 = start[4] + dy
+        self.prepareGeometryChange()
+        self.update().
+.
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\src\footprint_editor\graphics\pad_item.py
+============================================================
+from PySide6.QtWidgets import QGraphicsItem, QStyle
+from PySide6.QtGui import QPen, QBrush, QColor, QFont
+from PySide6.QtCore import QRectF, QPointF, Qt
+from footprint_editor.core.models import PadShape, PadType
+from footprint_editor.graphics.base import BaseGraphicsItem
+from constants import Colors, Sizes
+
+class PadGraphicsItem(BaseGraphicsItem):
+    def __init__(self, pad, canvas, parent=None):
+        super().__init__(pad, canvas, parent)
+        self.setPos(pad.x, pad.y)
+
+    def boundingRect(self):
+        w = self.model.width
+        h = self.model.height
+        extra = 0.5
+        return QRectF(-w/2-extra, -h/2-extra, w+2*extra, h+2*extra)
+
+    def paint(self, painter, option, widget):
+        if option.state & QStyle.StateFlag.State_Selected:
+            color = QColor(*Colors.SELECTED)
+        else:
+            color = QColor(*Colors.PAD)
+        
+        w = self.model.width
+        h = self.model.height
+        drill = self.model.drill or 0.0
+        
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(color)
+        
+        if self.model.shape == PadShape.CIRCLE:
+            painter.drawEllipse(QRectF(-w/2, -h/2, w, h))
+        elif self.model.shape == PadShape.RECT:
+            painter.drawRect(QRectF(-w/2, -h/2, w, h))
+        elif self.model.shape == PadShape.OVAL:
+            painter.drawRoundedRect(QRectF(-w/2, -h/2, w, h), w/2, h/2)
+        
+        if drill > 0:
+            painter.setBrush(QColor(*Colors.BACKGROUND))
+            painter.drawEllipse(QRectF(-drill/2, -drill/2, drill, drill))
+        
+        painter.setPen(QColor(*Colors.PAD_NUMBER))
+        font = QFont()
+        font_size = min(w, h) * Sizes.PAD_NUMBER_FONT_RATIO
+        # Ограничиваем минимальный размер шрифта 4 пунктами, чтобы избежать ошибок отрисовки
+        font_size_pt = max(4.0, font_size * Sizes.TEXT_FONT_MULTIPLIER)
+        font.setPointSizeF(font_size_pt)
+        font.setBold(True)
+        painter.setFont(font)
+        
+        painter.drawText(QRectF(-w/2, -h/2, w, h), Qt.AlignCenter, self.model.number)
+
+    def apply_drag_delta(self, start, dx, dy):
+        if self.model.locked:
+            return
+        self.model.x = start[1] + dx
+        self.model.y = start[2] + dy
+        self.setPos(self.model.x, self.model.y).
+.
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\src\footprint_editor\graphics\text_item.py
+============================================================
+from PySide6.QtWidgets import QGraphicsItem, QStyle
+from PySide6.QtGui import QPen, QColor, QFont, QFontMetrics
+from PySide6.QtCore import QRectF, QPointF, Qt
+from footprint_editor.graphics.base import BaseGraphicsItem
+from footprint_editor.core.models import TextType
+from constants import Colors, Sizes
+
+class TextGraphicsItem(BaseGraphicsItem):
+    def __init__(self, text_model, canvas, parent=None):
+        super().__init__(text_model, canvas, parent)
+
+    def boundingRect(self):
+        font = QFont()
+        font.setPointSizeF(self.model.size * Sizes.TEXT_FONT_MULTIPLIER)
+        metrics = QFontMetrics(font)
+        rect = metrics.boundingRect(self.model.text)
+        return QRectF(self.model.x, self.model.y - rect.height(), rect.width(), rect.height()).adjusted(-0.5, -0.5, 0.5, 0.5)
+
+    def paint(self, painter, option, widget):
+        font = QFont()
+        font.setPointSizeF(self.model.size * Sizes.TEXT_FONT_MULTIPLIER)
+        painter.setFont(font)
+        
+        if option.state & QStyle.StateFlag.State_Selected:
+            painter.setPen(QColor(*Colors.SELECTED))
+        elif self.model.text_type == TextType.REFERENCE:
+            painter.setPen(QColor(100, 200, 100))
+        elif self.model.text_type == TextType.VALUE:
+            painter.setPen(QColor(200, 100, 100))
+        else:
+            if self.model.visible:
+                painter.setPen(QColor(*Colors.TEXT_VISIBLE))
+            else:
+                painter.setPen(QColor(*Colors.TEXT_HIDDEN))
+        
+        if not self.model.visible and self.model.text_type == TextType.NORMAL:
+            painter.setOpacity(0.3)
+            
+        painter.drawText(QPointF(self.model.x, self.model.y), self.model.text)
+        painter.setOpacity(1.0)
+
+    def apply_drag_delta(self, start, dx, dy):
+        if self.model.locked:
+            return
+        self.model.x = start[1] + dx
+        self.model.y = start[2] + dy
+        self.prepareGeometryChange()
+        self.update().
+.
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\src\footprint_editor\ui\canvas.py
+============================================================
+from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem
+from PySide6.QtCore import Qt, QPointF, Signal, QTimer
+from PySide6.QtGui import QPen, QColor, QWheelEvent, QMouseEvent, QPainter, QFont
+from constants import VK_W, VK_A, VK_S, VK_D, PAN_KEYS, Colors, Sizes, Steps
+
+class FootprintCanvas(QGraphicsView):
+    zoom_changed = Signal(float)
+    canvas_clicked = Signal(float, float)
+    mouse_moved = Signal(float, float)
+    finish_drawing = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        
+        self.scene = QGraphicsScene(self)
+        self.setScene(self.scene)
+        self.scene.setSceneRect(-500, -500, 1000, 1000)
+        
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        
+        self.setMouseTracking(True)
+        self.viewport().setMouseTracking(True)
+        
+        self.setDragMode(QGraphicsView.DragMode.NoDrag)
+        self.setRubberBandSelectionMode(Qt.ItemSelectionMode.IntersectsItemShape)
+        self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
+        
+        self.grid_size = float(Steps.DEFAULT_GRID)
+        self.grid_color = QColor(*Colors.GRID)
+        self.background_color = QColor(*Colors.BACKGROUND)
+        
+        self.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.setBackgroundBrush(self.background_color)
+        
+        self.base_scale = Sizes.BASE_SCALE
+        self.scale(self.base_scale, self.base_scale)
+        
+        self.zoom_steps = Steps.ZOOM
+        self.zoom_index = self.zoom_steps.index(1.0)
+        self.zoom_level = 1.0
+        
+        self.pressed_keys = set()
+        self.pan_speed_px = Sizes.PAN_SPEED_PX
+        self.pan_timer = QTimer(self)
+        self.pan_timer.setInterval(Sizes.PAN_TIMER_INTERVAL)
+        self.pan_timer.timeout.connect(self._pan_step)
+        
+        self._scroll_acc_px_x = 0.0
+        self._scroll_acc_px_y = 0.0
+
+        self._snap_pos = None
+        self.show_snap = True
+        self._ghost_line_start = None
+        self._ghost_line_end = None
+        self._ghost_circle_center = None
+        self._ghost_circle_radius = 0.0
+        
+        self._ghost_text_pos = None
+        self._ghost_text_content = ""
+        self._ghost_text_size = 1.0
+        self._ghost_text_visible = True
+
+    def set_grid_size(self, size_mm):
+        self.grid_size = size_mm
+        self.viewport().update()
+
+    def snap_to_grid(self, x, y):
+        return QPointF(round(x / self.grid_size) * self.grid_size, round(y / self.grid_size) * self.grid_size)
+
+    def set_show_snap(self, show):
+        self.show_snap = show
+        self.viewport().update()
+
+    def set_ghost_line(self, x1, y1, x2, y2):
+        self._ghost_line_start = QPointF(x1, y1)
+        self._ghost_line_end = QPointF(x2, y2)
+        self.viewport().update()
+
+    def clear_ghost_line(self):
+        self._ghost_line_start = None
+        self._ghost_line_end = None
+        self.viewport().update()
+
+    def set_ghost_circle(self, cx, cy, r):
+        self._ghost_circle_center = QPointF(cx, cy)
+        self._ghost_circle_radius = r
+        self.viewport().update()
+
+    def clear_ghost_circle(self):
+        self._ghost_circle_center = None
+        self._ghost_circle_radius = 0.0
+        self.viewport().update()
+
+    def set_ghost_text(self, x, y, text, size, visible):
+        self._ghost_text_pos = QPointF(x, y)
+        self._ghost_text_content = text
+        self._ghost_text_size = size
+        self._ghost_text_visible = visible
+        self.viewport().update()
+
+    def clear_ghost_text(self):
+        self._ghost_text_pos = None
+        self._ghost_text_content = ""
+        self._ghost_text_size = 1.0
+        self._ghost_text_visible = True
+        self.viewport().update()
+
+    def set_interaction_enabled(self, enabled):
+        for item in self.scene.items():
+            item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled)
+        if not enabled:
+            self.scene.clearSelection()
+
+    def set_drag_mode(self, mode):
+        self.setDragMode(mode)
+
+    def drawBackground(self, painter, rect):
+        super().drawBackground(painter, rect)
+        scale_factor = self.transform().m11()
+        cell_px = self.grid_size * scale_factor
+        
+        if cell_px < Sizes.MIN_CELL_PX:
+            return
+
+        left = int(rect.left() // self.grid_size) * self.grid_size
+        right = int(rect.right() // self.grid_size) * self.grid_size
+        top = int(rect.top() // self.grid_size) * self.grid_size
+        bottom = int(rect.bottom() // self.grid_size) * self.grid_size
+        
+        draw_step = self.grid_size
+        max_points = Sizes.MAX_GRID_POINTS
+        
+        if (right - left) / draw_step > max_points:
+            factor = 2
+            while (right - left) / (draw_step * factor) > max_points: factor *= 2
+            draw_step = self.grid_size * factor
+        if (bottom - top) / draw_step > max_points:
+            factor = 2
+            while (bottom - top) / (draw_step * factor) > max_points: factor *= 2
+            draw_step = self.grid_size * factor
+
+        pen = QPen(self.grid_color, 0)
+        painter.setPen(pen)
+        
+        x = left
+        while x <= right:
+            y = top
+            while y <= bottom:
+                painter.drawPoint(QPointF(x, y))
+                y += draw_step
+            x += draw_step
+
+    def drawForeground(self, painter, rect):
+        super().drawForeground(painter, rect)
+        scale = self.transform().m11()
+        cross_size = Sizes.CROSS_SIZE / scale
+
+        axis_pen = QPen(QColor(*Colors.AXIS), 0)
+        axis_pen.setCosmetic(True)
+        painter.setPen(axis_pen)
+        painter.drawLine(QPointF(rect.left(), 0), QPointF(rect.right(), 0))
+        painter.drawLine(QPointF(0, rect.top()), QPointF(0, rect.bottom()))
+
+        if self._snap_pos and self.show_snap:
+            pen = QPen(QColor(*Colors.SNAP_CROSS), 0)
+            pen.setCosmetic(True)
+            painter.setPen(pen)
+            x, y = self._snap_pos.x(), self._snap_pos.y()
+            painter.drawLine(QPointF(x - cross_size, y), QPointF(x + cross_size, y))
+            painter.drawLine(QPointF(x, y - cross_size), QPointF(x, y + cross_size))
+
+        if self._ghost_line_start and self._ghost_line_end:
+            pen = QPen(QColor(*Colors.GHOST_LINE), 0)
+            pen.setCosmetic(True)
+            pen.setStyle(Qt.PenStyle.DashLine)
+            painter.setPen(pen)
+            painter.drawLine(self._ghost_line_start, self._ghost_line_end)
+
+        if self._ghost_circle_center and self._ghost_circle_radius > 0:
+            pen = QPen(QColor(*Colors.GHOST_LINE), 0)
+            pen.setCosmetic(True)
+            pen.setStyle(Qt.PenStyle.DashLine)
+            painter.setPen(pen)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawEllipse(self._ghost_circle_center, self._ghost_circle_radius, self._ghost_circle_radius)
+
+        if self._ghost_text_pos and self._ghost_text_content:
+            font = QFont()
+            font.setPointSizeF(self._ghost_text_size * Sizes.TEXT_FONT_MULTIPLIER)
+            painter.setFont(font)
+            
+            if self._ghost_text_visible:
+                painter.setPen(QColor(*Colors.GHOST_TEXT))
+            else:
+                painter.setPen(QColor(*Colors.GHOST_TEXT).lighter(50))
+            
+            painter.drawText(self._ghost_text_pos, self._ghost_text_content)
+
+    def wheelEvent(self, event: QWheelEvent):
+        if event.angleDelta().y() > 0:
+            if self.zoom_index < len(self.zoom_steps) - 1: self.zoom_index += 1
+        else:
+            if self.zoom_index > 0: self.zoom_index -= 1
+                
+        new_zoom = self.zoom_steps[self.zoom_index]
+        factor = (self.base_scale * new_zoom) / self.transform().m11()
+        self.scale(factor, factor)
+        self.zoom_level = new_zoom
+        self.zoom_changed.emit(self.zoom_level)
+
+    def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton:
+            item = self.itemAt(event.position().toPoint())
+            if item is not None and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+                item.setSelected(not item.isSelected())
+                return
+            scene_pos = self.mapToScene(event.position().toPoint())
+            snapped_pos = self.snap_to_grid(scene_pos.x(), scene_pos.y())
+            self.canvas_clicked.emit(snapped_pos.x(), snapped_pos.y())
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.RightButton:
+            self.finish_drawing.emit()
+        super().mouseReleaseEvent(event)
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        scene_pos = self.mapToScene(event.position().toPoint())
+        snapped_pos = self.snap_to_grid(scene_pos.x(), scene_pos.y())
+        self._snap_pos = QPointF(snapped_pos.x(), snapped_pos.y())
+        self.mouse_moved.emit(snapped_pos.x(), snapped_pos.y())
+        self.viewport().update()
+        super().mouseMoveEvent(event)
+
+    def _pan_step(self):
+        dx_dir = 0
+        dy_dir = 0
+        if VK_W in self.pressed_keys: dy_dir -= 1
+        if VK_S in self.pressed_keys: dy_dir += 1
+        if VK_A in self.pressed_keys: dx_dir -= 1
+        if VK_D in self.pressed_keys: dx_dir += 1
+            
+        if dx_dir == 0 and dy_dir == 0: return
+            
+        self._scroll_acc_px_x += dx_dir * self.pan_speed_px
+        self._scroll_acc_px_y += dy_dir * self.pan_speed_px
+        
+        dx_px_int = int(self._scroll_acc_px_x)
+        dy_px_int = int(self._scroll_acc_px_y)
+        
+        self._scroll_acc_px_x -= dx_px_int
+        self._scroll_acc_px_y -= dy_px_int
+        
+        if dx_px_int != 0 or dy_px_int != 0:
+            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + dx_px_int)
+            self.verticalScrollBar().setValue(self.verticalScrollBar().value() + dy_px_int).
+.
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\src\footprint_editor\ui\library_dialog.py
+============================================================
+from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
+                               QPushButton, QListWidget, QFileDialog)
+from PySide6.QtCore import Qt
+from constants import Styles
+from footprint_editor.core.kicad_parser import parse_kicad_mod
+
+class LibraryBrowserDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Выбор модуля из библиотеки")
+        self.resize(600, 400)
+        self.setStyleSheet(Styles.DIALOG_BG)
+        
+        layout = QVBoxLayout(self)
+        
+        file_layout = QHBoxLayout()
+        self.file_label = QLabel("Библиотека: не выбрана")
+        self.btn_browse = QPushButton("Обзор...")
+        self.btn_browse.clicked.connect(self.browse_library)
+        file_layout.addWidget(self.file_label)
+        file_layout.addWidget(self.btn_browse)
+        layout.addLayout(file_layout)
+        
+        self.module_list = QListWidget()
+        self.module_list.itemDoubleClicked.connect(self.accept)
+        layout.addWidget(self.module_list)
+        
+        btn_layout = QHBoxLayout()
+        self.btn_ok = QPushButton("Загрузить")
+        self.btn_ok.clicked.connect(self.accept)
+        self.btn_cancel = QPushButton("Отмена")
+        self.btn_cancel.clicked.connect(self.reject)
+        btn_layout.addWidget(self.btn_ok)
+        btn_layout.addWidget(self.btn_cancel)
+        layout.addLayout(btn_layout)
+        
+        self.library_path = None
+        self.modules = {}
+        self.selected_module_name = None
+
+    def browse_library(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Выбрать библиотеку KiCad", "", 
+            "KiCad Library (*.mod);;All Files (*)"
+        )
+        if path:
+            self.library_path = path
+            self.file_label.setText(f"Библиотека: {path.split('/')[-1]}")
+            self.load_modules()
+
+    def load_modules(self):
+        self.module_list.clear()
+        self.modules = {}
+        try:
+            footprints = parse_kicad_mod(self.library_path)
+            for fp in footprints:
+                self.modules[fp.name] = fp
+                self.module_list.addItem(fp.name)
+        except Exception as e:
+            self.file_label.setText(f"Ошибка: {e}")
+
+    def get_selected_module(self):
+        if self.module_list.currentItem():
+            name = self.module_list.currentItem().text()
+            return self.modules.get(name)
+        return None
+
+    def _on_select_library(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Выбрать библиотеку KiCad", "", 
+            "KiCad Library (*.mod);;All Files (*)"
+        )
+        if path:
+            self.current_library_path = path
+            self.show_log(f"Библиотека выбрана: {path.split('/')[-1]}")
+            self._load_library_modules(path)
+
+    def _load_library_modules(self, path):
+        from footprint_editor.core.kicad_parser import parse_kicad_mod
+        try:
+            footprints = parse_kicad_mod(path)
+            self.library_modules = {fp.name: fp for fp in footprints}
+            self._update_module_list()
+            self.show_log(f"Загружено модулей: {len(footprints)}")
+        except Exception as e:
+            self.show_log(f"Ошибка загрузки: {e}")
+
+    def _update_module_list(self):
+        if not hasattr(self, 'module_list_widget'):
+            from PySide6.QtWidgets import QListWidget
+            self.module_list_widget = QListWidget()
+            self.module_list_widget.itemClicked.connect(self._on_module_selected)
+            self.module_list_widget.setStyleSheet("background-color: #2b2b2b; color: #a9b7c6;")
+            
+            module_dock = QDockWidget("Модули библиотеки", self)
+            module_dock.setWidget(self.module_list_widget)
+            self.addDockWidget(Qt.LeftDockWidgetArea, module_dock)
+        
+        self.module_list_widget.clear()
+        for name in self.library_modules.keys():
+            self.module_list_widget.addItem(name)
+
+    def _on_module_selected(self, item):
+        module_name = item.text()
+        if module_name in self.library_modules:
+            self._load_module(self.library_modules[module_name]).
+.
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\src\footprint_editor\ui\properties_panel.py
+============================================================
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, 
+                               QDoubleSpinBox, QComboBox, QLineEdit, QCheckBox, 
+                               QPushButton, QLabel)
+from PySide6.QtCore import Qt
+from footprint_editor.core.models import Pad, Line, Circle, Text, PadShape
+
+class PropertiesPanel(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        
+        self.no_selection_label = QLabel("Выберите один объект")
+        self.main_layout.addWidget(self.no_selection_label)
+        
+        self.form_layout = QFormLayout()
+        self.main_layout.addLayout(self.form_layout)
+        
+        self.btn_apply = QPushButton("Применить")
+        self.btn_apply.setStyleSheet("background-color: #365880; color: white; padding: 5px;")
+        self.btn_apply.clicked.connect(self._apply_changes)
+        self.main_layout.addWidget(self.btn_apply)
+        
+        self.current_object = None
+        self._widgets = {}
+        self.btn_apply.hide()
+
+    def clear_panel(self):
+        for widget in self._widgets.values():
+            self.form_layout.removeRow(widget)
+        self._widgets.clear()
+        self.current_object = None
+        self.btn_apply.hide()
+        self.no_selection_label.show()
+        
+    def set_object(self, obj):
+        self.clear_panel()
+        self.no_selection_label.hide()
+        self.current_object = obj
+        self.btn_apply.show()
+        
+        if isinstance(obj, Pad):
+            self._build_pad_ui(obj)
+        elif isinstance(obj, Line):
+            self._build_line_ui(obj)
+        elif isinstance(obj, Circle):
+            self._build_circle_ui(obj)
+        elif isinstance(obj, Text):
+            self._build_text_ui(obj)
+
+    def _build_pad_ui(self, pad):
+        self._add_spinbox("X (мм):", pad.x, -500.0, 500.0, 0.01, "x")
+        self._add_spinbox("Y (мм):", pad.y, -500.0, 500.0, 0.01, "y")
+        
+        text_input = QLineEdit(pad.number)
+        self.form_layout.addRow("Номер:", text_input)
+        self._widgets["number"] = text_input
+        
+        self._add_spinbox("Размер X (мм):", pad.width, 0.1, 50.0, 0.01, "width")
+        self._add_spinbox("Размер Y (мм):", pad.height, 0.1, 50.0, 0.01, "height")
+        self._add_spinbox("Отверстие (мм):", pad.drill or 0.0, 0.0, 50.0, 0.01, "drill")
+        
+        shape_combo = QComboBox()
+        shape_combo.addItem("Круг", PadShape.CIRCLE)
+        shape_combo.addItem("Квадрат", PadShape.RECT)
+        shape_combo.setCurrentIndex(0 if pad.shape == PadShape.CIRCLE else 1)
+        self.form_layout.addRow("Форма:", shape_combo)
+        self._widgets["shape"] = shape_combo
+
+    def _build_line_ui(self, line):
+        self._add_spinbox("X1 (мм):", line.x1, -500.0, 500.0, 0.01, "x1")
+        self._add_spinbox("Y1 (мм):", line.y1, -500.0, 500.0, 0.01, "y1")
+        self._add_spinbox("X2 (мм):", line.x2, -500.0, 500.0, 0.01, "x2")
+        self._add_spinbox("Y2 (мм):", line.y2, -500.0, 500.0, 0.01, "y2")
+
+    def _build_circle_ui(self, circle):
+        self._add_spinbox("X (мм):", circle.x, -500.0, 500.0, 0.01, "x")
+        self._add_spinbox("Y (мм):", circle.y, -500.0, 500.0, 0.01, "y")
+        self._add_spinbox("Диаметр (мм):", circle.radius * 2, 0.1, 20.0, 0.01, "diameter")
+
+    def _build_text_ui(self, text):
+        self._add_spinbox("X (мм):", text.x, -500.0, 500.0, 0.01, "x")
+        self._add_spinbox("Y (мм):", text.y, -500.0, 500.0, 0.01, "y")
+        
+        text_input = QLineEdit(text.text)
+        self.form_layout.addRow("Текст:", text_input)
+        self._widgets["text"] = text_input
+        
+        visible_check = QCheckBox()
+        visible_check.setChecked(text.visible)
+        self.form_layout.addRow("Видимый:", visible_check)
+        self._widgets["visible"] = visible_check
+
+    def _add_spinbox(self, label, value, min_val, max_val, step, key):
+        spin = QDoubleSpinBox()
+        spin.setRange(min_val, max_val)
+        spin.setSingleStep(step)
+        spin.setDecimals(4)
+        spin.setValue(value)
+        self.form_layout.addRow(label, spin)
+        self._widgets[key] = spin
+
+    def _apply_changes(self):
+        if not self.current_object:
+            return
+            
+        obj = self.current_object
+        
+        if isinstance(obj, Pad):
+            obj.x = self._widgets["x"].value()
+            obj.y = self._widgets["y"].value()
+            obj.number = self._widgets["number"].text()
+            obj.width = self._widgets["width"].value()
+            obj.height = self._widgets["height"].value()
+            obj.drill = self._widgets["drill"].value()
+            obj.shape = self._widgets["shape"].currentData()
+        elif isinstance(obj, Line):
+            obj.x1 = self._widgets["x1"].value()
+            obj.y1 = self._widgets["y1"].value()
+            obj.x2 = self._widgets["x2"].value()
+            obj.y2 = self._widgets["y2"].value()
+        elif isinstance(obj, Circle):
+            obj.x = self._widgets["x"].value()
+            obj.y = self._widgets["y"].value()
+            obj.radius = self._widgets["diameter"].value() / 2
+        elif isinstance(obj, Text):
+            obj.x = self._widgets["x"].value()
+            obj.y = self._widgets["y"].value()
+            obj.text = self._widgets["text"].text()
+            obj.visible = self._widgets["visible"].isChecked()
+        
+        obj.graphics_item.update_geometry().
+.
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\src\footprint_editor\ui\right_panel.py
+============================================================
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QPushButton, QButtonGroup
+from footprint_editor.ui.properties_panel import PropertiesPanel
+from constants import Styles
+
+class RightPanel(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(5, 5, 5, 5)
+        
+        self.tool_group_box = QGroupBox("Инструменты")
+        tool_layout = QHBoxLayout(self.tool_group_box)
+        
+        self.btn_add_pad = QPushButton("⬤")
+        self.btn_add_pad.setFixedSize(40, 40)
+        self.btn_add_pad.setToolTip("Площадка")
+        self.btn_add_pad.setCheckable(True)
+        self.btn_add_pad.setStyleSheet(Styles.TOOL_BUTTON_INACTIVE)
+        
+        self.btn_add_line = QPushButton("╱")
+        self.btn_add_line.setFixedSize(40, 40)
+        self.btn_add_line.setToolTip("Линия")
+        self.btn_add_line.setCheckable(True)
+        self.btn_add_line.setStyleSheet(Styles.TOOL_BUTTON_INACTIVE)
+
+        self.btn_add_circle = QPushButton("◯")
+        self.btn_add_circle.setFixedSize(40, 40)
+        self.btn_add_circle.setToolTip("Окружность")
+        self.btn_add_circle.setCheckable(True)
+        self.btn_add_circle.setStyleSheet(Styles.TOOL_BUTTON_INACTIVE)
+
+        self.btn_add_text = QPushButton("Т")
+        self.btn_add_text.setFixedSize(40, 40)
+        self.btn_add_text.setToolTip("Текст")
+        self.btn_add_text.setCheckable(True)
+        self.btn_add_text.setStyleSheet(Styles.TOOL_BUTTON_INACTIVE)
+        
+        tool_layout.addWidget(self.btn_add_pad)
+        tool_layout.addWidget(self.btn_add_line)
+        tool_layout.addWidget(self.btn_add_circle)
+        tool_layout.addWidget(self.btn_add_text)
+        layout.addWidget(self.tool_group_box)
+        
+        self.actions_group_box = QGroupBox("Действия")
+        actions_layout = QHBoxLayout(self.actions_group_box)
+        
+        self.btn_select = QPushButton("■")
+        self.btn_select.setFixedSize(40, 40)
+        self.btn_select.setToolTip("Выделение")
+        self.btn_select.setCheckable(True)
+        self.btn_select.setChecked(True)
+        self.btn_select.setStyleSheet(Styles.TOOL_BUTTON_ACTIVE)
+        actions_layout.addWidget(self.btn_select)
+        
+        self.btn_delete = QPushButton("🗑")
+        self.btn_delete.setFixedSize(40, 40)
+        self.btn_delete.setToolTip("Удалить")
+        self.btn_delete.setEnabled(False)
+        self.btn_delete.setStyleSheet("font-size: 20px; background-color: #555555; color: white; border: none;")
+        actions_layout.addWidget(self.btn_delete)
+        
+        layout.addWidget(self.actions_group_box)
+        
+        self.properties_panel = PropertiesPanel()
+        layout.addWidget(self.properties_panel, stretch=1)
+    
+    def update_tool_buttons(self, active_button):
+        buttons = [self.btn_add_pad, self.btn_add_line, self.btn_add_circle, self.btn_add_text, self.btn_select]
+        for btn in buttons:
+            if btn == active_button:
+                btn.setStyleSheet(Styles.TOOL_BUTTON_ACTIVE)
+            else:
+                btn.setStyleSheet(Styles.TOOL_BUTTON_INACTIVE).
+.
+============================================================
+FILE: C:\Users\Nikitos\TraceCAD\src\footprint_editor\ui\window.py
+============================================================
+import copy
+import uuid
+import math
+from pathlib import Path
+from PySide6.QtWidgets import (QMainWindow, QDockWidget, QWidget, QVBoxLayout, QHBoxLayout,
+                               QLabel, QToolBar, QStatusBar, QComboBox, QApplication, QGraphicsView, 
+                               QDialog, QLineEdit, QDoubleSpinBox, QCheckBox, QPushButton, QMenuBar, QMenu,
+                               QFileDialog, QMessageBox, QInputDialog, QListWidget)
+from PySide6.QtCore import Qt, QEvent, QObject, QPointF, Signal
+from PySide6.QtGui import QKeyEvent, QAction
+from constants import Tool, PAN_KEYS, Steps, Styles, VK_ESCAPE, VK_DELETE, VK_F1, VK_F2, VK_C, VK_V
+from footprint_editor.core.models import Footprint, Pad, PadShape, PadType, Line, Circle, Text, TextType
+from footprint_editor.core.manager import FootprintManager
+from footprint_editor.core.kicad_parser import parse_kicad_mod
+from footprint_editor.ui.canvas import FootprintCanvas
+from footprint_editor.graphics.pad_item import PadGraphicsItem
+from footprint_editor.graphics.line_item import LineGraphicsItem
+from footprint_editor.graphics.circle_item import CircleGraphicsItem
+from footprint_editor.graphics.text_item import TextGraphicsItem
+from footprint_editor.ui.right_panel import RightPanel
+from footprint_editor.ui.library_dialog import LibraryBrowserDialog
+
+class TextDialog(QDialog):
+    text_changed = Signal(str)
+    size_changed = Signal(float)
+    visible_changed = Signal(bool)
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground, False)
+        self.setStyleSheet(Styles.DIALOG_BG)
+        
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
+        
+        self.text_input = QLineEdit()
+        self.text_input.setPlaceholderText("Введите текст...")
+        self.text_input.setStyleSheet(Styles.INPUT_BG)
+        self.text_input.textChanged.connect(self.text_changed.emit)
+        layout.addWidget(self.text_input)
+        
+        size_layout = QHBoxLayout()
+        size_layout.addWidget(QLabel("Размер:"))
+        self.size_spin = QDoubleSpinBox()
+        self.size_spin.setRange(0.1, 10.0)
+        self.size_spin.setSingleStep(0.1)
+        self.size_spin.setDecimals(1)
+        self.size_spin.setValue(1.0)
+        self.size_spin.setStyleSheet(Styles.INPUT_BG)
+        self.size_spin.valueChanged.connect(self.size_changed.emit)
+        size_layout.addWidget(self.size_spin)
+        layout.addLayout(size_layout)
+        
+        self.visible_check = QCheckBox("Видимый")
+        self.visible_check.setChecked(True)
+        self.visible_check.setStyleSheet("color: #a9b7c6;")
+        self.visible_check.stateChanged.connect(lambda state: self.visible_changed.emit(state == Qt.CheckState.Checked.value))
+        layout.addWidget(self.visible_check)
+        
+        btn_layout = QHBoxLayout()
+        self.btn_ok = QPushButton("OK")
+        self.btn_ok.setFixedSize(60, 30)
+        self.btn_ok.setStyleSheet(Styles.BUTTON_OK)
+        self.btn_ok.clicked.connect(self.accept)
+        
+        self.btn_cancel = QPushButton("Cancel")
+        self.btn_cancel.setFixedSize(60, 30)
+        self.btn_cancel.setStyleSheet(Styles.BUTTON_CANCEL)
+        self.btn_cancel.clicked.connect(self.reject)
+        
+        btn_layout.addWidget(self.btn_ok)
+        btn_layout.addWidget(self.btn_cancel)
+        layout.addLayout(btn_layout)
+        
+        self.text_input.returnPressed.connect(self.accept)
+
+    def get_text(self):
+        return self.text_input.text()
+
+    def get_size(self):
+        return self.size_spin.value()
+
+    def get_visible(self):
+        return self.visible_check.isChecked()
+
+class GlobalKeyFilter(QObject):
+    def __init__(self, window):
+        super().__init__()
+        self.window = window
+        
+    def eventFilter(self, obj, event):
+        if event.type() in (QEvent.Type.KeyPress, QEvent.Type.KeyRelease):
+            focus_widget = QApplication.focusWidget()
+            if focus_widget and isinstance(focus_widget, (QLineEdit, QDoubleSpinBox)):
+                return super().eventFilter(obj, event)
+            return self.window.handle_global_key(event)
+        return super().eventFilter(obj, event)
+
+class FootprintEditorWindow(QMainWindow):
+    def __init__(self, footprint=None):
+        super().__init__()
+        
+        self.footprint = footprint or Footprint(name="New_Footprint")
+        self.setWindowTitle(f"TraceCAD - Редактор корпусов: {self.footprint.name}")
+        self.resize(1000, 700)
+        
+        self.current_tool = Tool.SELECT
+        self.line_start_point = None
+        self.circle_center_point = None
+        self.text_position = None
+        self.clipboard = []
+        self._current_mouse_scene_pos = QPointF(0, 0)
+        self.current_library_path = None
+        self.library_modules = {}
+        
+        self._init_menu()
+        
+        self.canvas = FootprintCanvas(self)
+        self.setCentralWidget(self.canvas)
+        self.canvas.zoom_changed.connect(self._update_zoom_label)
+        self.canvas.canvas_clicked.connect(self._on_canvas_clicked)
+        self.canvas.mouse_moved.connect(self._on_mouse_moved)
+        self.canvas.finish_drawing.connect(self._finish_drawing)
+        self.canvas.scene.selectionChanged.connect(self._on_selection_changed)
+        
+        self.manager = FootprintManager(self.footprint, self.canvas.scene, self.canvas)
+        
+        self.log_label = QLabel("Готово.", self)
+        self.log_label.setStyleSheet(Styles.LOG_LABEL)
+        self.log_label.adjustSize()
+        self.log_label.raise_()
+        
+        self.key_filter = GlobalKeyFilter(self)
+        QApplication.instance().installEventFilter(self.key_filter)
+        
+        self._init_docks()
+        self._init_toolbars()
+        self._init_statusbar()
+        self._connect_right_panel()
+        
+        self._ensure_reference_and_value()
+
+    def _ensure_reference_and_value(self):
+        has_ref = any(t.text_type == TextType.REFERENCE for t in self.footprint.texts)
+        has_val = any(t.text_type == TextType.VALUE for t in self.footprint.texts)
+        
+        if not has_ref:
+            ref = Text(0, 0, self.footprint.reference, 1.0, True, TextType.REFERENCE, locked=True)
+            self.footprint.texts.append(ref)
+            self.manager.add_model(ref)
+        
+        if not has_val:
+            val = Text(0, 1, self.footprint.value, 1.0, False, TextType.VALUE, locked=True)
+            self.footprint.texts.append(val)
+            self.manager.add_model(val)
+
+    def _init_menu(self):
+        menubar = self.menuBar()
+        
+        file_menu = menubar.addMenu("Файл")
+        
+        act_select_lib = QAction("Выбрать библиотеку", self)
+        act_select_lib.triggered.connect(self._on_select_library)
+        file_menu.addAction(act_select_lib)
+        
+        act_create_lib = QAction("Создать библиотеку", self)
+        act_create_lib.triggered.connect(self._on_create_library)
+        file_menu.addAction(act_create_lib)
+        
+        file_menu.addSeparator()
+        
+        act_new_module = QAction("Новый модуль", self)
+        act_new_module.triggered.connect(self._on_new_module)
+        file_menu.addAction(act_new_module)
+        
+        act_save_module = QAction("Сохранить модуль", self)
+        act_save_module.triggered.connect(self._on_save_module)
+        file_menu.addAction(act_save_module)
+        
+        act_load_module = QAction("Загрузить модуль из библиотеки", self)
+        act_load_module.triggered.connect(self._on_load_module)
+        file_menu.addAction(act_load_module)
+        
+        file_menu.addSeparator()
+        
+        act_properties = QAction("Свойства модуля", self)
+        act_properties.triggered.connect(self._on_module_properties)
+        file_menu.addAction(act_properties)
+
+    def _on_select_library(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Выбрать библиотеку KiCad", "", 
+            "KiCad Library (*.mod);;All Files (*)"
+        )
+        if path:
+            self.current_library_path = path
+            self._load_library_modules(path)
+
+    def _load_library_modules(self, path):
+        try:
+            footprints = parse_kicad_mod(path)
+            self.library_modules = {fp.name: fp for fp in footprints}
+            self._update_module_list()
+            self.show_log(f"Библиотека выбрана: {len(footprints)} модулей")
+        except Exception as e:
+            self.show_log(f"Ошибка загрузки: {e}")
+
+    def _update_module_list(self):
+        if not hasattr(self, 'module_list_widget'):
+            self.module_list_widget = QListWidget()
+            self.module_list_widget.itemClicked.connect(self._on_module_selected)
+            self.module_list_widget.setStyleSheet("background-color: #2b2b2b; color: #a9b7c6;")
+            
+            dock = QDockWidget("Модули библиотеки", self)
+            dock.setWidget(self.module_list_widget)
+            self.addDockWidget(Qt.LeftDockWidgetArea, dock)
+        
+        self.module_list_widget.clear()
+        for name in self.library_modules.keys():
+            self.module_list_widget.addItem(name)
+
+    def _on_module_selected(self, item):
+        module_name = item.text()
+        if module_name in self.library_modules:
+            self._load_module(self.library_modules[module_name])
+
+    def _on_create_library(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Создать библиотеку", "", 
+            "KiCad Library (*.mod);;All Files (*)"
+        )
+        if path:
+            if not path.endswith('.mod'):
+                path += '.mod'
+            Path(path).write_text("PCBNEW-LibModule-V1\n$INDEX\n$EndINDEX\n$EndLIBRARY\n", encoding='utf-8')
+            self.current_library_path = path
+            self.show_log(f"Библиотека создана: {Path(path).name}")
+
+    def _on_new_module(self):
+        name, ok = QInputDialog.getText(self, "Новый модуль", "Имя модуля:")
+        if ok and name:
+            self.footprint = Footprint(name=name)
+            self.manager.footprint = self.footprint
+            self.canvas.scene.clear()
+            self.manager.items.clear()
+            self._ensure_reference_and_value()
+            self.setWindowTitle(f"TraceCAD - Редактор корпусов: {name}")
+            self.show_log(f"Создан новый модуль: {name}")
+
+    def _on_save_module(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Сохранить модуль", "", 
+            "KiCad Module (*.mod);;All Files (*)"
+        )
+        if path:
+            if not path.endswith('.mod'):
+                path += '.mod'
+            self._export_to_kicad(path)
+            self.show_log(f"Модуль сохранён: {Path(path).name}")
+
+    def _on_load_module(self):
+        dialog = LibraryBrowserDialog(self)
+        if dialog.exec() == QDialog.Accepted:
+            module = dialog.get_selected_module()
+            if module:
+                self._load_module(module)
+
+    def _on_module_properties(self):
+        name, ok = QInputDialog.getText(self, "Свойства модуля", "Имя модуля:", text=self.footprint.name)
+        if ok and name:
+            self.footprint.name = name
+            self.setWindowTitle(f"TraceCAD - Редактор корпусов: {name}")
+
+    def _load_module(self, module):
+        self.footprint = module
+        self.manager.footprint = self.footprint
+        self.canvas.scene.clear()
+        self.manager.items.clear()
+        
+        for pad in self.footprint.pads:
+            self.manager.add_model(pad)
+        for line in self.footprint.lines:
+            self.manager.add_model(line)
+        for circle in self.footprint.circles:
+            self.manager.add_model(circle)
+        for text in self.footprint.texts:
+            self.manager.add_model(text)
+        
+        self._ensure_reference_and_value()
+        self.setWindowTitle(f"TraceCAD - Редактор корпусов: {module.name}")
+        self.show_log(f"Загружен модуль: {module.name}")
+
+    def _export_to_kicad(self, filepath):
+        from datetime import datetime
+        
+        lines = []
+        lines.append(f"PCBNEW-LibModule-V1  {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")
+        lines.append("# encoding utf-8")
+        lines.append("$INDEX")
+        lines.append(self.footprint.name)
+        lines.append("$EndINDEX")
+        lines.append(f"$MODULE {self.footprint.name}")
+        lines.append("Po 0 0 0 15 00000000 00000000 ~~")
+        lines.append(f"Li {self.footprint.name}")
+        lines.append("Sc 00000000")
+        lines.append("AR")
+        lines.append("Op 0 0 0")
+        
+        for text in self.footprint.texts:
+            if text.text_type == TextType.REFERENCE:
+                idx = 0
+            elif text.text_type == TextType.VALUE:
+                idx = 1
+            else:
+                continue
+            
+            x_k = int(text.x * 1000)
+            y_k = int(text.y * 1000)
+            size_k = int(text.size * 1000)
+            hide = 'Y' if not text.visible else 'N'
+            lines.append(f'T{idx} {x_k} {y_k} {size_k} {size_k} 0 120 N N N 21 N {hide} "{text.text}"')
+        
+        for line in self.footprint.lines:
+            x1 = int(line.x1 * 1000)
+            y1 = int(line.y1 * 1000)
+            x2 = int(line.x2 * 1000)
+            y2 = int(line.y2 * 1000)
+            t = int(line.width * 1000)
+            lines.append(f"DS {x1} {y1} {x2} {y2} {t} 21")
+        
+        for circle in self.footprint.circles:
+            x = int(circle.x * 1000)
+            y = int(circle.y * 1000)
+            r = int(circle.radius * 1000)
+            t = int(circle.width * 1000)
+            lines.append(f"DC {x} {y} {r} 0 {t} 21")
+        
+        for pad in self.footprint.pads:
+            lines.append("$PAD")
+            shape_map = {PadShape.RECT: 'R', PadShape.CIRCLE: 'C', PadShape.OVAL: 'O'}
+            shape_char = shape_map.get(pad.shape, 'C')
+            sx = int(pad.width * 1000)
+            sy = int(pad.height * 1000)
+            drill = int((pad.drill or 0) * 1000)
+            x = int(pad.x * 1000)
+            y = int(pad.y * 1000)
+            attr = 'STD' if pad.pad_type == PadType.THT else 'SMD'
+            lines.append(f'Sh "{pad.number}" {shape_char} {sx} {sy} 0 0 0')
+            lines.append(f"Dr {drill} 0 0")
+            lines.append(f"At {attr} N 00E0FFFF")
+            lines.append('Ne 0 ""')
+            lines.append(f"Po {x} {y}")
+            lines.append("$EndPAD")
+        
+        lines.append(f"$EndMODULE  {self.footprint.name}")
+        lines.append("$EndLIBRARY")
+        
+        Path(filepath).write_text('\n'.join(lines), encoding='utf-8')
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, 'log_label') and hasattr(self, 'canvas'):
+            canvas_rect = self.canvas.geometry()
+            label_size = self.log_label.sizeHint()
+            x = canvas_rect.left() + 10
+            y = canvas_rect.bottom() - label_size.height() - 10
+            self.log_label.move(x, y)
+
+    def show_log(self, text):
+        self.log_label.setText(text)
+        self.log_label.adjustSize()
+        self.resizeEvent(None)
+
+    def _init_docks(self):
+        self.properties_dock = QDockWidget("Панель инструментов", self)
+        self.properties_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        
+        self.right_panel = RightPanel()
+        self.right_panel.setStyleSheet(Styles.RIGHT_PANEL)
+        
+        self.properties_dock.setWidget(self.right_panel)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.properties_dock)
+
+    def _connect_right_panel(self):
+        self.right_panel.btn_select.clicked.connect(lambda: self._on_tool_button_clicked(self.right_panel.btn_select))
+        self.right_panel.btn_add_pad.clicked.connect(lambda: self._on_tool_button_clicked(self.right_panel.btn_add_pad))
+        self.right_panel.btn_add_line.clicked.connect(lambda: self._on_tool_button_clicked(self.right_panel.btn_add_line))
+        self.right_panel.btn_add_circle.clicked.connect(lambda: self._on_tool_button_clicked(self.right_panel.btn_add_circle))
+        self.right_panel.btn_add_text.clicked.connect(lambda: self._on_tool_button_clicked(self.right_panel.btn_add_text))
+        self.right_panel.btn_delete.clicked.connect(self._delete_selected)
+
+    def _init_toolbars(self):
+        toolbar = QToolBar("Настройки вида", self)
+        toolbar.setMovable(False)
+        self.addToolBar(toolbar)
+        
+        grid_label = QLabel(" Шаг сетки (мм): ")
+        toolbar.addWidget(grid_label)
+        
+        self.grid_combo = QComboBox()
+        self.grid_combo.addItems(Steps.GRID)
+        self.grid_combo.setCurrentText(Steps.DEFAULT_GRID)
+        self.grid_combo.currentTextChanged.connect(self._on_grid_changed)
+        toolbar.addWidget(self.grid_combo)
+        
+        toolbar.addSeparator()
+        
+        self.zoom_label = QLabel(" 100% ")
+        toolbar.addWidget(self.zoom_label)
+
+    def _init_statusbar(self):
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        
+        self.coords_label = QLabel("X: 0.0000, Y: 0.0000")
+        self.status_bar.addPermanentWidget(self.coords_label)
+        
+        self.tool_label = QLabel("Инструмент: select")
+        self.status_bar.addWidget(self.tool_label)
+
+    def _on_tool_button_clicked(self, button):
+        if button == self.right_panel.btn_select:
+            self.current_tool = Tool.SELECT
+        elif button == self.right_panel.btn_add_pad:
+            self.current_tool = Tool.ADD_PAD
+        elif button == self.right_panel.btn_add_line:
+            self.current_tool = Tool.ADD_LINE
+        elif button == self.right_panel.btn_add_circle:
+            self.current_tool = Tool.ADD_CIRCLE
+        elif button == self.right_panel.btn_add_text:
+            self.current_tool = Tool.ADD_TEXT
+        
+        self.right_panel.update_tool_buttons(button)
+            
+        self.line_start_point = None
+        self.circle_center_point = None
+        self.text_position = None
+        self.canvas.clear_ghost_line()
+        self.canvas.clear_ghost_circle()
+        self.canvas.clear_ghost_text()
+        
+        if self.current_tool == Tool.SELECT:
+            self.canvas.set_show_snap(False)
+            self.canvas.set_interaction_enabled(True)
+            self.canvas.set_drag_mode(QGraphicsView.DragMode.RubberBandDrag)
+        else:
+            self.canvas.set_show_snap(True)
+            self.canvas.set_interaction_enabled(False)
+            self.canvas.set_drag_mode(QGraphicsView.DragMode.NoDrag)
+            
+        self.tool_label.setText(f"Инструмент: {self.current_tool}")
+
+    def _finish_drawing(self):
+        self.line_start_point = None
+        self.circle_center_point = None
+        self.text_position = None
+        self.canvas.clear_ghost_line()
+        self.canvas.clear_ghost_circle()
+        self.canvas.clear_ghost_text()
+
+    def _on_grid_changed(self, text):
+        self.canvas.set_grid_size(float(text))
+        self.canvas.setFocus()
+
+    def _change_grid_step(self, direction):
+        current_index = self.grid_combo.currentIndex()
+        new_index = current_index + direction
+        if 0 <= new_index < self.grid_combo.count():
+            self.grid_combo.setCurrentIndex(new_index)
+            self._on_grid_changed(self.grid_combo.currentText())
+
+    def _update_zoom_label(self, zoom):
+        self.zoom_label.setText(f" {int(zoom * 100)}% ")
+
+    def _on_canvas_clicked(self, x, y):
+        if self.current_tool == Tool.ADD_PAD:
+            next_num = self.manager.get_next_pad_number()
+            new_pad = Pad(number=next_num, shape=PadShape.CIRCLE, pad_type=PadType.SMD, x=x, y=y, width=1.5, height=1.5, drill=0.8)
+            self.footprint.pads.append(new_pad)
+            self.manager.add_model(new_pad)
+            self.canvas.set_interaction_enabled(False)
+            self.show_log(f'элемент "площадка" #{next_num} установлен')
+            
+        elif self.current_tool == Tool.ADD_LINE:
+            if self.line_start_point is None:
+                self.line_start_point = (x, y)
+                self.canvas.set_ghost_line(x, y, x, y)
+            else:
+                start_x, start_y = self.line_start_point
+                new_line = Line(start_x, start_y, x, y)
+                self.footprint.lines.append(new_line)
+                self.manager.add_model(new_line)
+                self.canvas.set_interaction_enabled(False)
+                self.line_start_point = (x, y)
+                self.canvas.set_ghost_line(x, y, x, y)
+                self.show_log('элемент "линия" установлен')
+
+        elif self.current_tool == Tool.ADD_CIRCLE:
+            if self.circle_center_point is None:
+                self.circle_center_point = (x, y)
+                self.canvas.set_ghost_circle(x, y, 0.0)
+            else:
+                cx, cy = self.circle_center_point
+                r = math.sqrt((x - cx)**2 + (y - cy)**2)
+                r = round(r / self.canvas.grid_size) * self.canvas.grid_size
+                if r > 0:
+                    new_circle = Circle(cx, cy, r)
+                    self.footprint.circles.append(new_circle)
+                    self.manager.add_model(new_circle)
+                    self.canvas.set_interaction_enabled(False)
+                    self.show_log('элемент "окружность" установлен')
+                self.circle_center_point = None
+                self.canvas.clear_ghost_circle()
+
+        elif self.current_tool == Tool.ADD_TEXT:
+            self.text_position = (x, y)
+            self.canvas.set_ghost_text(x, y, "", 1.0, True)
+            self._show_text_dialog()
+
+    def _show_text_dialog(self):
+        dialog = TextDialog(self)
+        dialog.text_changed.connect(lambda text: self.canvas.set_ghost_text(*self.text_position, text, dialog.get_size(), dialog.get_visible()))
+        dialog.size_changed.connect(lambda size: self.canvas.set_ghost_text(*self.text_position, dialog.get_text(), size, dialog.get_visible()))
+        dialog.visible_changed.connect(lambda visible: self.canvas.set_ghost_text(*self.text_position, dialog.get_text(), dialog.get_size(), visible))
+        
+        if dialog.exec() == QDialog.Accepted:
+            text = dialog.get_text()
+            size = dialog.get_size()
+            visible = dialog.get_visible()
+            if text:
+                new_text = Text(self.text_position[0], self.text_position[1], text, size, visible)
+                self.footprint.texts.append(new_text)
+                self.manager.add_model(new_text)
+                self.canvas.set_interaction_enabled(False)
+                self.show_log('элемент "текст" установлен')
+        
+        self.text_position = None
+        self.canvas.clear_ghost_text()
+
+    def _on_mouse_moved(self, x, y):
+        self._current_mouse_scene_pos = QPointF(x, y)
+        self.coords_label.setText(f"X: {x:.4f}, Y: {y:.4f}")
+        
+        if self.current_tool == Tool.ADD_LINE and self.line_start_point:
+            self.canvas.set_ghost_line(self.line_start_point[0], self.line_start_point[1], x, y)
+        elif self.current_tool == Tool.ADD_CIRCLE and self.circle_center_point:
+            cx, cy = self.circle_center_point
+            r = math.sqrt((x - cx)**2 + (y - cy)**2)
+            r = round(r / self.canvas.grid_size) * self.canvas.grid_size
+            self.canvas.set_ghost_circle(cx, cy, r)
+        else:
+            self.canvas.clear_ghost_line()
+            self.canvas.clear_ghost_circle()
+
+    def _on_selection_changed(self):
+        selected_items = self.canvas.scene.selectedItems()
+        has_selection = len(selected_items) > 0
+        self.right_panel.btn_delete.setEnabled(has_selection)
+        
+        if len(selected_items) == 1:
+            item = selected_items[0]
+            if isinstance(item, (PadGraphicsItem, LineGraphicsItem, CircleGraphicsItem, TextGraphicsItem)):
+                if getattr(item.model, 'locked', False):
+                    self.right_panel.btn_delete.setEnabled(False)
+                self.right_panel.properties_panel.set_object(item.model)
+            else:
+                self.right_panel.properties_panel.clear_panel()
+        else:
+            self.right_panel.properties_panel.clear_panel()
+
+    def _delete_selected(self):
+        selected_items = self.canvas.scene.selectedItems()
+        for item in selected_items:
+            if isinstance(item, (PadGraphicsItem, LineGraphicsItem, CircleGraphicsItem, TextGraphicsItem)):
+                if getattr(item.model, 'locked', False):
+                    continue
+                if item.model in self.footprint.pads:
+                    self.footprint.pads.remove(item.model)
+                if item.model in self.footprint.lines:
+                    self.footprint.lines.remove(item.model)
+                if item.model in self.footprint.circles:
+                    self.footprint.circles.remove(item.model)
+                if item.model in self.footprint.texts:
+                    self.footprint.texts.remove(item.model)
+                self.manager.remove_model(item.model)
+                
+        self.right_panel.btn_delete.setEnabled(False)
+        self.right_panel.properties_panel.clear_panel()
+        self.show_log("элементы удалены")
+
+    def _copy_selected(self):
+        self.clipboard = []
+        for item in self.canvas.scene.selectedItems():
+            if isinstance(item, (PadGraphicsItem, LineGraphicsItem, CircleGraphicsItem, TextGraphicsItem)):
+                if not getattr(item.model, 'locked', False):
+                    self.clipboard.append(copy.deepcopy(item.model))
+        if self.clipboard:
+            self.show_log("(буфер обмена) элементы скопированы")
+
+    def _paste_from_clipboard(self):
+        if not self.clipboard:
+            return
+        self.canvas.scene.clearSelection()
+        
+        center_x, center_y = 0, 0
+        count = 0
+        for model in self.clipboard:
+            if isinstance(model, Pad):
+                center_x += model.x; center_y += model.y; count += 1
+            elif isinstance(model, Line):
+                center_x += (model.x1 + model.x2)/2; center_y += (model.y1 + model.y2)/2; count += 1
+            elif isinstance(model, Circle):
+                center_x += model.x; center_y += model.y; count += 1
+            elif isinstance(model, Text):
+                center_x += model.x; center_y += model.y; count += 1
+                
+        if count > 0:
+            center_x /= count
+            center_y /= count
+            
+        dx = self._current_mouse_scene_pos.x() - center_x
+        dy = self._current_mouse_scene_pos.y() - center_y
+        dx = round(dx / self.canvas.grid_size) * self.canvas.grid_size
+        dy = round(dy / self.canvas.grid_size) * self.canvas.grid_size
+        
+        for model in self.clipboard:
+            new_model = copy.deepcopy(model)
+            new_model.uid = str(uuid.uuid4())
+            new_model.locked = False
+            
+            if isinstance(new_model, Pad):
+                new_model.x += dx; new_model.y += dy
+                self.footprint.pads.append(new_model)
+            elif isinstance(new_model, Line):
+                new_model.x1 += dx; new_model.y1 += dy
+                new_model.x2 += dx; new_model.y2 += dy
+                self.footprint.lines.append(new_model)
+            elif isinstance(new_model, Circle):
+                new_model.x += dx; new_model.y += dy
+                self.footprint.circles.append(new_model)
+            elif isinstance(new_model, Text):
+                new_model.x += dx; new_model.y += dy
+                self.footprint.texts.append(new_model)
+            
+            item = self.manager.add_model(new_model)
+            item.setSelected(True)
+                
+        self.show_log("(буфер обмена) элементы установлены")
+
+    def handle_global_key(self, event):
+        vk = event.nativeVirtualKey()
+        modifiers = event.modifiers()
+        
+        if event.type() == QEvent.Type.KeyPress:
+            if vk in PAN_KEYS:
+                self.canvas.pressed_keys.add(vk)
+                if not self.canvas.pan_timer.isActive():
+                    self.canvas.pan_timer.start()
+                return True
+            elif vk == VK_ESCAPE:
+                self._finish_drawing()
+                self.canvas.scene.clearSelection()
+                self.right_panel.btn_select.setChecked(True)
+                self._on_tool_button_clicked(self.right_panel.btn_select)
+                return True
+            elif vk == VK_DELETE:
+                self._delete_selected()
+                return True
+            elif vk == VK_F1:
+                self._change_grid_step(-1)
+                return True
+            elif vk == VK_F2:
+                self._change_grid_step(1)
+                return True
+            elif vk == VK_C and (modifiers & Qt.KeyboardModifier.ControlModifier):
+                self._copy_selected()
+                return True
+            elif vk == VK_V and (modifiers & Qt.KeyboardModifier.ControlModifier):
+                self._paste_from_clipboard()
+                return True
+                
+        elif event.type() == QEvent.Type.KeyRelease:
+            if vk in PAN_KEYS:
+                self.canvas.pressed_keys.discard(vk)
+                if not self.canvas.pressed_keys:
+                    self.canvas.pan_timer.stop()
+                return True
+                
+        return False.
+.
