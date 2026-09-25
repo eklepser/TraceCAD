@@ -1,8 +1,9 @@
 from PySide6.QtWidgets import QGraphicsItem, QStyle
-from PySide6.QtGui import QPen, QBrush, QColor, QFont, QPainterPath, QTransform
-from PySide6.QtCore import QRectF, QPointF, Qt
+from PySide6.QtGui import QColor
+from PySide6.QtCore import QRectF, Qt
 from footprint_editor.core.models import PadShape, PadType
 from footprint_editor.graphics.base import BaseGraphicsItem
+from footprint_editor.graphics.text_path import build_text_path
 from constants import Colors, Sizes
 
 
@@ -17,38 +18,23 @@ class PadGraphicsItem(BaseGraphicsItem):
         w = self.model.width
         h = self.model.height
         extra = 0.5
-        return QRectF(-w/2-extra, -h/2-extra, w+2*extra, h+2*extra)
+        return QRectF(-w/2 - extra, -h/2 - extra, w + 2*extra, h + 2*extra)
 
-    def _build_text_path(self):
-        text = self.model.number
+    def _text(self):
         target_h = min(self.model.width, self.model.height) * Sizes.PAD_NUMBER_FONT_RATIO
-        key = (text, target_h)
-        if self._text_path_key == key and self._text_path is not None:
-            return self._text_path
-
-        path = QPainterPath()
-        if text and target_h > 0:
-            font = QFont()
-            font.setPointSizeF(20.0)
-            font.setBold(True)
-            path.addText(0, 0, font, text)
+        key = (self.model.number, target_h)
+        if self._text_path_key != key:
+            path = build_text_path(self.model.number, target_h, bold=True)
             bounds = path.boundingRect()
-            if bounds.height() > 0:
-                scale = target_h / bounds.height()
-                transform = QTransform()
-                transform.scale(scale, scale)
-                path = transform.map(path)
-                bounds = path.boundingRect()
+            if not bounds.isNull():
                 path.translate(-bounds.center())
-        self._text_path = path
-        self._text_path_key = key
-        return path
+            self._text_path = path
+            self._text_path_key = key
+        return self._text_path
 
     def paint(self, painter, option, widget):
-        if option.state & QStyle.StateFlag.State_Selected:
-            color = QColor(*Colors.SELECTED)
-        else:
-            color = QColor(*Colors.PAD)
+        color = QColor(*(Colors.SELECTED if option.state & QStyle.StateFlag.State_Selected
+                         else Colors.PAD))
 
         w = self.model.width
         h = self.model.height
@@ -68,7 +54,7 @@ class PadGraphicsItem(BaseGraphicsItem):
             painter.setBrush(QColor(*Colors.BACKGROUND))
             painter.drawEllipse(QRectF(-drill/2, -drill/2, drill, drill))
 
-        path = self._build_text_path()
+        path = self._text()
         if not path.isEmpty():
             painter.save()
             painter.setPen(Qt.PenStyle.NoPen)

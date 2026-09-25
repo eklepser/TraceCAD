@@ -15,7 +15,6 @@ class LibrariesManagerDialog(QDialog):
         self.setStyleSheet(Styles.DIALOG_BG)
 
         self.library_paths = list(library_paths)
-
         layout = QVBoxLayout(self)
 
         self.table = QTableWidget(0, 2)
@@ -28,7 +27,7 @@ class LibrariesManagerDialog(QDialog):
         self.table.verticalHeader().setVisible(False)
         layout.addWidget(self.table)
 
-        btn_layout = QHBoxLayout()
+        btns = QHBoxLayout()
         self.btn_add = QPushButton("Добавить...")
         self.btn_add.setStyleSheet(Styles.BUTTON_OK)
         self.btn_add.clicked.connect(self._add_library)
@@ -41,11 +40,11 @@ class LibrariesManagerDialog(QDialog):
         self.btn_close.setStyleSheet(Styles.BUTTON_CANCEL)
         self.btn_close.clicked.connect(self.accept)
 
-        btn_layout.addWidget(self.btn_add)
-        btn_layout.addWidget(self.btn_remove)
-        btn_layout.addStretch()
-        btn_layout.addWidget(self.btn_close)
-        layout.addLayout(btn_layout)
+        btns.addWidget(self.btn_add)
+        btns.addWidget(self.btn_remove)
+        btns.addStretch()
+        btns.addWidget(self.btn_close)
+        layout.addLayout(btns)
 
         self._refresh()
 
