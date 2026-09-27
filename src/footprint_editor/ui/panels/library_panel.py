@@ -9,12 +9,19 @@ from constants import Styles
 LEFT_PANEL_MIN_WIDTH = 160
 LEFT_PANEL_MAX_WIDTH = 320
 
+ADD_BUTTON_STYLE = (
+    "QPushButton { background-color: #365880; color: white;"
+    " font-size: 14px; font-weight: bold;"
+    " border: none; padding: 0px; }"
+    " QPushButton:hover { background-color: #2a4a6b; }"
+)
+
 
 class LibraryPanel(QWidget):
     add_library_requested = Signal()
     add_module_requested = Signal()
-    library_selected = Signal(str)      # path
-    module_selected = Signal(str)       # name
+    library_selected = Signal(str)
+    module_selected = Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -22,8 +29,8 @@ class LibraryPanel(QWidget):
         self.setMaximumWidth(LEFT_PANEL_MAX_WIDTH)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
-        layout.setSpacing(4)
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(6)
 
         self.btn_add_library, lib_header = self._make_header("Библиотеки", "Добавить библиотеку")
         self.btn_add_library.clicked.connect(self.add_library_requested.emit)
@@ -47,20 +54,21 @@ class LibraryPanel(QWidget):
         header = QHBoxLayout()
         header.setContentsMargins(0, 0, 0, 0)
         label = QLabel(title)
-        label.setStyleSheet("font-weight: bold;")
+        label.setStyleSheet(Styles.SECTION_LABEL)
         header.addWidget(label)
         header.addStretch()
 
         btn = QPushButton("+")
         btn.setFixedSize(24, 24)
         btn.setToolTip(tooltip)
-        btn.setStyleSheet(Styles.BUTTON_OK)
+        btn.setStyleSheet(ADD_BUTTON_STYLE)
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
         header.addWidget(btn)
         return btn, header
 
     def apply_theme(self):
-        self.btn_add_library.setStyleSheet(Styles.BUTTON_OK)
-        self.btn_add_module.setStyleSheet(Styles.BUTTON_OK)
+        self.btn_add_library.setStyleSheet(ADD_BUTTON_STYLE)
+        self.btn_add_module.setStyleSheet(ADD_BUTTON_STYLE)
         self.library_list_widget.setStyleSheet(Styles.LIST_BG)
         self.module_list_widget.setStyleSheet(Styles.LIST_BG)
 
@@ -73,8 +81,6 @@ class LibraryPanel(QWidget):
         name = item.data(Qt.ItemDataRole.UserRole)
         if name:
             self.module_selected.emit(name)
-
-    # ---------- data binding ----------
 
     def set_libraries(self, paths):
         self.library_list_widget.clear()

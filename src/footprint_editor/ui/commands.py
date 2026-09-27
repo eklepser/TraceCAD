@@ -1,19 +1,16 @@
 import copy
 import math
 import re
-import uuid
 from pathlib import Path
-from datetime import datetime
 
-from PySide6.QtWidgets import (QInputDialog, QDialog, QFileDialog,
-                               QMessageBox, QListWidget, QListWidgetItem)
-from PySide6.QtCore import Qt, QPointF
+from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
+from PySide6.QtCore import QPointF
 
-from constants import Tool
+from constants import Tool, Sizes
 from footprint_editor.core.models import (
-    Footprint, Pad, PadShape, PadType, Line, Circle, Arc, Text
+    Footprint, Pad, PadShape, PadType, Line, Circle, Arc, Text, TextType, new_uid
 )
-from footprint_editor.core.kicad_parser import parse_kicad_mod, mm_to_kicad
+from footprint_editor.core.kicad_parser import parse_kicad_mod
 from footprint_editor.core.arc_geometry import arc_sample_points
 from footprint_editor.graphics.pad_item import PadGraphicsItem
 from footprint_editor.graphics.line_item import LineGraphicsItem
@@ -21,6 +18,8 @@ from footprint_editor.graphics.circle_item import CircleGraphicsItem
 from footprint_editor.graphics.arc_item import ArcGraphicsItem
 from footprint_editor.graphics.text_item import TextGraphicsItem
 from footprint_editor.ui.dialogs.text_dialog import TextDialog
+from footprint_editor.ui.dialogs.arc_dialog import ArcDialog
+from footprint_editor.ui.dialogs.input_dialog import InputDialog
 from footprint_editor.ui.dialogs.libraries_dialog import LibrariesManagerDialog
 
 
@@ -38,8 +37,6 @@ class CommandHandler:
         self.w = window
         self.clipboard = []
         self._current_mouse_pos = QPointF(0, 0)
-
-    # ---------------- canvas callbacks ----------------
 
     def on_canvas_clicked(self, x, y):
         tool = self.w.current_tool
@@ -73,8 +70,6 @@ class CommandHandler:
             canvas.clear_ghost_line()
             canvas.clear_ghost_circle()
 
-    # ---------------- add tools ----------------
-
     def add_pad(self, x, y):
         num = self.w.manager.get_next_pad_number()
         pad = Pad(number=num, shape=PadShape.CIRCLE, pad_type=PadType.SMD,
@@ -82,7 +77,7 @@ class CommandHandler:
         self.w.footprint.pads.append(pad)
         self.w.manager.add_model(pad)
         self.w.canvas.set_interaction_enabled(False)
-        self.w.mark_dirty()
+        self.w.commit_history("площадка")
         self.w.show_log(f'площадка #{num} установлена')
 
     def add_line_point(self, x, y):
@@ -91,13 +86,13 @@ class CommandHandler:
             self.w.canvas.set_ghost_line(x, y, x, y)
             return
         sx, sy = self.w.line_start_point
-        line = Line(sx, sy, x, y)
+        line = Line(sx, sy, x, y, width=Sizes.DEFAULT_LINE_WIDTH)
         self.w.footprint.lines.append(line)
         self.w.manager.add_model(line)
         self.w.canvas.set_interaction_enabled(False)
         self.w.line_start_point = (x, y)
         self.w.canvas.set_ghost_line(x, y, x, y)
-        self.w.mark_dirty()
+        self.w.commit_history("линия")
         self.w.show_log('линия установлена')
 
     def add_circle_point(self, x, y):
@@ -109,11 +104,11 @@ class CommandHandler:
         grid = self.w.canvas.grid_size
         r = round(math.hypot(x - cx, y - cy) / grid) * grid
         if r > 0:
-            circle = Circle(cx, cy, r)
+            circle = Circle(cx, cy, r, width=Sizes.DEFAULT_LINE_WIDTH)
             self.w.footprint.circles.append(circle)
             self.w.manager.add_model(circle)
             self.w.canvas.set_interaction_enabled(False)
-            self.w.mark_dirty()
+            self.w.commit_history("окружность")
             self.w.show_log('окружность установлена')
         self.w.circle_center_point = None
         self.w.canvas.clear_ghost_circle()
@@ -134,22 +129,27 @@ class CommandHandler:
         self.w.canvas.set_ghost_line(x, y, x, y)
 
     def _show_arc_dialog(self):
-        angle, ok = QInputDialog.getDouble(
-            self.w, "Угол дуги", "Угол дуги (градусы):",
-            90.0, -359.0, 359.0, 1
+        cx, cy = self.w.arc_center_point
+        sx, sy = self.w.arc_start_point
+
+        dlg = ArcDialog(self.w)
+        dlg.angle_changed.connect(
+            lambda a: self.w.canvas.set_ghost_arc(cx, cy, sx, sy, a)
         )
-        if ok:
-            cx, cy = self.w.arc_center_point
-            sx, sy = self.w.arc_start_point
-            arc = Arc(cx=cx, cy=cy, sx=sx, sy=sy, angle=angle)
+        self.w.canvas.set_ghost_arc(cx, cy, sx, sy, dlg.get_angle())
+
+        if dlg.exec() == QDialog.Accepted:
+            arc = Arc(cx=cx, cy=cy, sx=sx, sy=sy,
+                      angle=dlg.get_angle(), width=Sizes.DEFAULT_LINE_WIDTH)
             self.w.footprint.arcs.append(arc)
             self.w.manager.add_model(arc)
             self.w.canvas.set_interaction_enabled(False)
-            self.w.mark_dirty()
+            self.w.commit_history("дуга")
             self.w.show_log('дуга установлена')
+
         self.w.arc_center_point = None
         self.w.arc_start_point = None
-        self.w.canvas.clear_ghost_line()
+        self.w.canvas.clear_ghost_arc()
 
     def add_text_at(self, x, y):
         self.w.text_position = (x, y)
@@ -166,19 +166,18 @@ class CommandHandler:
             lambda v: self.w.canvas.set_ghost_text(*self.w.text_position, dialog.get_text(),
                                                     dialog.get_size(), v))
 
-        if dialog.exec() == QDialog.Accepted and dialog.get_text():
+        if dialog.exec() == QDialog.Accepted:
+            text_value = dialog.get_text() or "Text"
             tx, ty = self.w.text_position
-            t = Text(tx, ty, dialog.get_text(), dialog.get_size(), dialog.get_visible())
+            t = Text(tx, ty, text_value, dialog.get_size(), dialog.get_visible())
             self.w.footprint.texts.append(t)
             self.w.manager.add_model(t)
             self.w.canvas.set_interaction_enabled(False)
-            self.w.mark_dirty()
+            self.w.commit_history("текст")
             self.w.show_log('текст установлен')
 
         self.w.text_position = None
         self.w.canvas.clear_ghost_text()
-
-    # ---------------- selection operations ----------------
 
     def _selected_model_items(self):
         return [it for it in self.w.canvas.scene.selectedItems()
@@ -195,10 +194,10 @@ class CommandHandler:
             self.w.manager.remove_model(item.model)
             deleted = True
 
-        self.w.right_panel.btn_delete.setEnabled(False)
+        self.w.aux_bar.set_delete_enabled(False)
         self.w.right_panel.properties_panel.clear_panel()
         if deleted:
-            self.w.mark_dirty()
+            self.w.commit_history("удаление")
         self.w.show_log("элементы удалены")
 
     def _remove_from_footprint(self, model):
@@ -230,14 +229,14 @@ class CommandHandler:
 
         for model in self.clipboard:
             new_model = copy.deepcopy(model)
-            new_model.uid = str(uuid.uuid4())
+            new_model.uid = new_uid()
             new_model.locked = False
             self._translate_model(new_model, dx, dy)
             self._append_model(new_model)
             item = self.w.manager.add_model(new_model)
             item.setSelected(True)
 
-        self.w.mark_dirty()
+        self.w.commit_history("вставка")
         self.w.show_log("(буфер обмена) элементы установлены")
 
     def _clipboard_center(self):
@@ -245,7 +244,9 @@ class CommandHandler:
         n = 0
         for m in self.clipboard:
             px, py = self._model_center(m)
-            sx += px; sy += py; n += 1
+            sx += px
+            sy += py
+            n += 1
         return (sx / n, sy / n) if n else (0, 0)
 
     def _model_center(self, m):
@@ -263,15 +264,24 @@ class CommandHandler:
 
     def _translate_model(self, m, dx, dy):
         if isinstance(m, Pad):
-            m.x += dx; m.y += dy
+            m.x += dx
+            m.y += dy
         elif isinstance(m, Line):
-            m.x1 += dx; m.y1 += dy; m.x2 += dx; m.y2 += dy
+            m.x1 += dx
+            m.y1 += dy
+            m.x2 += dx
+            m.y2 += dy
         elif isinstance(m, Circle):
-            m.x += dx; m.y += dy
+            m.x += dx
+            m.y += dy
         elif isinstance(m, Arc):
-            m.cx += dx; m.cy += dy; m.sx += dx; m.sy += dy
+            m.cx += dx
+            m.cy += dy
+            m.sx += dx
+            m.sy += dy
         elif isinstance(m, Text):
-            m.x += dx; m.y += dy
+            m.x += dx
+            m.y += dy
 
     def _append_model(self, m):
         fp = self.w.footprint
@@ -295,8 +305,10 @@ class CommandHandler:
         max_x = max_y = float('-inf')
         for item in items:
             for px, py in self._model_bounds(item.model):
-                min_x = min(min_x, px); min_y = min(min_y, py)
-                max_x = max(max_x, px); max_y = max(max_y, py)
+                min_x = min(min_x, px)
+                min_y = min(min_y, py)
+                max_x = max(max_x, px)
+                max_y = max(max_y, py)
 
         cx = (min_x + max_x) / 2
         cy = (min_y + max_y) / 2
@@ -307,13 +319,13 @@ class CommandHandler:
                 item.setPos(item.model.x, item.model.y)
             item.update_geometry()
 
-        self.w.mark_dirty()
+        self.w.commit_history("поворот")
         self.w.show_log("элементы повёрнуты на 90°")
 
     def _model_bounds(self, m):
         if isinstance(m, Pad):
-            return [(m.x - m.width/2, m.y - m.height/2),
-                    (m.x + m.width/2, m.y + m.height/2)]
+            return [(m.x - m.width / 2, m.y - m.height / 2),
+                    (m.x + m.width / 2, m.y + m.height / 2)]
         if isinstance(m, Line):
             return [(m.x1, m.y1), (m.x2, m.y2)]
         if isinstance(m, Circle):
@@ -341,13 +353,10 @@ class CommandHandler:
         elif isinstance(m, Text):
             m.x, m.y = _rotate_point_90(m.x, m.y, cx, cy)
 
-    # ---------------- module lifecycle ----------------
-
     def ensure_reference_and_value(self):
         fp = self.w.footprint
-        has_ref = any(t.text_type.name == "REFERENCE" for t in fp.texts)
-        has_val = any(t.text_type.name == "VALUE" for t in fp.texts)
-        from footprint_editor.core.models import TextType
+        has_ref = any(t.text_type == TextType.REFERENCE for t in fp.texts)
+        has_val = any(t.text_type == TextType.VALUE for t in fp.texts)
         if not has_ref:
             ref = Text(0, 0, fp.reference, 1.0, True, TextType.REFERENCE, locked=True)
             fp.texts.append(ref)
@@ -358,9 +367,13 @@ class CommandHandler:
             self.w.manager.add_model(val)
 
     def new_module(self):
-        name, ok = QInputDialog.getText(self.w, "Новый корпус", "Имя корпуса:")
-        if not ok or not name:
+        dlg = InputDialog(self.w, title="Новый корпус", label="Имя корпуса:")
+        if dlg.exec() != QDialog.Accepted:
             return
+        name = dlg.get_text().strip()
+        if not name:
+            return
+
         self.w.stash_current_module()
         self.w.load_footprint(Footprint(name=name), mark_unsaved=False)
         if self.w.current_library_path:
@@ -430,8 +443,6 @@ class CommandHandler:
         else:
             content = content.rstrip() + "\n" + module_text + "\n" + end_marker + "\n"
         Path(path).write_text(content, encoding='utf-8')
-
-    # ---------------- library management ----------------
 
     def add_library(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -506,6 +517,7 @@ class CommandHandler:
         names = list(self.w.library_modules[path].keys())
         self.w.library_panel.set_modules(names)
         self.w.refresh_module_list_display()
+        self.w._update_window_title()
         self.w.show_log(f"Библиотека: {Path(path).name}")
 
     def select_module(self, name):

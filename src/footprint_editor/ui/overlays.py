@@ -1,7 +1,8 @@
 from PySide6.QtCore import Qt, QPointF
-from PySide6.QtGui import QPen, QColor
+from PySide6.QtGui import QPen, QColor, QPainterPath
 from constants import Colors, Sizes
 from footprint_editor.graphics.text_path import build_text_path
+from footprint_editor.core.arc_geometry import arc_sample_points
 
 
 def _effective_step(span, grid_size, max_points):
@@ -26,7 +27,10 @@ def draw_grid(painter, rect, view):
     step_x = _effective_step(right - left, grid_size, Sizes.MAX_GRID_POINTS)
     step_y = _effective_step(bottom - top, grid_size, Sizes.MAX_GRID_POINTS)
 
-    painter.setPen(QPen(view.grid_color, 0))
+    pen = QPen(view.grid_color, 0)
+    pen.setCosmetic(True)
+    painter.setPen(pen)
+
     y = top
     while y <= bottom:
         x = left
@@ -75,10 +79,29 @@ def draw_ghost_circle(painter, center, radius):
     painter.drawEllipse(center, radius, radius)
 
 
+def draw_ghost_arc(painter, cx, cy, sx, sy, angle):
+    if cx is None or sx is None:
+        return
+    pts = arc_sample_points(cx, cy, sx, sy, angle, 64)
+    if len(pts) < 2:
+        return
+    path = QPainterPath()
+    path.moveTo(pts[0][0], pts[0][1])
+    for px, py in pts[1:]:
+        path.lineTo(px, py)
+
+    pen = QPen(QColor(*Colors.GHOST_LINE), 0)
+    pen.setCosmetic(True)
+    pen.setStyle(Qt.PenStyle.DashLine)
+    painter.setPen(pen)
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+    painter.drawPath(path)
+
+
 def draw_ghost_text(painter, pos, text, size, visible):
     if not pos or not text:
         return
-    path = build_text_path(text, size * Sizes.TEXT_FONT_MULTIPLIER)
+    path = build_text_path(text, size * Sizes.TEXT_FONT_MULTIPLIER, center=True)
     if path.isEmpty():
         return
     color = QColor(*Colors.GHOST_TEXT)

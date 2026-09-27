@@ -17,7 +17,7 @@ class TextGraphicsItem(BaseGraphicsItem):
         target_h = self.model.size * Sizes.TEXT_FONT_MULTIPLIER
         key = (self.model.text, target_h)
         if self._path_key != key:
-            self._path_cache = build_text_path(self.model.text, target_h)
+            self._path_cache = build_text_path(self.model.text, target_h, center=True)
             self._path_key = key
         return self._path_cache
 

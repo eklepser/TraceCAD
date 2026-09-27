@@ -18,17 +18,13 @@ class PadGraphicsItem(BaseGraphicsItem):
         w = self.model.width
         h = self.model.height
         extra = 0.5
-        return QRectF(-w/2 - extra, -h/2 - extra, w + 2*extra, h + 2*extra)
+        return QRectF(-w / 2 - extra, -h / 2 - extra, w + 2 * extra, h + 2 * extra)
 
     def _text(self):
         target_h = min(self.model.width, self.model.height) * Sizes.PAD_NUMBER_FONT_RATIO
         key = (self.model.number, target_h)
         if self._text_path_key != key:
-            path = build_text_path(self.model.number, target_h, bold=True)
-            bounds = path.boundingRect()
-            if not bounds.isNull():
-                path.translate(-bounds.center())
-            self._text_path = path
+            self._text_path = build_text_path(self.model.number, target_h, bold=True, center=True)
             self._text_path_key = key
         return self._text_path
 
@@ -44,15 +40,15 @@ class PadGraphicsItem(BaseGraphicsItem):
         painter.setBrush(color)
 
         if self.model.shape == PadShape.CIRCLE:
-            painter.drawEllipse(QRectF(-w/2, -h/2, w, h))
+            painter.drawEllipse(QRectF(-w / 2, -h / 2, w, h))
         elif self.model.shape == PadShape.RECT:
-            painter.drawRect(QRectF(-w/2, -h/2, w, h))
+            painter.drawRect(QRectF(-w / 2, -h / 2, w, h))
         elif self.model.shape == PadShape.OVAL:
-            painter.drawRoundedRect(QRectF(-w/2, -h/2, w, h), w/2, h/2)
+            painter.drawRoundedRect(QRectF(-w / 2, -h / 2, w, h), w / 2, h / 2)
 
         if drill > 0:
             painter.setBrush(QColor(*Colors.BACKGROUND))
-            painter.drawEllipse(QRectF(-drill/2, -drill/2, drill, drill))
+            painter.drawEllipse(QRectF(-drill / 2, -drill / 2, drill, drill))
 
         path = self._text()
         if not path.isEmpty():

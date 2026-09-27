@@ -1,7 +1,7 @@
 from PySide6.QtGui import QFont, QPainterPath, QTransform
 
 
-def build_text_path(text, target_height, bold=False):
+def build_text_path(text, target_height, bold=False, center=False):
     path = QPainterPath()
     if not text or target_height <= 0:
         return path
@@ -16,4 +16,7 @@ def build_text_path(text, target_height, bold=False):
         t = QTransform()
         t.scale(scale, scale)
         path = t.map(path)
+        if center:
+            b = path.boundingRect()
+            path.translate(-b.center().x(), -b.center().y())
     return path

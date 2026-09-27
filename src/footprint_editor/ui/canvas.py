@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem
 from PySide6.QtCore import Qt, QPointF, Signal, QTimer
-from PySide6.QtGui import QColor, QWheelEvent, QMouseEvent, QPainter
+from PySide6.QtGui import QColor, QWheelEvent, QMouseEvent, QPainter, QPen
 from constants import VK_W, VK_A, VK_S, VK_D, Colors, Sizes, Steps
 from footprint_editor.ui import overlays
 
@@ -20,8 +20,6 @@ class FootprintCanvas(QGraphicsView):
         self._setup_pan()
         self._reset_ghosts()
 
-    # ---------- setup ----------
-
     def _setup_view(self):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -31,6 +29,10 @@ class FootprintCanvas(QGraphicsView):
         self.setRubberBandSelectionMode(Qt.ItemSelectionMode.IntersectsItemShape)
         self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.setFrameShape(QGraphicsView.Shape.Box)
+        self.setFrameShadow(QGraphicsView.Shadow.Plain)
+        self.setLineWidth(1)
+        self.setStyleSheet("QGraphicsView { border: 1px solid #ffffff; }")
 
     def _setup_scene(self):
         self.scene = QGraphicsScene(self)
@@ -64,12 +66,11 @@ class FootprintCanvas(QGraphicsView):
         self._ghost_line_end = None
         self._ghost_circle_center = None
         self._ghost_circle_radius = 0.0
+        self._ghost_arc = None
         self._ghost_text_pos = None
         self._ghost_text_content = ""
         self._ghost_text_size = 1.0
         self._ghost_text_visible = True
-
-    # ---------- public ----------
 
     def apply_theme(self):
         self.grid_color = QColor(*Colors.GRID)
@@ -109,6 +110,14 @@ class FootprintCanvas(QGraphicsView):
         self._ghost_circle_radius = 0.0
         self.viewport().update()
 
+    def set_ghost_arc(self, cx, cy, sx, sy, angle):
+        self._ghost_arc = (cx, cy, sx, sy, angle)
+        self.viewport().update()
+
+    def clear_ghost_arc(self):
+        self._ghost_arc = None
+        self.viewport().update()
+
     def set_ghost_text(self, x, y, text, size, visible):
         self._ghost_text_pos = QPointF(x, y)
         self._ghost_text_content = text
@@ -132,8 +141,6 @@ class FootprintCanvas(QGraphicsView):
     def set_drag_mode(self, mode):
         self.setDragMode(mode)
 
-    # ---------- rendering ----------
-
     def drawBackground(self, painter, rect):
         super().drawBackground(painter, rect)
         overlays.draw_grid(painter, rect, self)
@@ -145,10 +152,10 @@ class FootprintCanvas(QGraphicsView):
             overlays.draw_snap_marker(painter, self._snap_pos, cross_size)
         overlays.draw_ghost_line(painter, self._ghost_line_start, self._ghost_line_end)
         overlays.draw_ghost_circle(painter, self._ghost_circle_center, self._ghost_circle_radius)
+        if self._ghost_arc is not None:
+            overlays.draw_ghost_arc(painter, *self._ghost_arc)
         overlays.draw_ghost_text(painter, self._ghost_text_pos, self._ghost_text_content,
                                  self._ghost_text_size, self._ghost_text_visible)
-
-    # ---------- events ----------
 
     def wheelEvent(self, event: QWheelEvent):
         if event.angleDelta().y() > 0:
@@ -187,14 +194,16 @@ class FootprintCanvas(QGraphicsView):
         self.viewport().update()
         super().mouseMoveEvent(event)
 
-    # ---------- pan ----------
-
     def _pan_step(self):
         dx = dy = 0
-        if VK_W in self.pressed_keys: dy -= 1
-        if VK_S in self.pressed_keys: dy += 1
-        if VK_A in self.pressed_keys: dx -= 1
-        if VK_D in self.pressed_keys: dx += 1
+        if VK_W in self.pressed_keys:
+            dy -= 1
+        if VK_S in self.pressed_keys:
+            dy += 1
+        if VK_A in self.pressed_keys:
+            dx -= 1
+        if VK_D in self.pressed_keys:
+            dx += 1
         if dx == 0 and dy == 0:
             return
 

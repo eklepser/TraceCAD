@@ -1,21 +1,26 @@
 from pathlib import Path
 
-from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QTableWidget,
+from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QTableWidget,
                                QTableWidgetItem, QPushButton, QHeaderView,
-                               QFileDialog, QMessageBox)
+                               QFileDialog, QMessageBox, QLabel)
 from PySide6.QtCore import Qt
 from constants import Styles
+from footprint_editor.ui.dialogs.headerless_dialog import HeaderlessDialog
 
 
-class LibrariesManagerDialog(QDialog):
+class LibrariesManagerDialog(HeaderlessDialog):
     def __init__(self, library_paths, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Управление библиотеками")
+        super().__init__(parent, title="Управление библиотеками")
         self.resize(700, 400)
-        self.setStyleSheet(Styles.DIALOG_BG)
 
         self.library_paths = list(library_paths)
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(10)
+
+        header = QLabel("Управление библиотеками")
+        header.setStyleSheet(Styles.OBJECT_TITLE)
+        layout.addWidget(header)
 
         self.table = QTableWidget(0, 2)
         self.table.setHorizontalHeaderLabels(["Имя", "Путь"])
@@ -25,6 +30,12 @@ class LibrariesManagerDialog(QDialog):
         self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.verticalHeader().setVisible(False)
+        self.table.setStyleSheet(
+            "QTableWidget { background-color: #1e1e1e; color: #cfcfcf;"
+            " gridline-color: #3c3f41; border: 1px solid #3c3f41; }"
+            "QHeaderView::section { background-color: #2b2b2b; color: #a9b7c6;"
+            " border: 0px; border-right: 1px solid #3c3f41; padding: 4px; }"
+        )
         layout.addWidget(self.table)
 
         btns = QHBoxLayout()
@@ -36,14 +47,15 @@ class LibrariesManagerDialog(QDialog):
         self.btn_remove.setStyleSheet(Styles.BUTTON_CANCEL)
         self.btn_remove.clicked.connect(self._remove_selected)
 
-        self.btn_close = QPushButton("Закрыть")
-        self.btn_close.setStyleSheet(Styles.BUTTON_CANCEL)
-        self.btn_close.clicked.connect(self.accept)
-
         btns.addWidget(self.btn_add)
         btns.addWidget(self.btn_remove)
         btns.addStretch()
+
+        self.btn_close = QPushButton("Закрыть")
+        self.btn_close.setStyleSheet(Styles.BUTTON_CANCEL)
+        self.btn_close.clicked.connect(self.accept)
         btns.addWidget(self.btn_close)
+
         layout.addLayout(btns)
 
         self._refresh()

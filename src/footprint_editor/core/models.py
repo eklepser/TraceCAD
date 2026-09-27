@@ -1,22 +1,47 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional
-import uuid
 import copy
+from constants import Sizes
+
 
 class PadShape(Enum):
     CIRCLE = "circle"
     RECT = "rect"
     OVAL = "oval"
 
+
 class PadType(Enum):
     SMD = "smd"
     THT = "thru_hole"
+
 
 class TextType(Enum):
     NORMAL = "normal"
     REFERENCE = "reference"
     VALUE = "value"
+
+
+_next_uid = [1]
+
+
+def new_uid():
+    value = _next_uid[0]
+    _next_uid[0] += 1
+    return value
+
+
+def _deepcopy_no_graphics(self, memo):
+    cls = self.__class__
+    result = cls.__new__(cls)
+    memo[id(self)] = result
+    for k, v in self.__dict__.items():
+        if k == 'graphics_item':
+            setattr(result, k, None)
+        else:
+            setattr(result, k, copy.deepcopy(v, memo))
+    return result
+
 
 @dataclass
 class Pad:
@@ -29,18 +54,10 @@ class Pad:
     height: float
     drill: Optional[float] = None
     locked: bool = False
-    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+    uid: int = field(default_factory=new_uid)
 
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            if k == 'graphics_item':
-                setattr(result, k, None)
-            else:
-                setattr(result, k, copy.deepcopy(v, memo))
-        return result
+    __deepcopy__ = _deepcopy_no_graphics
+
 
 @dataclass
 class Line:
@@ -48,40 +65,24 @@ class Line:
     y1: float
     x2: float
     y2: float
-    width: float = 0.15
+    width: float = Sizes.DEFAULT_LINE_WIDTH
     locked: bool = False
-    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+    uid: int = field(default_factory=new_uid)
 
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            if k == 'graphics_item':
-                setattr(result, k, None)
-            else:
-                setattr(result, k, copy.deepcopy(v, memo))
-        return result
+    __deepcopy__ = _deepcopy_no_graphics
+
 
 @dataclass
 class Circle:
     x: float
     y: float
     radius: float
-    width: float = 0.15
+    width: float = Sizes.DEFAULT_LINE_WIDTH
     locked: bool = False
-    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+    uid: int = field(default_factory=new_uid)
 
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            if k == 'graphics_item':
-                setattr(result, k, None)
-            else:
-                setattr(result, k, copy.deepcopy(v, memo))
-        return result
+    __deepcopy__ = _deepcopy_no_graphics
+
 
 @dataclass
 class Arc:
@@ -90,20 +91,12 @@ class Arc:
     sx: float
     sy: float
     angle: float = 90.0
-    width: float = 0.15
+    width: float = Sizes.DEFAULT_LINE_WIDTH
     locked: bool = False
-    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+    uid: int = field(default_factory=new_uid)
 
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            if k == 'graphics_item':
-                setattr(result, k, None)
-            else:
-                setattr(result, k, copy.deepcopy(v, memo))
-        return result
+    __deepcopy__ = _deepcopy_no_graphics
+
 
 @dataclass
 class Text:
@@ -114,18 +107,10 @@ class Text:
     visible: bool = True
     text_type: TextType = TextType.NORMAL
     locked: bool = False
-    uid: str = field(default_factory=lambda: str(uuid.uuid4()))
+    uid: int = field(default_factory=new_uid)
 
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            if k == 'graphics_item':
-                setattr(result, k, None)
-            else:
-                setattr(result, k, copy.deepcopy(v, memo))
-        return result
+    __deepcopy__ = _deepcopy_no_graphics
+
 
 @dataclass
 class Footprint:

@@ -1,22 +1,25 @@
-from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
+from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                                QLineEdit, QDoubleSpinBox, QCheckBox, QPushButton)
 from PySide6.QtCore import Qt, Signal
 from constants import Styles
+from footprint_editor.ui.dialogs.headerless_dialog import HeaderlessDialog
 
 
-class TextDialog(QDialog):
+class TextDialog(HeaderlessDialog):
     text_changed = Signal(str)
     size_changed = Signal(float)
     visible_changed = Signal(bool)
 
     def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
-        self.setAttribute(Qt.WA_TranslucentBackground, False)
-        self.setStyleSheet(Styles.DIALOG_BG)
+        super().__init__(parent, title="Текст")
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(10)
+
+        header = QLabel("Текст")
+        header.setStyleSheet(Styles.OBJECT_TITLE)
+        layout.addWidget(header)
 
         self.text_input = QLineEdit()
         self.text_input.setPlaceholderText("Введите текст...")
@@ -24,8 +27,8 @@ class TextDialog(QDialog):
         self.text_input.textChanged.connect(self.text_changed.emit)
         layout.addWidget(self.text_input)
 
-        size_layout = QHBoxLayout()
-        size_layout.addWidget(QLabel("Размер:"))
+        size_row = QHBoxLayout()
+        size_row.addWidget(QLabel("Размер:"))
         self.size_spin = QDoubleSpinBox()
         self.size_spin.setRange(0.05, 10.0)
         self.size_spin.setSingleStep(0.1)
@@ -33,8 +36,8 @@ class TextDialog(QDialog):
         self.size_spin.setValue(1.0)
         self.size_spin.setStyleSheet(Styles.INPUT_BG)
         self.size_spin.valueChanged.connect(self.size_changed.emit)
-        size_layout.addWidget(self.size_spin)
-        layout.addLayout(size_layout)
+        size_row.addWidget(self.size_spin, 1)
+        layout.addLayout(size_row)
 
         self.visible_check = QCheckBox("Видимый")
         self.visible_check.setChecked(True)
@@ -44,13 +47,12 @@ class TextDialog(QDialog):
         layout.addWidget(self.visible_check)
 
         btns = QHBoxLayout()
+        btns.addStretch()
         self.btn_ok = QPushButton("OK")
-        self.btn_ok.setFixedSize(60, 30)
         self.btn_ok.setStyleSheet(Styles.BUTTON_OK)
         self.btn_ok.clicked.connect(self.accept)
 
-        self.btn_cancel = QPushButton("Cancel")
-        self.btn_cancel.setFixedSize(60, 30)
+        self.btn_cancel = QPushButton("Отмена")
         self.btn_cancel.setStyleSheet(Styles.BUTTON_CANCEL)
         self.btn_cancel.clicked.connect(self.reject)
 
