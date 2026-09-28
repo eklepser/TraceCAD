@@ -1,79 +1,3 @@
-VK_W = 0x57
-VK_A = 0x41
-VK_S = 0x53
-VK_D = 0x44
-
-VK_ESCAPE = 0x1B
-VK_DELETE = 0x2E
-VK_F1 = 0x70
-VK_F2 = 0x71
-VK_F3 = 0x72
-VK_F11 = 0x7A
-VK_C = 0x43
-VK_V = 0x56
-VK_R = 0x52
-VK_Y = 0x59
-VK_Z = 0x5A
-VK_1 = 0x31
-VK_2 = 0x32
-VK_3 = 0x33
-VK_4 = 0x34
-VK_5 = 0x35
-
-PAN_KEYS = (VK_W, VK_A, VK_S, VK_D)
-
-
-class Tool:
-    SELECT = "select"
-    ADD_PAD = "add_pad"
-    ADD_LINE = "add_line"
-    ADD_CIRCLE = "add_circle"
-    ADD_ARC = "add_arc"
-    ADD_TEXT = "add_text"
-
-
-class Colors:
-    GRID = (80, 80, 80)
-    BACKGROUND = (30, 30, 30)
-    PAD = (180, 160, 80)
-    SELECTED = (0, 150, 255)
-    AXIS = (255, 100, 100, 150)
-    GHOST_LINE = (100, 200, 100, 255)
-    SNAP_CROSS = (255, 255, 255, 150)
-    TEXT_VISIBLE = (200, 200, 200)
-    TEXT_HIDDEN = (200, 200, 200, 50)
-    PAD_NUMBER = (255, 255, 255)
-    GHOST_TEXT = (150, 150, 150, 180)
-    REFERENCE = (100, 200, 100)
-    VALUE = (200, 100, 100)
-
-
-class Sizes:
-    BASE_SCALE = 50.0
-    PAN_SPEED_PX = 15.0
-    PAN_TIMER_INTERVAL = 16
-    CROSS_SIZE = 8.0
-    MAX_GRID_POINTS = 150
-    MIN_CELL_PX = 2.0
-    TEXT_FONT_MULTIPLIER = 1.415
-    PAD_NUMBER_FONT_RATIO = 0.2
-    DEFAULT_LINE_WIDTH = 0.381
-
-
-class Steps:
-    ZOOM = [0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0]
-    GRID_1X = [
-        "5.000", "2.500", "2.000", "1.000",
-        "0.500", "0.250", "0.200", "0.100",
-        "0.050", "0.025", "0.010",
-    ]
-    GRID_127X = [
-        "5.080", "2.540", "1.270", "0.635",
-        "0.508", "0.254", "0.127", "0.0508",
-    ]
-    DEFAULT_GRID = "1.000"
-
-
 class Styles:
     DIALOG_BG = ""
     INPUT_BG = ""
@@ -93,22 +17,6 @@ class Styles:
     OBJECT_TITLE = ""
     AUX_BAR = ""
 
-
-DARK_COLORS = {
-    "GRID": (80, 80, 80),
-    "BACKGROUND": (30, 30, 30),
-    "PAD": (180, 160, 80),
-    "SELECTED": (0, 150, 255),
-    "AXIS": (255, 100, 100, 150),
-    "GHOST_LINE": (100, 200, 100, 255),
-    "SNAP_CROSS": (255, 255, 255, 150),
-    "TEXT_VISIBLE": (200, 200, 200),
-    "TEXT_HIDDEN": (200, 200, 200, 50),
-    "PAD_NUMBER": (255, 255, 255),
-    "GHOST_TEXT": (150, 150, 150, 180),
-    "REFERENCE": (100, 200, 100),
-    "VALUE": (200, 100, 100),
-}
 
 DARK_STYLES = {
     "DIALOG_BG": (
@@ -176,13 +84,3 @@ DARK_STYLES = {
         " border-top: 1px solid #1e1e1e; }"
     ),
 }
-
-
-def apply_theme():
-    for k, v in DARK_COLORS.items():
-        setattr(Colors, k, v)
-    for k, v in DARK_STYLES.items():
-        setattr(Styles, k, v)
-
-
-apply_theme()

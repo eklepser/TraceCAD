@@ -11,12 +11,12 @@ class GraphicsFactory:
     def create(model, canvas, is_preview=False):
         if isinstance(model, Pad):
             return PadGraphicsItem(model, canvas)
-        elif isinstance(model, Line):
+        if isinstance(model, Line):
             return LineGraphicsItem(model, canvas, is_preview)
-        elif isinstance(model, Circle):
+        if isinstance(model, Circle):
             return CircleGraphicsItem(model, canvas, is_preview)
-        elif isinstance(model, Arc):
+        if isinstance(model, Arc):
             return ArcGraphicsItem(model, canvas, is_preview)
-        elif isinstance(model, Text):
+        if isinstance(model, Text):
             return TextGraphicsItem(model, canvas)
         raise ValueError(f"Unknown model type: {type(model)}")

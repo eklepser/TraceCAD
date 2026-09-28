@@ -4,6 +4,7 @@ from PySide6.QtCore import QLineF, QRectF, QPointF, Qt
 from footprint_editor.graphics.base import BaseGraphicsItem
 from constants import Colors
 
+
 class LineGraphicsItem(BaseGraphicsItem):
     def __init__(self, line_model, canvas, is_preview=False, parent=None):
         super().__init__(line_model, canvas, parent)
@@ -13,7 +14,9 @@ class LineGraphicsItem(BaseGraphicsItem):
 
     def boundingRect(self):
         extra = 0.2
-        rect = QRectF(self.model.x1, self.model.y1, self.model.x2 - self.model.x1, self.model.y2 - self.model.y1)
+        rect = QRectF(self.model.x1, self.model.y1,
+                      self.model.x2 - self.model.x1,
+                      self.model.y2 - self.model.y1)
         return rect.normalized().adjusted(-extra, -extra, extra, extra)
 
     def shape(self):
@@ -29,13 +32,13 @@ class LineGraphicsItem(BaseGraphicsItem):
             color = QColor(*Colors.SELECTED)
         else:
             color = QColor(*Colors.TEXT_VISIBLE)
-        
+
         pen = QPen(color, self.model.width if not self.is_preview else 0.05)
         pen.setCosmetic(False)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         if self.is_preview:
             pen.setStyle(Qt.PenStyle.DashLine)
-        
+
         painter.setPen(pen)
         painter.drawLine(QLineF(self.model.x1, self.model.y1, self.model.x2, self.model.y2))
 

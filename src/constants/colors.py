@@ -1,0 +1,31 @@
+class Colors:
+    GRID = (80, 80, 80)
+    BACKGROUND = (30, 30, 30)
+    PAD = (180, 160, 80)
+    SELECTED = (0, 150, 255)
+    AXIS = (255, 100, 100, 150)
+    GHOST_LINE = (100, 200, 100, 255)
+    SNAP_CROSS = (255, 255, 255, 150)
+    TEXT_VISIBLE = (200, 200, 200)
+    TEXT_HIDDEN = (200, 200, 200, 50)
+    PAD_NUMBER = (255, 255, 255)
+    GHOST_TEXT = (150, 150, 150, 180)
+    REFERENCE = (100, 200, 100)
+    VALUE = (200, 100, 100)
+
+
+DARK_COLORS = {
+    "GRID": (80, 80, 80),
+    "BACKGROUND": (30, 30, 30),
+    "PAD": (180, 160, 80),
+    "SELECTED": (0, 150, 255),
+    "AXIS": (255, 100, 100, 150),
+    "GHOST_LINE": (100, 200, 100, 255),
+    "SNAP_CROSS": (255, 255, 255, 150),
+    "TEXT_VISIBLE": (200, 200, 200),
+    "TEXT_HIDDEN": (200, 200, 200, 50),
+    "PAD_NUMBER": (255, 255, 255),
+    "GHOST_TEXT": (150, 150, 150, 180),
+    "REFERENCE": (100, 200, 100),
+    "VALUE": (200, 100, 100),
+}

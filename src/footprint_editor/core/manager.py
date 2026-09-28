@@ -19,16 +19,13 @@ class FootprintManager:
         item = self.items.pop(model.uid, None)
         if item is None:
             return
-
         item.setSelected(False)
         item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
         item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, False)
         item.setEnabled(False)
         item.setVisible(False)
-
         if item.scene() is self.scene:
             self.scene.removeItem(item)
-
         self.scene.update()
         self.canvas.viewport().update()
 
