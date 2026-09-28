@@ -51,13 +51,21 @@ class DrawingToolBar(QWidget):
         self.tool_selected.emit(tool)
 
     def set_active(self, tool):
-        self._active = tool
+        if tool is None:
+            self._active = None
+        else:
+            self._active = tool
+        self._update_styles()
+
+    def clear_active(self):
+        self._active = None
         self._update_styles()
 
     def _update_styles(self):
         for tool, btn in self.buttons.items():
-            btn.setChecked(tool == self._active)
-            btn.setStyleSheet(Styles.TOOL_BUTTON_ACTIVE if tool == self._active
+            is_active = (self._active == tool)
+            btn.setChecked(is_active)
+            btn.setStyleSheet(Styles.TOOL_BUTTON_ACTIVE if is_active
                               else Styles.TOOL_BUTTON_INACTIVE)
 
     def apply_theme(self):

@@ -72,7 +72,7 @@ class CommandHandler:
 
     def add_pad(self, x, y):
         num = self.w.manager.get_next_pad_number()
-        pad = Pad(number=num, shape=PadShape.CIRCLE, pad_type=PadType.SMD,
+        pad = Pad(number=num, shape=PadShape.CIRCLE, pad_type=PadType.STANDARD,
                   x=x, y=y, width=1.5, height=1.5, drill=0.8)
         self.w.footprint.pads.append(pad)
         self.w.manager.add_model(pad)
@@ -184,19 +184,26 @@ class CommandHandler:
                 if isinstance(it, MODEL_ITEMS)]
 
     def delete_selected(self):
-        deleted = False
-        for item in self.w.canvas.scene.selectedItems():
+        deleted_models = []
+        for item in list(self.w.canvas.scene.selectedItems()):
             if not isinstance(item, MODEL_ITEMS):
                 continue
             if getattr(item.model, 'locked', False):
                 continue
-            self._remove_from_footprint(item.model)
-            self.w.manager.remove_model(item.model)
-            deleted = True
+            item.setSelected(False)
+            deleted_models.append(item.model)
 
+        for model in deleted_models:
+            self._remove_from_footprint(model)
+            self.w.manager.remove_model(model)
+
+        self.w.canvas.scene.clearSelection()
         self.w.aux_bar.set_delete_enabled(False)
         self.w.right_panel.properties_panel.clear_panel()
-        if deleted:
+        self.w.canvas.scene.update()
+        self.w.canvas.viewport().update()
+
+        if deleted_models:
             self.w.commit_history("удаление")
         self.w.show_log("элементы удалены")
 

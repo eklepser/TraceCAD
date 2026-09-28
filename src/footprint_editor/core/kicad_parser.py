@@ -2,7 +2,8 @@ import re
 import math
 from pathlib import Path
 from footprint_editor.core.models import (
-    Footprint, Pad, PadShape, PadType, Line, Circle, Arc, Text, TextType
+    Footprint, Pad, PadShape, PadType, Line, Circle, Arc, Text, TextType,
+    default_layers_for_pad_type
 )
 
 KICAD_UNIT_MM = 0.00254
@@ -14,6 +15,59 @@ def kicad_to_mm(value):
 
 def mm_to_kicad(value):
     return int(round(float(value) / KICAD_UNIT_MM))
+
+
+KICAD_LAYER_TO_INTERNAL = {
+    "F.Cu": "F.Cu", "B.Cu": "B.Cu", "*.Cu": "F.Cu",
+    "F.SilkS": "F.SilkS", "B.SilkS": "B.SilkS",
+    "F.Mask": "F.Mask", "B.Mask": "B.Mask",
+    "F.Paste": "F.Paste", "B.Paste": "B.Paste",
+    "F.Adhes": "F.Adhes", "B.Adhes": "B.Adhes",
+    "Cmts.User": "Cmts.User",
+    "Eco1.User": "Eco1.User", "Eco2.User": "Eco2.User",
+}
+
+INTERNAL_TO_KICAD_LAYER = {
+    "F.Cu": "F.Cu", "B.Cu": "B.Cu",
+    "F.SilkS": "F.SilkS", "B.SilkS": "B.SilkS",
+    "F.Mask": "F.Mask", "B.Mask": "B.Mask",
+    "F.Paste": "F.Paste", "B.Paste": "B.Paste",
+    "F.Adhes": "F.Adhes", "B.Adhes": "B.Adhes",
+    "Cmts.User": "Cmts.User",
+    "Eco1.User": "Eco1.User", "Eco2.User": "Eco2.User",
+}
+
+LAYER_ID = {
+    "B.Cu": 0,
+    "F.Cu": 15,
+    "B.Paste": 16,
+    "F.Paste": 17,
+    "B.Mask": 18,
+    "F.Mask": 19,
+    "B.SilkS": 20,
+    "F.SilkS": 21,
+    "F.Adhes": 22,
+    "B.Adhes": 23,
+    "Cmts.User": 40,
+    "Eco1.User": 41,
+    "Eco2.User": 42,
+}
+
+LAYER_ID_TO_INTERNAL = {v: k for k, v in LAYER_ID.items()}
+
+
+def layer_from_id(layer_id):
+    return LAYER_ID_TO_INTERNAL.get(int(layer_id), "F.SilkS")
+
+
+def layer_to_id(layer):
+    return LAYER_ID.get(layer, 21)
+
+
+TEXT_PATTERN_SIMPLE = re.compile(
+    r'^T(\d+)\s+([^\r\n"]+?)\s+"([^"]*)"',
+    re.MULTILINE
+)
 
 
 def parse_kicad_mod(filepath):
@@ -50,17 +104,59 @@ def parse_module(name, body):
         fp.texts.append(val_text)
         fp.value = val_text.text
 
-    for ds_match in re.finditer(r'^DS\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\d+)', body, re.MULTILINE):
-        x1, y1, x2, y2, thickness = ds_match.groups()
+    for text_match in TEXT_PATTERN_SIMPLE.finditer(body):
+        idx = int(text_match.group(1))
+        if idx in (0, 1):
+            continue
+        params = text_match.group(2).split()
+        text_value = text_match.group(3)
+
+        x = kicad_to_mm(params[0]) if len(params) > 0 else 0
+        y = kicad_to_mm(params[1]) if len(params) > 1 else 0
+        w = kicad_to_mm(params[2]) if len(params) > 2 else kicad_to_mm(400)
+        h = kicad_to_mm(params[3]) if len(params) > 3 else w
+        size = max(w, h) if max(w, h) > 0 else 1.0
+
+        visible = 'I' not in params[4:8]
+
+        layer = "F.SilkS"
+        for tok in params:
+            try:
+                layer_id = int(tok)
+            except ValueError:
+                continue
+            if layer_id in LAYER_ID_TO_INTERNAL:
+                layer = layer_from_id(layer_id)
+                break
+
+        t = Text(
+            x=x, y=y,
+            text=text_value if text_value else "Text",
+            size=size,
+            visible=visible,
+            text_type=TextType.NORMAL,
+            layer=layer,
+        )
+        fp.texts.append(t)
+
+    for ds_match in re.finditer(
+        r'^DS\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\d+)\s+(\d+)',
+        body, re.MULTILINE
+    ):
+        x1, y1, x2, y2, thickness, layer_id = ds_match.groups()
         line = Line(
             x1=kicad_to_mm(x1), y1=kicad_to_mm(y1),
             x2=kicad_to_mm(x2), y2=kicad_to_mm(y2),
-            width=kicad_to_mm(thickness)
+            width=kicad_to_mm(thickness),
+            layer=layer_from_id(layer_id),
         )
         fp.lines.append(line)
 
-    for dc_match in re.finditer(r'^DC\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\d+)', body, re.MULTILINE):
-        xc, yc, xp, yp, thickness = dc_match.groups()
+    for dc_match in re.finditer(
+        r'^DC\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\d+)\s+(\d+)',
+        body, re.MULTILINE
+    ):
+        xc, yc, xp, yp, thickness, layer_id = dc_match.groups()
         xc_mm = kicad_to_mm(xc)
         yc_mm = kicad_to_mm(yc)
         xp_mm = kicad_to_mm(xp)
@@ -69,19 +165,22 @@ def parse_module(name, body):
         circle = Circle(
             x=xc_mm, y=yc_mm,
             radius=radius,
-            width=kicad_to_mm(thickness)
+            width=kicad_to_mm(thickness),
+            layer=layer_from_id(layer_id),
         )
         fp.circles.append(circle)
 
-    # DA cx cy sx sy angle width layer
-    # (cx,cy) - центр дуги, (sx,sy) - начальная точка, angle - угол в десятых градуса
-    for da_match in re.finditer(r'^DA\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\d+)', body, re.MULTILINE):
-        cx, cy, sx, sy, angle, thickness = da_match.groups()
+    for da_match in re.finditer(
+        r'^DA\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\d+)\s+(\d+)',
+        body, re.MULTILINE
+    ):
+        cx, cy, sx, sy, angle, thickness, layer_id = da_match.groups()
         arc = Arc(
             cx=kicad_to_mm(cx), cy=kicad_to_mm(cy),
             sx=kicad_to_mm(sx), sy=kicad_to_mm(sy),
             angle=float(angle) / 10.0,
-            width=kicad_to_mm(thickness)
+            width=kicad_to_mm(thickness),
+            layer=layer_from_id(layer_id),
         )
         fp.arcs.append(arc)
 
@@ -107,13 +206,22 @@ def parse_text_line(text_str, text_type):
     h = kicad_to_mm(params[3]) if len(params) > 3 else w
     size = max(w, h) if max(w, h) > 0 else 1.0
 
-    visible = True
-    if len(params) > 7 and params[7] in ('I', 'i'):
-        visible = False
+    visible = 'I' not in params[4:8]
+
+    layer = "F.SilkS"
+    for tok in params:
+        try:
+            layer_id = int(tok)
+        except ValueError:
+            continue
+        if layer_id in LAYER_ID_TO_INTERNAL:
+            layer = layer_from_id(layer_id)
+            break
 
     return Text(
         x=x, y=y, text=text, size=size,
-        visible=visible, text_type=text_type, locked=True
+        visible=visible, text_type=text_type, locked=True,
+        layer=layer,
     )
 
 
@@ -122,6 +230,7 @@ def parse_pad(pad_body):
     dr_match = re.search(r'Dr\s+(\d+)', pad_body)
     po_match = re.search(r'Po\s+(-?\d+)\s+(-?\d+)', pad_body)
     at_match = re.search(r'At\s+(\w+)', pad_body)
+    la_match = re.search(r'^La\s+([^\r\n]+)', pad_body, re.MULTILINE)
 
     if not sh_match or not po_match:
         return None
@@ -137,14 +246,29 @@ def parse_pad(pad_body):
     shape_map = {'R': PadShape.RECT, 'C': PadShape.CIRCLE, 'O': PadShape.OVAL}
     shape = shape_map.get(shape_str, PadShape.CIRCLE)
 
-    pad_type = PadType.SMD
+    pad_type = PadType.STANDARD
     if at_match:
         attr = at_match.group(1)
-        if attr in ('STD', 'NPTH'):
-            pad_type = PadType.THT
+        if attr == 'SMD':
+            pad_type = PadType.SMD
+        elif attr == 'CONN':
+            pad_type = PadType.CONN
+        else:
+            pad_type = PadType.STANDARD
+
+    layers = []
+    if la_match:
+        for token in la_match.group(1).split():
+            internal = KICAD_LAYER_TO_INTERNAL.get(token)
+            if internal and internal not in layers:
+                layers.append(internal)
+
+    if not layers:
+        layers = default_layers_for_pad_type(pad_type)
 
     return Pad(
         number=number, shape=shape, pad_type=pad_type,
         x=x, y=y, width=size_x, height=size_y,
-        drill=drill if drill > 0 else None
+        drill=drill if drill > 0 else None,
+        layers=layers,
     )

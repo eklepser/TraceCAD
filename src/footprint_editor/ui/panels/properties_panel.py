@@ -1,9 +1,13 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QHBoxLayout, QLabel,
                                QDoubleSpinBox, QComboBox, QLineEdit, QCheckBox,
-                               QPushButton)
+                               QPushButton, QListView)
 from PySide6.QtCore import Qt
-from footprint_editor.core.models import Pad, Line, Circle, Arc, Text, PadShape, TextType
+from footprint_editor.core.models import (
+    Pad, Line, Circle, Arc, Text, PadShape, PadType, TextType,
+    default_layers_for_pad_type
+)
 from constants import Styles
+from footprint_editor.ui.panels.layers_table import LayersTable
 
 
 TYPE_NAMES_RU = {
@@ -13,6 +17,25 @@ TYPE_NAMES_RU = {
     Arc: "Дуга",
     Text: "Текст",
 }
+
+PAD_TYPE_NAMES = {
+    PadType.STANDARD: "Стандарт",
+    PadType.SMD: "SMD",
+    PadType.CONN: "Conn",
+}
+
+PAD_TYPE_ORDER = [PadType.STANDARD, PadType.SMD, PadType.CONN]
+
+
+CHECKBOX_QSS = (
+    "QCheckBox { color: #a9b7c6; spacing: 8px; background: transparent; }"
+    "QCheckBox::indicator { width: 14px; height: 14px;"
+    " border: 1px solid #d8d8d8; background-color: #2b2b2b;"
+    " border-radius: 2px; }"
+    "QCheckBox::indicator:hover { border: 1px solid }"
+    "QCheckBox::indicator:checked {"
+    " border: 1px solid #ffffff; background-color: #2b2b2b; }"
+)
 
 
 class PropertiesPanel(QWidget):
@@ -91,18 +114,6 @@ class PropertiesPanel(QWidget):
             " QWidget#PropertiesTable QDoubleSpinBox::up-button,"
             " QWidget#PropertiesTable QDoubleSpinBox::down-button {"
             "   background: transparent; border: none; width: 12px; }"
-            " QWidget#PropertiesTable QCheckBox {"
-            "   background: transparent; color: #a9b7c6; spacing: 6px;"
-            " }"
-            " QWidget#PropertiesTable QCheckBox::indicator {"
-            "   width: 14px; height: 14px;"
-            "   border: 1px solid #7a7a7a; background-color: #1e1e1e;"
-            "   border-radius: 2px; }"
-            " QWidget#PropertiesTable QCheckBox::indicator:hover {"
-            "   border: 1px solid #a9b7c6; }"
-            " QWidget#PropertiesTable QCheckBox::indicator:checked {"
-            "   background-color: #365880; border: 1px solid #0096ff;"
-            "   image: none; }"
         )
 
     def apply_theme(self):
@@ -144,8 +155,6 @@ class PropertiesPanel(QWidget):
         elif isinstance(obj, Text):
             self._build_text_ui(obj)
 
-    # ---------------- helpers ----------------
-
     def _make_label(self, text):
         label = QLabel(text)
         label.setStyleSheet("background: transparent; color: #a9b7c6;")
@@ -157,9 +166,56 @@ class PropertiesPanel(QWidget):
         self.form_layout.addRow(self._make_label(label_text), field_widget)
         self._widgets[key] = field_widget
 
-    # ---------------- builders ----------------
+    def _add_layers_block(self, initial_layers, multi):
+        # Заголовок "Слои:" отдельной строкой
+        header = QLabel("Слои:")
+        header.setStyleSheet("background: transparent; color: #a9b7c6;")
+        self.form_layout.addRow(header)
+
+        # Сама таблица — на следующей строке, растянута по всей ширине формы
+        layers_table = LayersTable(multi=multi)
+        layers_table.set_layers(initial_layers)
+        self.form_layout.addRow(layers_table)
+        self._widgets["layers_table"] = layers_table
+        return layers_table
+
+    def _make_combo_view(self):
+        view = QListView()
+        view.setStyleSheet(
+            "QListView { background-color: #2b2b2b; color: #a9b7c6;"
+            " border: 1px solid #555555; outline: 0; }"
+            "QListView::item { padding: 4px 8px; }"
+            "QListView::item:selected {"
+            "  background-color: #365880; color: white; }"
+        )
+        view.setMinimumWidth(140)
+        view.setSpacing(0)
+        return view
+
+    def _make_pad_type_combo(self, current_type):
+        combo = QComboBox()
+        for ptype in PAD_TYPE_ORDER:
+            combo.addItem(PAD_TYPE_NAMES[ptype], ptype)
+        idx = PAD_TYPE_ORDER.index(current_type) if current_type in PAD_TYPE_ORDER else 0
+        combo.setCurrentIndex(idx)
+        combo.setView(self._make_combo_view())
+        combo.setStyleSheet(
+            "QComboBox { background: transparent; color: #ffffff;"
+            " border: none; border-bottom: 1px solid #555555;"
+            " padding: 2px 2px; }"
+            " QComboBox:hover { border-bottom: 1px solid #7a7a7a; }"
+            " QComboBox:focus { border-bottom: 1px solid #365880; }"
+            " QComboBox::drop-down { border: none; width: 14px; }"
+        )
+        return combo
 
     def _build_pad_ui(self, pad):
+        pad_type_combo = self._make_pad_type_combo(pad.pad_type)
+        pad_type_combo.currentIndexChanged.connect(
+            lambda _i, p=pad, c=pad_type_combo: self._on_pad_type_changed(p, c)
+        )
+        self._add_row("Тип:", pad_type_combo, "pad_type")
+
         self._add_spinbox("X, мм:", pad.x, -500.0, 500.0, "x")
         self._add_spinbox("Y, мм:", pad.y, -500.0, 500.0, "y")
 
@@ -182,28 +238,10 @@ class PropertiesPanel(QWidget):
             " QComboBox:hover { border-bottom: 1px solid #7a7a7a; }"
             " QComboBox:focus { border-bottom: 1px solid #365880; }"
             " QComboBox::drop-down { border: none; width: 14px; }"
-            " QComboBox QAbstractItemView {"
-            "   background-color: #2b2b2b; color: #a9b7c6;"
-            "   border: 1px solid #555555;"
-            "   selection-background-color: #365880;"
-            "   selection-color: white;"
-            "   outline: 0; }"
         )
         self._add_row("Форма:", shape_combo, "shape")
 
-    def _make_combo_view(self):
-        from PySide6.QtWidgets import QListView
-        view = QListView()
-        view.setStyleSheet(
-            "QListView { background-color: #2b2b2b; color: #a9b7c6;"
-            " border: 1px solid #555555; outline: 0; }"
-            "QListView::item { padding: 4px 8px; }"
-            "QListView::item:selected {"
-            "  background-color: #365880; color: white; }"
-        )
-        view.setMinimumWidth(140)
-        view.setSpacing(0)
-        return view
+        self._add_layers_block(pad.layers, multi=True)
 
     def _build_line_ui(self, line):
         self._add_spinbox("X1, мм:", line.x1, -500.0, 500.0, "x1")
@@ -211,12 +249,14 @@ class PropertiesPanel(QWidget):
         self._add_spinbox("X2, мм:", line.x2, -500.0, 500.0, "x2")
         self._add_spinbox("Y2, мм:", line.y2, -500.0, 500.0, "y2")
         self._add_spinbox("Толщина, мм:", line.width, 0.01, 5.0, "width")
+        self._add_layers_block([line.layer], multi=False)
 
     def _build_circle_ui(self, circle):
         self._add_spinbox("Центр X, мм:", circle.x, -500.0, 500.0, "x")
         self._add_spinbox("Центр Y, мм:", circle.y, -500.0, 500.0, "y")
         self._add_spinbox("Диаметр, мм:", circle.radius * 2, 0.1, 20.0, "diameter")
         self._add_spinbox("Толщина, мм:", circle.width, 0.01, 5.0, "width")
+        self._add_layers_block([circle.layer], multi=False)
 
     def _build_arc_ui(self, arc):
         self._add_spinbox("Центр X, мм:", arc.cx, -500.0, 500.0, "cx")
@@ -225,6 +265,7 @@ class PropertiesPanel(QWidget):
         self._add_spinbox("Начало Y, мм:", arc.sy, -500.0, 500.0, "sy")
         self._add_spinbox("Угол, °:", arc.angle, -359.0, 359.0, "angle")
         self._add_spinbox("Толщина, мм:", arc.width, 0.01, 5.0, "width")
+        self._add_layers_block([arc.layer], multi=False)
 
     def _build_text_ui(self, text):
         self._add_spinbox("X, мм:", text.x, -500.0, 500.0, "x")
@@ -236,7 +277,10 @@ class PropertiesPanel(QWidget):
 
         visible_check = QCheckBox()
         visible_check.setChecked(text.visible)
+        visible_check.setStyleSheet(CHECKBOX_QSS)
         self._add_row("Видимый:", visible_check, "visible")
+
+        self._add_layers_block([text.layer], multi=False)
 
     def _add_spinbox(self, label, value, min_val, max_val, key):
         spin = QDoubleSpinBox()
@@ -247,7 +291,17 @@ class PropertiesPanel(QWidget):
         spin.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
         self._add_row(label, spin, key)
 
-    # ---------------- actions ----------------
+    def _on_pad_type_changed(self, pad, combo):
+        new_type = combo.currentData()
+        if new_type == pad.pad_type:
+            return
+        pad.pad_type = new_type
+        pad.layers = default_layers_for_pad_type(new_type)
+        layers_table = self._widgets.get("layers_table")
+        if layers_table is not None:
+            layers_table.set_layers(pad.layers)
+        if pad.graphics_item is not None:
+            pad.graphics_item.update()
 
     def _reset_changes(self):
         if self.current_object is not None:
@@ -266,6 +320,10 @@ class PropertiesPanel(QWidget):
             obj.height = self._widgets["height"].value()
             obj.drill = self._widgets["drill"].value()
             obj.shape = self._widgets["shape"].currentData()
+            obj.pad_type = self._widgets["pad_type"].currentData()
+            new_layers = self._widgets["layers_table"].selected_layers()
+            if new_layers:
+                obj.layers = new_layers
             obj.graphics_item.setPos(obj.x, obj.y)
         elif isinstance(obj, Line):
             obj.x1 = self._widgets["x1"].value()
@@ -273,11 +331,17 @@ class PropertiesPanel(QWidget):
             obj.x2 = self._widgets["x2"].value()
             obj.y2 = self._widgets["y2"].value()
             obj.width = self._widgets["width"].value()
+            layers = self._widgets["layers_table"].selected_layers()
+            if layers:
+                obj.layer = layers[0]
         elif isinstance(obj, Circle):
             obj.x = self._widgets["x"].value()
             obj.y = self._widgets["y"].value()
             obj.radius = self._widgets["diameter"].value() / 2
             obj.width = self._widgets["width"].value()
+            layers = self._widgets["layers_table"].selected_layers()
+            if layers:
+                obj.layer = layers[0]
         elif isinstance(obj, Arc):
             obj.cx = self._widgets["cx"].value()
             obj.cy = self._widgets["cy"].value()
@@ -285,6 +349,9 @@ class PropertiesPanel(QWidget):
             obj.sy = self._widgets["sy"].value()
             obj.angle = self._widgets["angle"].value()
             obj.width = self._widgets["width"].value()
+            layers = self._widgets["layers_table"].selected_layers()
+            if layers:
+                obj.layer = layers[0]
         elif isinstance(obj, Text):
             obj.x = self._widgets["x"].value()
             obj.y = self._widgets["y"].value()
@@ -292,5 +359,8 @@ class PropertiesPanel(QWidget):
             text_value = self._widgets["text"].text()
             obj.text = text_value if text_value else "Text"
             obj.visible = self._widgets["visible"].isChecked()
+            layers = self._widgets["layers_table"].selected_layers()
+            if layers:
+                obj.layer = layers[0]
 
         obj.graphics_item.update_geometry()

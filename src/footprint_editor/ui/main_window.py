@@ -2,7 +2,7 @@ from pathlib import Path
 
 from PySide6.QtWidgets import (QMainWindow, QDockWidget, QWidget, QLabel, QToolBar,
                                QStatusBar, QComboBox, QApplication, QGraphicsView,
-                               QVBoxLayout, QMenuBar, QDialog)
+                               QVBoxLayout, QMenuBar)
 from PySide6.QtGui import QAction, QActionGroup, QGuiApplication
 from PySide6.QtCore import Qt, QEvent, QSettings
 
@@ -12,7 +12,9 @@ from constants import (Tool, Steps, Styles, VK_ESCAPE, VK_DELETE, VK_F1, VK_F2, 
 from footprint_editor.core.models import (Footprint, Pad, PadShape, PadType, Line,
                                           Circle, Arc, Text, TextType)
 from footprint_editor.core.manager import FootprintManager
-from footprint_editor.core.kicad_parser import mm_to_kicad, parse_kicad_mod
+from footprint_editor.core.kicad_parser import (
+    mm_to_kicad, parse_kicad_mod, INTERNAL_TO_KICAD_LAYER, layer_to_id
+)
 from footprint_editor.core.history import History
 from footprint_editor.ui.canvas import FootprintCanvas
 from footprint_editor.ui.shortcuts import GlobalKeyFilter
@@ -375,10 +377,19 @@ class FootprintEditorWindow(QMainWindow):
         self._set_tool(tool)
         self.aux_bar.set_select_active(False)
 
+    def _on_right_tool(self, tool):
+        self._set_tool(tool)
+        if tool != Tool.SELECT:
+            self.tool_bar.set_active(tool)
+
     def _set_tool(self, tool):
         self.current_tool = tool
-        self.aux_bar.set_select_active(tool == Tool.SELECT)
-        if tool != Tool.SELECT:
+
+        if tool == Tool.SELECT:
+            self.aux_bar.set_select_active(True)
+            self.tool_bar.clear_active()
+        else:
+            self.aux_bar.set_select_active(False)
             self.tool_bar.set_active(tool)
 
         self.line_start_point = None
@@ -669,7 +680,7 @@ class FootprintEditorWindow(QMainWindow):
 
 
 # =========================================================
-# kicad serialization
+# kicad serialization (для KiCad 2011, legacy .mod)
 # =========================================================
 
 def _build_kicad_module_text(fp):
@@ -682,48 +693,77 @@ def _build_kicad_module_text(fp):
         "Op 0 0 0",
     ]
 
+    text_idx = 2
     for text in fp.texts:
         if text.text_type == TextType.REFERENCE:
             idx = 0
         elif text.text_type == TextType.VALUE:
             idx = 1
         else:
-            continue
+            idx = text_idx
+            text_idx += 1
+
         x_k = mm_to_kicad(text.x)
         y_k = mm_to_kicad(text.y)
         size_k = mm_to_kicad(text.size)
         vis = 'V' if text.visible else 'I'
+        lid = layer_to_id(text.layer)
         text_value = text.text if text.text else "Text"
-        lines.append(f'T{idx} {x_k} {y_k} {size_k} {size_k} 0 120 N {vis} 21 N "{text_value}"')
+        lines.append(
+            f'T{idx} {x_k} {y_k} {size_k} {size_k} 0 120 N {vis} {lid} N "{text_value}"'
+        )
 
     for line in fp.lines:
+        lid = layer_to_id(line.layer)
         lines.append(
             f"DS {mm_to_kicad(line.x1)} {mm_to_kicad(line.y1)} "
-            f"{mm_to_kicad(line.x2)} {mm_to_kicad(line.y2)} {mm_to_kicad(line.width)} 21"
+            f"{mm_to_kicad(line.x2)} {mm_to_kicad(line.y2)} "
+            f"{mm_to_kicad(line.width)} {lid}"
         )
 
     for circle in fp.circles:
         x_c = mm_to_kicad(circle.x)
         y_c = mm_to_kicad(circle.y)
         r_k = mm_to_kicad(circle.radius)
-        lines.append(f"DC {x_c} {y_c} {x_c + r_k} {y_c} {mm_to_kicad(circle.width)} 21")
+        lid = layer_to_id(circle.layer)
+        lines.append(f"DC {x_c} {y_c} {x_c + r_k} {y_c} {mm_to_kicad(circle.width)} {lid}")
 
     for arc in fp.arcs:
+        lid = layer_to_id(arc.layer)
         lines.append(
             f"DA {mm_to_kicad(arc.cx)} {mm_to_kicad(arc.cy)} "
             f"{mm_to_kicad(arc.sx)} {mm_to_kicad(arc.sy)} "
-            f"{int(round(arc.angle * 10))} {mm_to_kicad(arc.width)} 21"
+            f"{int(round(arc.angle * 10))} {mm_to_kicad(arc.width)} {lid}"
         )
 
     for pad in fp.pads:
         shape_map = {PadShape.RECT: 'R', PadShape.CIRCLE: 'C', PadShape.OVAL: 'O'}
         shape_char = shape_map.get(pad.shape, 'C')
-        attr = 'STD' if pad.pad_type == PadType.THT else 'SMD'
+
+        if pad.pad_type == PadType.STANDARD:
+            attr = 'STD'
+            mask = '00E0FFFF'
+            drill_val = pad.drill if pad.drill else 0.8
+            dr_line = f"Dr {mm_to_kicad(drill_val)} 0 0"
+        elif pad.pad_type == PadType.SMD:
+            attr = 'SMD'
+            mask = '00888000'
+            dr_line = "Dr 0 0 0"
+        elif pad.pad_type == PadType.CONN:
+            attr = 'CONN'
+            mask = '00808000'
+            dr_line = "Dr 0 0 0"
+        else:
+            attr = 'STD'
+            mask = '00E0FFFF'
+            drill_val = pad.drill if pad.drill else 0.8
+            dr_line = f"Dr {mm_to_kicad(drill_val)} 0 0"
+
         lines.append("$PAD")
         lines.append(f'Sh "{pad.number}" {shape_char} '
                      f'{mm_to_kicad(pad.width)} {mm_to_kicad(pad.height)} 0 0 0')
-        lines.append(f"Dr {mm_to_kicad(pad.drill or 0)} 0 0")
-        lines.append(f"At {attr} N 00E0FFFF")
+        lines.append(dr_line)
+        lines.append(f"At {attr} N {mask}")
         lines.append('Ne 0 ""')
         lines.append(f"Po {mm_to_kicad(pad.x)} {mm_to_kicad(pad.y)}")
         lines.append("$EndPAD")

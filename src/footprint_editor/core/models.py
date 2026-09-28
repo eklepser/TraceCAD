@@ -12,14 +12,36 @@ class PadShape(Enum):
 
 
 class PadType(Enum):
+    STANDARD = "standard"
     SMD = "smd"
-    THT = "thru_hole"
+    CONN = "conn"
 
 
 class TextType(Enum):
     NORMAL = "normal"
     REFERENCE = "reference"
     VALUE = "value"
+
+
+AVAILABLE_LAYERS = [
+    "F.Cu", "B.Cu",
+    "F.Adhes", "B.Adhes",
+    "F.Paste", "B.Paste",
+    "F.SilkS", "B.SilkS",
+    "F.Mask", "B.Mask",
+    "Cmts.User", "Eco1.User", "Eco2.User",
+]
+
+
+DEFAULT_LAYERS = {
+    PadType.STANDARD: ["F.Cu", "B.Cu", "F.Mask", "B.Mask"],
+    PadType.SMD:      ["F.Cu", "F.Paste", "F.Mask"],
+    PadType.CONN:     ["F.Cu", "F.Mask"],
+}
+
+
+def default_layers_for_pad_type(pad_type):
+    return list(DEFAULT_LAYERS.get(pad_type, DEFAULT_LAYERS[PadType.STANDARD]))
 
 
 _next_uid = [1]
@@ -53,8 +75,13 @@ class Pad:
     width: float
     height: float
     drill: Optional[float] = None
+    layers: List[str] = field(default_factory=list)
     locked: bool = False
     uid: int = field(default_factory=new_uid)
+
+    def __post_init__(self):
+        if not self.layers:
+            self.layers = default_layers_for_pad_type(self.pad_type)
 
     __deepcopy__ = _deepcopy_no_graphics
 
@@ -66,6 +93,7 @@ class Line:
     x2: float
     y2: float
     width: float = Sizes.DEFAULT_LINE_WIDTH
+    layer: str = "F.SilkS"
     locked: bool = False
     uid: int = field(default_factory=new_uid)
 
@@ -78,6 +106,7 @@ class Circle:
     y: float
     radius: float
     width: float = Sizes.DEFAULT_LINE_WIDTH
+    layer: str = "F.SilkS"
     locked: bool = False
     uid: int = field(default_factory=new_uid)
 
@@ -92,6 +121,7 @@ class Arc:
     sy: float
     angle: float = 90.0
     width: float = Sizes.DEFAULT_LINE_WIDTH
+    layer: str = "F.SilkS"
     locked: bool = False
     uid: int = field(default_factory=new_uid)
 
@@ -106,6 +136,7 @@ class Text:
     size: float = 1.0
     visible: bool = True
     text_type: TextType = TextType.NORMAL
+    layer: str = "F.SilkS"
     locked: bool = False
     uid: int = field(default_factory=new_uid)
 

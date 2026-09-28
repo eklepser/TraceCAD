@@ -7,6 +7,11 @@ from footprint_editor.graphics.text_path import build_text_path
 from constants import Colors, Sizes
 
 
+STANDARD_COLOR = (180, 160, 80)
+SMD_COLOR = (220, 90, 90)
+CONN_COLOR = (235, 150, 60)
+
+
 class PadGraphicsItem(BaseGraphicsItem):
     def __init__(self, pad, canvas, parent=None):
         super().__init__(pad, canvas, parent)
@@ -28,9 +33,18 @@ class PadGraphicsItem(BaseGraphicsItem):
             self._text_path_key = key
         return self._text_path
 
+    def _base_color(self):
+        if self.model.pad_type == PadType.SMD:
+            return SMD_COLOR
+        if self.model.pad_type == PadType.CONN:
+            return CONN_COLOR
+        return STANDARD_COLOR
+
     def paint(self, painter, option, widget):
-        color = QColor(*(Colors.SELECTED if option.state & QStyle.StateFlag.State_Selected
-                         else Colors.PAD))
+        if option.state & QStyle.StateFlag.State_Selected:
+            color = QColor(*Colors.SELECTED)
+        else:
+            color = QColor(*self._base_color())
 
         w = self.model.width
         h = self.model.height
