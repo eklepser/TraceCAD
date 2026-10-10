@@ -14,14 +14,14 @@ class LineGraphicsItem(BaseGraphicsItem):
 
     def boundingRect(self):
         extra = 0.2
-        rect = QRectF(self.model.x1, self.model.y1,
-                      self.model.x2 - self.model.x1,
-                      self.model.y2 - self.model.y1)
+        rect = QRectF(self.model.x, self.model.y,
+                      self.model.x2 - self.model.x,
+                      self.model.y2 - self.model.y)
         return rect.normalized().adjusted(-extra, -extra, extra, extra)
 
     def shape(self):
         path = QPainterPath()
-        path.moveTo(self.model.x1, self.model.y1)
+        path.moveTo(self.model.x, self.model.y)
         path.lineTo(self.model.x2, self.model.y2)
         stroker = QPainterPathStroker()
         stroker.setWidth(0.3)
@@ -40,13 +40,13 @@ class LineGraphicsItem(BaseGraphicsItem):
             pen.setStyle(Qt.PenStyle.DashLine)
 
         painter.setPen(pen)
-        painter.drawLine(QLineF(self.model.x1, self.model.y1, self.model.x2, self.model.y2))
+        painter.drawLine(QLineF(self.model.x, self.model.y, self.model.x2, self.model.y2))
 
     def apply_drag_delta(self, start, dx, dy):
         if getattr(self.model, 'locked', False):
             return
-        self.model.x1 = start[1] + dx
-        self.model.y1 = start[2] + dy
+        self.model.x = start[1] + dx
+        self.model.y = start[2] + dy
         self.model.x2 = start[3] + dx
         self.model.y2 = start[4] + dy
         self.prepareGeometryChange()

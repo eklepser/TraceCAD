@@ -109,7 +109,7 @@ class DrawingCommandsMixin:
         self.w.canvas.set_ghost_arc(cx, cy, sx, sy, dlg.get_angle())
 
         if dlg.exec() == QDialog.Accepted:
-            arc = Arc(cx=cx, cy=cy, sx=sx, sy=sy,
+            arc = Arc(x=cx, y=cy, sx=sx, sy=sy,
                       angle=dlg.get_angle(), width=Sizes.DEFAULT_LINE_WIDTH)
             self.w.footprint.arcs.append(arc)
             self.w.manager.add_model(arc)

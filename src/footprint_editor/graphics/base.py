@@ -27,11 +27,11 @@ class BaseGraphicsItem(QGraphicsItem):
             if cls_name == 'PadGraphicsItem':
                 self._group_drag_start[item] = ('pad', item.model.x, item.model.y)
             elif cls_name == 'LineGraphicsItem':
-                self._group_drag_start[item] = ('line', item.model.x1, item.model.y1, item.model.x2, item.model.y2)
+                self._group_drag_start[item] = ('line', item.model.x, item.model.y, item.model.x2, item.model.y2)
+            elif cls_name == 'ArcGraphicsItem':
+                self._group_drag_start[item] = ('arc', item.model.x, item.model.y, item.model.sx, item.model.sy)
             elif cls_name == 'CircleGraphicsItem':
                 self._group_drag_start[item] = ('circle', item.model.x, item.model.y)
-            elif cls_name == 'ArcGraphicsItem':
-                self._group_drag_start[item] = ('arc', item.model.cx, item.model.cy, item.model.sx, item.model.sy)
             elif cls_name == 'TextGraphicsItem':
                 self._group_drag_start[item] = ('text', item.model.x, item.model.y)
 

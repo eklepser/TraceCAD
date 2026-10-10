@@ -66,81 +66,80 @@ def _deepcopy_no_graphics(self, memo):
 
 
 @dataclass
-class Pad:
+class BaseObject:
+    x: float
+    y: float
+    uid: int = field(default_factory=new_uid, kw_only=True)
+    locked: bool = field(default=False, kw_only=True)
+
+    def __deepcopy__(self, memo):
+        return _deepcopy_no_graphics(self, memo)
+
+
+@dataclass
+class Pad(BaseObject):
     number: str
     shape: PadShape
     pad_type: PadType
-    x: float
-    y: float
     width: float
     height: float
     drill: Optional[float] = None
     layers: List[str] = field(default_factory=list)
-    locked: bool = False
-    uid: int = field(default_factory=new_uid)
 
     def __post_init__(self):
         if not self.layers:
             self.layers = default_layers_for_pad_type(self.pad_type)
 
-    __deepcopy__ = _deepcopy_no_graphics
-
 
 @dataclass
-class Line:
-    x1: float
-    y1: float
+class Line(BaseObject):
     x2: float
     y2: float
     width: float = Sizes.DEFAULT_LINE_WIDTH
     layer: str = "F.SilkS"
-    locked: bool = False
-    uid: int = field(default_factory=new_uid)
-
-    __deepcopy__ = _deepcopy_no_graphics
 
 
 @dataclass
-class Circle:
-    x: float
-    y: float
+class Circle(BaseObject):
     radius: float
     width: float = Sizes.DEFAULT_LINE_WIDTH
     layer: str = "F.SilkS"
-    locked: bool = False
-    uid: int = field(default_factory=new_uid)
-
-    __deepcopy__ = _deepcopy_no_graphics
 
 
 @dataclass
-class Arc:
-    cx: float
-    cy: float
+class Arc(BaseObject):
     sx: float
     sy: float
     angle: float = 90.0
     width: float = Sizes.DEFAULT_LINE_WIDTH
     layer: str = "F.SilkS"
-    locked: bool = False
-    uid: int = field(default_factory=new_uid)
-
-    __deepcopy__ = _deepcopy_no_graphics
 
 
 @dataclass
-class Text:
-    x: float
-    y: float
+class BaseText(BaseObject):
     text: str
     size: float = 1.0
     visible: bool = True
-    text_type: TextType = TextType.NORMAL
     layer: str = "F.SilkS"
-    locked: bool = False
-    uid: int = field(default_factory=new_uid)
 
-    __deepcopy__ = _deepcopy_no_graphics
+
+@dataclass
+class Text(BaseText):
+    text_type: TextType = TextType.NORMAL
+
+
+@dataclass
+class ReferenceText(Text):
+    def __post_init__(self):
+        self.text_type = TextType.REFERENCE
+        self.locked = True
+
+
+@dataclass
+class ValueText(Text):
+    def __post_init__(self):
+        self.text_type = TextType.VALUE
+        self.locked = True
 
 
 @dataclass
