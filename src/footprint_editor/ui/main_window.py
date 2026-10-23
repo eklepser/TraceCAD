@@ -353,9 +353,9 @@ class FootprintEditorWindow(
                     self.aux_bar.set_delete_enabled(False)
                 self.right_panel.properties_panel.set_object(item.model)
             else:
-                self.right_panel.properties_panel.clear_object()
+                self.right_panel.properties_panel.clear_panel()
         else:
-            self.right_panel.properties_panel.clear_object()
+            self.right_panel.properties_panel.clear_panel()
 
     def _on_properties_changed(self, model):
         panel = self.right_panel.properties_panel

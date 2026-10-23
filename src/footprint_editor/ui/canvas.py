@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem
 from PySide6.QtCore import Qt, QPointF, Signal, QTimer
-from PySide6.QtGui import QColor, QWheelEvent, QMouseEvent, QKeyEvent, QPainter, QPen
+from PySide6.QtGui import QColor, QWheelEvent, QMouseEvent, QKeyEvent, QPainter
 from constants import VK_W, VK_A, VK_S, VK_D, Colors, Sizes, Steps
 from footprint_editor.ui import overlays
 
@@ -180,39 +180,38 @@ class FootprintCanvas(QGraphicsView):
         if event.button() == Qt.MouseButton.LeftButton:
             items = self.items(event.position().toPoint())
             selectable_items = [
-                it for it in items 
+                it for it in items
                 if it.flags() & QGraphicsItem.GraphicsItemFlag.ItemIsSelectable
             ]
 
             if selectable_items and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
-                top_item = selectable_items[0]
-                top_item.setSelected(not top_item.isSelected())
+                selectable_items[0].setSelected(not selectable_items[0].isSelected())
                 event.accept()
                 return
-
-            if selectable_items:
-                top_item = selectable_items[0]
-                if top_item.isSelected() and len(selectable_items) > 1:
-                    top_item.setSelected(False)
-                    selectable_items[1].setSelected(True)
-                    event.accept()
-                    return
-
-                if top_item.isSelected() and len(selectable_items) == 1:
-                    super().mousePressEvent(event)
-                    return
 
             if not selectable_items:
                 scene_pos = self.mapToScene(event.position().toPoint())
                 snapped = self.snap_to_grid(scene_pos.x(), scene_pos.y())
                 self.canvas_clicked.emit(snapped.x(), snapped.y())
 
-        elif event.button() == Qt.MouseButton.MiddleButton:
-            self._panning = True
-            self._pan_start = event.position().toPoint()
-            self.viewport().setCursor(Qt.CursorShape.ClosedHandCursor)
-            event.accept()
-            return
+        elif event.button() == Qt.MouseButton.RightButton:
+            items = self.items(event.position().toPoint())
+            selectable_items = [
+                it for it in items
+                if it.flags() & QGraphicsItem.GraphicsItemFlag.ItemIsSelectable
+            ]
+
+            if len(selectable_items) > 1:
+                top_item = selectable_items[0]
+                if top_item.isSelected():
+                    top_item.setSelected(False)
+                    selectable_items[1].setSelected(True)
+                    event.accept()
+                    return
+                else:
+                    top_item.setSelected(True)
+                    event.accept()
+                    return
 
         super().mousePressEvent(event)
 
