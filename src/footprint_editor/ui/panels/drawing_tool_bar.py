@@ -1,18 +1,28 @@
+from pathlib import Path
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtCore import Signal, Qt, QSize
 from constants import Styles, Tool
 
 
+ICONS_DIR = Path(__file__).resolve().parent.parent.parent / "resources" / "icons"
+
 TOOL_BUTTONS = [
-    (Tool.ADD_LINE, "╱", "Линия (1)"),
-    (Tool.ADD_PAD, "⬤", "Площадка (2)"),
-    (Tool.ADD_CIRCLE, "◯", "Окружность (3)"),
-    (Tool.ADD_ARC, "◜", "Дуга (4)"),
-    (Tool.ADD_TEXT, "Т", "Текст (5)"),
+    (Tool.ADD_LINE, "line", "╱", "Линия (1)"),
+    (Tool.ADD_PAD, "pad", "⬤", "Площадка (2)"),
+    (Tool.ADD_CIRCLE, "circle", "◯", "Окружность (3)"),
+    (Tool.ADD_ARC, "arc", "◜", "Дуга (4)"),
+    (Tool.ADD_TEXT, "text", "Т", "Текст (5)"),
 ]
 
-
 BUTTON_SIZE = 40
+
+
+def _load_icon(name):
+    path = ICONS_DIR / f"{name}.svg"
+    if path.exists():
+        return QIcon(str(path))
+    return QIcon()
 
 
 class DrawingToolBar(QWidget):
@@ -28,8 +38,14 @@ class DrawingToolBar(QWidget):
         self.buttons = {}
         self._active = Tool.ADD_LINE
 
-        for tool, symbol, tip in TOOL_BUTTONS:
-            btn = QPushButton(symbol)
+        for tool, icon_name, fallback, tip in TOOL_BUTTONS:
+            btn = QPushButton()
+            icon = _load_icon(icon_name)
+            if not icon.isNull():
+                btn.setIcon(icon)
+                btn.setIconSize(QSize(24, 24))
+            else:
+                btn.setText(fallback)
             btn.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
             btn.setToolTip(tip)
             btn.setCheckable(True)

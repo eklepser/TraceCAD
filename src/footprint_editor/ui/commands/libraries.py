@@ -1,9 +1,13 @@
+import copy
+import re
 from pathlib import Path
 
 from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
 
 from footprint_editor.kicad.importer import parse_kicad_mod
 from footprint_editor.ui.dialogs.libraries_dialog import LibrariesManagerDialog
+from footprint_editor.ui.dialogs.input_dialog import InputDialog
+from footprint_editor.ui.dialogs.custom_question_dialog import CustomQuestionDialog
 
 
 class LibrariesMixin:
@@ -76,9 +80,13 @@ class LibrariesMixin:
             except Exception as e:
                 self.w.show_log(f"Ошибка загрузки библиотеки: {e}")
                 return
+
         self.w.current_library_path = path
         names = list(self.w.library_modules[path].keys())
+
         self.w.library_panel.set_modules(names)
+        self.w.library_panel.highlight_library(path)
+
         self.w.refresh_module_list_display()
         self.w._update_window_title()
         self.w.show_log(f"Библиотека: {Path(path).name}")
@@ -95,7 +103,7 @@ class LibrariesMixin:
         if self.w.current_library_path and self.w.current_library_path in self.w.library_modules:
             module = self.w.library_modules[self.w.current_library_path].get(name)
             if module:
-                self.w.load_footprint(__import__('copy').deepcopy(module))
+                self.w.load_footprint(copy.deepcopy(module))
 
     def reload_current_library(self):
         if not self.w.current_library_path:
@@ -108,3 +116,100 @@ class LibrariesMixin:
             self.w.refresh_module_list_display()
         except Exception as e:
             self.w.show_log(f"Ошибка перезагрузки: {e}")
+
+    def rename_module(self, old_name):
+        dlg = InputDialog(self.w, title="Переименовать корпус", label="Новое имя:", initial=old_name)
+        if dlg.exec() != QDialog.Accepted:
+            return
+        new_name = dlg.get_text().strip()
+        if not new_name or new_name == old_name:
+            return
+
+        lib_path = self.w.current_library_path
+        if not lib_path or lib_path not in self.w.library_modules:
+            return
+
+        lib_data = self.w.library_modules[lib_path]
+        if new_name in lib_data:
+            QMessageBox.warning(self.w, "Ошибка", "Корпус с таким именем уже существует.")
+            return
+
+        is_current = (self.w.current_module_name == old_name)
+        if is_current:
+            self.w.footprint.name = new_name
+
+        if old_name in self.w.unsaved_modules:
+            self.w.unsaved_modules[new_name] = self.w.unsaved_modules.pop(old_name)
+            self.w.unsaved_modules[new_name].name = new_name
+
+        self._remove_module_from_library_file(lib_path, old_name)
+        
+        if is_current:
+            self._replace_module_in_library(lib_path, new_name)
+        else:
+            module = lib_data.get(old_name)
+            if module:
+                module.name = new_name
+                old_text = build_kicad_module_text(module)
+                content = Path(lib_path).read_text(encoding='utf-8', errors='ignore')
+                end_marker = "$EndLIBRARY"
+                if end_marker in content:
+                    idx = content.rfind(end_marker)
+                    content = content[:idx] + old_text + "\n" + end_marker + "\n"
+                    Path(lib_path).write_text(content, encoding='utf-8')
+
+        if old_name in lib_data:
+            lib_data[new_name] = lib_data.pop(old_name)
+            lib_data[new_name].name = new_name
+
+        if is_current:
+            self.w.current_module_name = new_name
+            self.w._update_window_title()
+
+        self.w.reload_current_library()
+        self.w.refresh_module_list_display()
+
+    def delete_module(self, name):
+        lib_path = self.w.current_library_path
+        if not lib_path or lib_path not in self.w.library_modules:
+            return
+
+        dlg = CustomQuestionDialog(
+            self.w, 
+            title="Удаление корпуса", 
+            message=f"Вы уверены, что хотите удалить корпус '{name}'?"
+        )
+        result = dlg.exec()
+        if result != CustomQuestionDialog.ResultSave:
+            return
+
+        if name in self.w.unsaved_modules:
+            del self.w.unsaved_modules[name]
+
+        self._remove_module_from_library_file(lib_path, name)
+
+        if name in self.w.library_modules[lib_path]:
+            del self.w.library_modules[lib_path][name]
+
+        if self.w.current_module_name == name:
+            if self.w.library_modules[lib_path]:
+                new_name = list(self.w.library_modules[lib_path].keys())[0]
+                self.select_module(new_name)
+            else:
+                from footprint_editor.core.models import Footprint
+                self.w.load_footprint(Footprint(name="Empty"))
+                self.w.current_module_name = "Empty"
+                self.w._update_window_title()
+
+        self.w.reload_current_library()
+        self.w.refresh_module_list_display()
+        self.w.show_log(f"Корпус удалён: {name}")
+
+    def _remove_module_from_library_file(self, path, module_name):
+        content = Path(path).read_text(encoding='utf-8', errors='ignore')
+        pattern = re.compile(
+            r'\$MODULE\s+' + re.escape(module_name) + r'\b.*?\$EndMODULE[^\n]*\n',
+            re.DOTALL
+        )
+        content = pattern.sub('', content)
+        Path(path).write_text(content, encoding='utf-8')

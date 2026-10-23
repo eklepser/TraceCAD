@@ -2,7 +2,7 @@ from constants.keys import (
     VK_W, VK_A, VK_S, VK_D,
     VK_ESCAPE, VK_DELETE,
     VK_F1, VK_F2, VK_F3, VK_F11,
-    VK_C, VK_V, VK_R, VK_Y, VK_Z,
+    VK_C, VK_V, VK_R, VK_Y, VK_Z, VK_G,
     VK_1, VK_2, VK_3, VK_4, VK_5,
     PAN_KEYS,
 )

@@ -26,8 +26,7 @@ CHECKBOX_QSS = (
     " border-radius: 2px; }"
     "QCheckBox::indicator:hover { border: 1px solid #ffffff; }"
     "QCheckBox::indicator:checked {"
-    " border: 1px solid #ffffff; background-color: #2b2b2b;"
-    " image: url(:/qt-project.org/styles/commonstyle/images/standardbutton-apply-16.png); }"
+    " border: 1px solid #ffffff; background-color: #365880; }"
 )
 
 

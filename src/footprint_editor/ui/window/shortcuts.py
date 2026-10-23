@@ -1,8 +1,9 @@
 from PySide6.QtCore import QEvent, Qt
+from PySide6.QtWidgets import QGraphicsView
 from constants import (
     Tool, PAN_KEYS,
     VK_ESCAPE, VK_DELETE, VK_F1, VK_F2, VK_F3, VK_F11,
-    VK_C, VK_V, VK_S, VK_R, VK_Y, VK_Z,
+    VK_C, VK_V, VK_S, VK_R, VK_Y, VK_Z, VK_G,
     VK_1, VK_2, VK_3, VK_4, VK_5,
 )
 
@@ -14,6 +15,10 @@ class KeyboardService:
         shift = bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
 
         if event.type() == QEvent.Type.KeyPress:
+            if event.key() == Qt.Key.Key_Escape:
+                self._exit_to_select_mode()
+                return True
+
             if self._handle_ctrl_key(vk, ctrl, shift):
                 return True
             if self._handle_tool_key(vk):
@@ -65,17 +70,16 @@ class KeyboardService:
     def _handle_nav_key(self, vk):
         if vk == VK_R:
             self.commands.rotate_selected(); return True
+        if vk == VK_G:
+            self.act_show_grid.setChecked(not self.act_show_grid.isChecked())
+            self._toggle_grid()
+            return True
         if vk == VK_F11:
             self.toggle_fullscreen(); return True
         if vk in PAN_KEYS:
             self.canvas.pressed_keys.add(vk)
             if not self.canvas.pan_timer.isActive():
                 self.canvas.pan_timer.start()
-            return True
-        if vk == VK_ESCAPE:
-            self.finish_drawing()
-            self.canvas.scene.clearSelection()
-            self._set_tool(Tool.SELECT)
             return True
         if vk == VK_DELETE:
             self.commands.delete_selected(); return True
@@ -86,3 +90,14 @@ class KeyboardService:
         if vk == VK_F3:
             self._toggle_grid_series(); return True
         return False
+
+    def _exit_to_select_mode(self):
+        self.finish_drawing()
+        self.canvas.scene.clearSelection()
+        self.current_tool = Tool.SELECT
+        self.aux_bar.set_select_active(True)
+        self.tool_bar.clear_active()
+        self.canvas.set_show_snap(False)
+        self.canvas.set_interaction_enabled(True)
+        self.canvas.set_drag_mode(QGraphicsView.DragMode.RubberBandDrag)
+        self.show_log(f"Инструмент: {Tool.SELECT}")

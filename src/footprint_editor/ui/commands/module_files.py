@@ -16,16 +16,17 @@ class ModuleFilesMixin:
         has_ref = any(t.text_type == TextType.REFERENCE for t in fp.texts)
         has_val = any(t.text_type == TextType.VALUE for t in fp.texts)
         if not has_ref:
-            ref = Text(0, 0, fp.reference, 1.0, True, TextType.REFERENCE, locked=True)
+            ref = Text(x=0, y=0, text=fp.reference, size=1.0, visible=True, text_type=TextType.REFERENCE, locked=True)
             fp.texts.append(ref)
             self.w.manager.add_model(ref)
         if not has_val:
-            val = Text(0, 1, fp.value, 1.0, True, TextType.VALUE, locked=True)
+            val = Text(x=0, y=1, text=fp.value, size=1.0, visible=True, text_type=TextType.VALUE, locked=True)
             fp.texts.append(val)
             self.w.manager.add_model(val)
 
     def new_module(self):
-        dlg = InputDialog(self.w, title="Новый корпус", label="Имя корпуса:")
+        name = self.w.get_next_module_name()
+        dlg = InputDialog(self.w, title="Новый корпус", label="Имя корпуса:", initial=name)
         if dlg.exec() != QDialog.Accepted:
             return
         name = dlg.get_text().strip()
@@ -33,7 +34,18 @@ class ModuleFilesMixin:
             return
 
         self.w.stash_current_module()
-        self.w.load_footprint(Footprint(name=name), mark_unsaved=False)
+        
+        new_fp = Footprint(name=name, reference=name, value="VAL**")
+        self.w.load_footprint(new_fp, mark_unsaved=False)
+        
+        for t in self.w.footprint.texts:
+            if t.text_type == TextType.REFERENCE:
+                t.text = name
+                if t.graphics_item:
+                    t.graphics_item.prepareGeometryChange()
+                    t.graphics_item.update()
+                break
+                
         if self.w.current_library_path:
             try:
                 self._replace_module_in_library(self.w.current_library_path, name)

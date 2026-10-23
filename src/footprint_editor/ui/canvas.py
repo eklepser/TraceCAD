@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem
 from PySide6.QtCore import Qt, QPointF, Signal, QTimer
-from PySide6.QtGui import QColor, QWheelEvent, QMouseEvent, QPainter, QPen
+from PySide6.QtGui import QColor, QWheelEvent, QMouseEvent, QKeyEvent, QPainter, QPen
 from constants import VK_W, VK_A, VK_S, VK_D, Colors, Sizes, Steps
 from footprint_editor.ui import overlays
 
@@ -11,14 +11,19 @@ class FootprintCanvas(QGraphicsView):
     mouse_moved = Signal(float, float)
     finish_drawing = Signal()
     content_changed = Signal()
+    properties_changed = Signal(object)
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._panning = False
+        self._pan_start = None
+        self.show_grid = True
         self._setup_view()
         self._setup_scene()
         self._setup_zoom()
         self._setup_pan()
         self._reset_ghosts()
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
     def _setup_view(self):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -143,7 +148,8 @@ class FootprintCanvas(QGraphicsView):
 
     def drawBackground(self, painter, rect):
         super().drawBackground(painter, rect)
-        overlays.draw_grid(painter, rect, self)
+        if self.show_grid:
+            overlays.draw_grid(painter, rect, self)
 
     def drawForeground(self, painter, rect):
         super().drawForeground(painter, rect)
@@ -172,21 +178,64 @@ class FootprintCanvas(QGraphicsView):
 
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:
-            item = self.itemAt(event.position().toPoint())
-            if item is not None and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
-                item.setSelected(not item.isSelected())
+            items = self.items(event.position().toPoint())
+            selectable_items = [
+                it for it in items 
+                if it.flags() & QGraphicsItem.GraphicsItemFlag.ItemIsSelectable
+            ]
+
+            if selectable_items and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+                top_item = selectable_items[0]
+                top_item.setSelected(not top_item.isSelected())
+                event.accept()
                 return
-            scene_pos = self.mapToScene(event.position().toPoint())
-            snapped = self.snap_to_grid(scene_pos.x(), scene_pos.y())
-            self.canvas_clicked.emit(snapped.x(), snapped.y())
+
+            if selectable_items:
+                top_item = selectable_items[0]
+                if top_item.isSelected() and len(selectable_items) > 1:
+                    top_item.setSelected(False)
+                    selectable_items[1].setSelected(True)
+                    event.accept()
+                    return
+
+                if top_item.isSelected() and len(selectable_items) == 1:
+                    super().mousePressEvent(event)
+                    return
+
+            if not selectable_items:
+                scene_pos = self.mapToScene(event.position().toPoint())
+                snapped = self.snap_to_grid(scene_pos.x(), scene_pos.y())
+                self.canvas_clicked.emit(snapped.x(), snapped.y())
+
+        elif event.button() == Qt.MouseButton.MiddleButton:
+            self._panning = True
+            self._pan_start = event.position().toPoint()
+            self.viewport().setCursor(Qt.CursorShape.ClosedHandCursor)
+            event.accept()
+            return
+
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.MiddleButton and self._panning:
+            self._panning = False
+            self.viewport().unsetCursor()
+            event.accept()
+            return
         if event.button() == Qt.MouseButton.RightButton:
             self.finish_drawing.emit()
         super().mouseReleaseEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent):
+        if self._panning:
+            current_pos = event.position().toPoint()
+            delta = current_pos - self._pan_start
+            self._pan_start = current_pos
+            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() - delta.x())
+            self.verticalScrollBar().setValue(self.verticalScrollBar().value() - delta.y())
+            event.accept()
+            return
+
         scene_pos = self.mapToScene(event.position().toPoint())
         snapped = self.snap_to_grid(scene_pos.x(), scene_pos.y())
         self._snap_pos = QPointF(snapped.x(), snapped.y())

@@ -93,7 +93,7 @@ def parse_module(name, body):
     ):
         x1, y1, x2, y2, thickness, layer_id = ds_match.groups()
         line = Line(
-            x1=kicad_to_mm(x1), y1=kicad_to_mm(y1),
+            x=kicad_to_mm(x1), y=kicad_to_mm(y1),
             x2=kicad_to_mm(x2), y2=kicad_to_mm(y2),
             width=kicad_to_mm(thickness),
             layer=layer_from_id(layer_id),
@@ -124,7 +124,7 @@ def parse_module(name, body):
     ):
         cx, cy, sx, sy, angle, thickness, layer_id = da_match.groups()
         arc = Arc(
-            cx=kicad_to_mm(cx), cy=kicad_to_mm(cy),
+            x=kicad_to_mm(cx), y=kicad_to_mm(cy),
             sx=kicad_to_mm(sx), sy=kicad_to_mm(sy),
             angle=float(angle) / 10.0,
             width=kicad_to_mm(thickness),
@@ -215,8 +215,9 @@ def parse_pad(pad_body):
         layers = default_layers_for_pad_type(pad_type)
 
     return Pad(
+        x=x, y=y,
         number=number, shape=shape, pad_type=pad_type,
-        x=x, y=y, width=size_x, height=size_y,
+        width=size_x, height=size_y,
         drill=drill if drill > 0 else None,
         layers=layers,
     )

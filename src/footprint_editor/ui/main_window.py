@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt, QSettings
 from constants import (
     Tool, Styles, GRID_SERIES, GRID_SERIES_LABEL,
     SETTINGS_ORG, SETTINGS_APP,
-    LEFT_PANEL_MIN_WIDTH, RIGHT_PANEL_MIN_WIDTH,
+    LEFT_PANEL_MIN_WIDTH, RIGHT_PANEL_MAX_WIDTH,
     apply_theme,
 )
 from footprint_editor.core.models import Footprint
@@ -47,7 +47,7 @@ class FootprintEditorWindow(
         self.library_modules = {}
         self.current_library_path = None
 
-        self.current_tool = Tool.ADD_LINE
+        self.current_tool = Tool.SELECT
         self.line_start_point = None
         self.circle_center_point = None
         self.arc_center_point = None
@@ -76,14 +76,13 @@ class FootprintEditorWindow(
         self._apply_grid_series(self.grid_mode, initial=True)
 
         self.resizeDocks([self.library_dock], [LEFT_PANEL_MIN_WIDTH], Qt.Orientation.Horizontal)
-        self.resizeDocks([self.properties_dock], [RIGHT_PANEL_MIN_WIDTH], Qt.Orientation.Horizontal)
+        self.resizeDocks([self.properties_dock], [RIGHT_PANEL_MAX_WIDTH], Qt.Orientation.Horizontal)
 
         self._apply_theme()
 
         self.history.reset(self.footprint)
         self._update_history_buttons()
-        self._set_tool(Tool.ADD_LINE)
-        self.tool_bar.set_active(Tool.ADD_LINE)
+        self._set_tool(Tool.SELECT)
 
         self._restore_last_session()
 
@@ -104,6 +103,7 @@ class FootprintEditorWindow(
         self.canvas.finish_drawing.connect(self.finish_drawing)
         self.canvas.scene.selectionChanged.connect(self._on_selection_changed)
         self.canvas.content_changed.connect(self.commit_history)
+        self.canvas.properties_changed.connect(self._on_properties_changed)
 
         self.manager = FootprintManager(self.footprint, self.canvas.scene, self.canvas)
 
@@ -158,21 +158,48 @@ class FootprintEditorWindow(
         self.setMenuBar(menubar)
 
         file_menu = menubar.addMenu("Файл")
+
         lib_menu = file_menu.addMenu("Библиотека")
-        lib_menu.addAction("Создать", self.commands.create_library)
-        lib_menu.addAction("Открыть", self.commands.open_library)
-        lib_menu.addAction("Управление", self.commands.manage_libraries)
+        act_lib_new = QAction("Создать", self)
+        act_lib_new.triggered.connect(self.commands.create_library)
+        lib_menu.addAction(act_lib_new)
+
+        act_lib_open = QAction("Открыть", self)
+        act_lib_open.triggered.connect(self.commands.open_library)
+        lib_menu.addAction(act_lib_open)
+
+        act_lib_manage = QAction("Управление", self)
+        act_lib_manage.triggered.connect(self.commands.manage_libraries)
+        lib_menu.addAction(act_lib_manage)
 
         mod_menu = file_menu.addMenu("Корпус")
-        mod_menu.addAction("Создать", self.commands.new_module)
-        mod_menu.addAction("Открыть", self.commands.open_module_file)
+        act_mod_new = QAction("Создать", self)
+        act_mod_new.triggered.connect(self.commands.new_module)
+        mod_menu.addAction(act_mod_new)
+
+        act_mod_open = QAction("Открыть файл...", self)
+        act_mod_open.triggered.connect(self.commands.open_module_file)
+        mod_menu.addAction(act_mod_open)
+
+        act_mod_save = QAction("Сохранить", self)
+        act_mod_save.setShortcut("Ctrl+S")
+        act_mod_save.triggered.connect(self.commands.save_current)
+        mod_menu.addAction(act_mod_save)
+
+        act_mod_save_as = QAction("Сохранить как...", self)
+        act_mod_save_as.setShortcut("Ctrl+Shift+S")
+        act_mod_save_as.triggered.connect(self.commands._save_current_as)
+        mod_menu.addAction(act_mod_save_as)
 
         file_menu.addSeparator()
+
         act_exit = QAction("Выход", self)
+        act_exit.setShortcut("Ctrl+Q")
         act_exit.triggered.connect(self.close)
         file_menu.addAction(act_exit)
 
         edit_menu = menubar.addMenu("Правка")
+
         act_undo = QAction("Отменить", self)
         act_undo.setShortcut("Ctrl+Z")
         act_undo.triggered.connect(self.undo)
@@ -183,7 +210,45 @@ class FootprintEditorWindow(
         act_redo.triggered.connect(self.redo)
         edit_menu.addAction(act_redo)
 
+        edit_menu.addSeparator()
+
+        act_copy = QAction("Копировать", self)
+        act_copy.setShortcut("Ctrl+C")
+        act_copy.triggered.connect(self.commands.copy_selected)
+        edit_menu.addAction(act_copy)
+
+        act_paste = QAction("Вставить", self)
+        act_paste.setShortcut("Ctrl+V")
+        act_paste.triggered.connect(self.commands.paste)
+        edit_menu.addAction(act_paste)
+
+        act_delete = QAction("Удалить", self)
+        act_delete.setShortcut("Del")
+        act_delete.triggered.connect(self.commands.delete_selected)
+        edit_menu.addAction(act_delete)
+
+        edit_menu.addSeparator()
+
+        act_rotate = QAction("Повернуть на 90°", self)
+        act_rotate.setShortcut("R")
+        act_rotate.triggered.connect(self.commands.rotate_selected)
+        edit_menu.addAction(act_rotate)
+
+        edit_menu.addSeparator()
+
+        act_select_all = QAction("Выделить всё", self)
+        act_select_all.setShortcut("Ctrl+A")
+        act_select_all.triggered.connect(self._select_all)
+        edit_menu.addAction(act_select_all)
+
         view_menu = menubar.addMenu("Вид")
+
+        self.act_show_grid = QAction("Показывать сетку", self, checkable=True)
+        self.act_show_grid.setChecked(True)
+        self.act_show_grid.setShortcut("G")
+        self.act_show_grid.triggered.connect(self._toggle_grid)
+        view_menu.addAction(self.act_show_grid)
+
         grid_menu = view_menu.addMenu("Шаг сетки")
         self._grid_group = QActionGroup(self)
         self._grid_group.setExclusive(True)
@@ -201,6 +266,15 @@ class FootprintEditorWindow(
         act_full.triggered.connect(self.toggle_fullscreen)
         view_menu.addSeparator()
         view_menu.addAction(act_full)
+
+    def _toggle_grid(self):
+        self.canvas.show_grid = self.act_show_grid.isChecked()
+        self.canvas.viewport().update()
+
+    def _select_all(self):
+        for item in self.canvas.scene.items():
+            if hasattr(item, 'model') and not getattr(item.model, 'locked', False):
+                item.setSelected(True)
 
     def _init_docks(self):
         self.properties_dock = QDockWidget("", self)
@@ -238,6 +312,8 @@ class FootprintEditorWindow(
         lp.add_module_requested.connect(self.commands.new_module)
         lp.library_selected.connect(self.commands.select_library)
         lp.module_selected.connect(self.commands.select_module)
+        lp.module_rename_requested.connect(self.commands.rename_module)
+        lp.module_delete_requested.connect(self.commands.delete_module)
 
     def _hide_dock_title(self, dock):
         empty = QWidget()
@@ -277,9 +353,14 @@ class FootprintEditorWindow(
                     self.aux_bar.set_delete_enabled(False)
                 self.right_panel.properties_panel.set_object(item.model)
             else:
-                self.right_panel.properties_panel.clear_panel()
+                self.right_panel.properties_panel.clear_object()
         else:
-            self.right_panel.properties_panel.clear_panel()
+            self.right_panel.properties_panel.clear_object()
+
+    def _on_properties_changed(self, model):
+        panel = self.right_panel.properties_panel
+        if panel.current_object == model:
+            panel.refresh_values()
 
     def toggle_fullscreen(self):
         if self.isFullScreen():
@@ -290,6 +371,7 @@ class FootprintEditorWindow(
 
     def refresh_library_list(self):
         self.library_panel.set_libraries(self.library_paths)
+        self.library_panel.highlight_library(self.current_library_path)
 
     def save_library_paths(self):
         self._save_library_paths()

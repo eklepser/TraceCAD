@@ -32,9 +32,9 @@ CHECKBOX_QSS = (
     "QCheckBox::indicator { width: 14px; height: 14px;"
     " border: 1px solid #d8d8d8; background-color: #2b2b2b;"
     " border-radius: 2px; }"
-    "QCheckBox::indicator:hover { border: 1px solid }"
+    "QCheckBox::indicator:hover { border: 1px solid #ffffff; }"
     "QCheckBox::indicator:checked {"
-    " border: 1px solid #ffffff; background-color: #2b2b2b; }"
+    " border: 1px solid #ffffff; background-color: #365880; }"
 )
 
 
@@ -49,8 +49,6 @@ class PropertiesPanel(QWidget):
         self.header_label = QLabel("")
         self.header_label.setStyleSheet(Styles.SECTION_LABEL)
         self.header_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.header_label.hide()
-        self.main_layout.addWidget(self.header_label)
 
         self.form_widget = QWidget()
         self.form_widget.setObjectName("PropertiesTable")
@@ -63,9 +61,10 @@ class PropertiesPanel(QWidget):
         self.form_layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.DontWrapRows)
         self.form_layout.setHorizontalSpacing(8)
         self.form_layout.setVerticalSpacing(4)
-        self.main_layout.addWidget(self.form_widget)
 
-        btns = QHBoxLayout()
+        self.buttons_widget = QWidget()
+        btns = QHBoxLayout(self.buttons_widget)
+        btns.setContentsMargins(0, 0, 0, 0)
         btns.setSpacing(6)
 
         self.btn_reset = QPushButton("Отменить")
@@ -78,14 +77,19 @@ class PropertiesPanel(QWidget):
 
         btns.addWidget(self.btn_reset)
         btns.addWidget(self.btn_apply)
-        self.main_layout.addLayout(btns)
+
+        self.main_layout.addWidget(self.header_label)
+        self.main_layout.addWidget(self.form_widget)
+        self.main_layout.addWidget(self.buttons_widget)
         self.main_layout.addStretch()
+
+        self.header_label.hide()
+        self.form_widget.hide()
+        self.buttons_widget.hide()
 
         self.current_object = None
         self._widgets = {}
-        self.form_widget.hide()
-        self.btn_apply.hide()
-        self.btn_reset.hide()
+        self._building = False
 
     def _form_widget_qss(self):
         return (
@@ -123,37 +127,94 @@ class PropertiesPanel(QWidget):
         self.btn_reset.setStyleSheet(Styles.BUTTON_CANCEL)
 
     def clear_panel(self):
-        while self.form_layout.rowCount() > 0:
-            self.form_layout.removeRow(0)
-        self._widgets.clear()
-        self.current_object = None
-        self.form_widget.hide()
-        self.btn_apply.hide()
-        self.btn_reset.hide()
-        self.header_label.hide()
-        self.header_label.setText("")
+        self.setUpdatesEnabled(False)
+        try:
+            while self.form_layout.rowCount() > 0:
+                self.form_layout.removeRow(0)
+            self._widgets.clear()
+            self.current_object = None
+            self.header_label.hide()
+            self.form_widget.hide()
+            self.buttons_widget.hide()
+            self.header_label.setText("")
+        finally:
+            self.setUpdatesEnabled(True)
 
     def set_object(self, obj):
-        self.clear_panel()
-        self.current_object = obj
-        self.form_widget.show()
-        self.btn_apply.show()
-        self.btn_reset.show()
+        self.setUpdatesEnabled(False)
+        try:
+            self._building = True
+            try:
+                while self.form_layout.rowCount() > 0:
+                    self.form_layout.removeRow(0)
+                self._widgets.clear()
+            finally:
+                self._building = False
 
-        type_name = TYPE_NAMES_RU.get(type(obj), "Объект")
-        self.header_label.setText(f"{type_name} #{obj.uid}")
-        self.header_label.show()
+            self.current_object = obj
 
-        if isinstance(obj, Pad):
-            self._build_pad_ui(obj)
-        elif isinstance(obj, Line):
-            self._build_line_ui(obj)
-        elif isinstance(obj, Circle):
-            self._build_circle_ui(obj)
-        elif isinstance(obj, Arc):
-            self._build_arc_ui(obj)
-        elif isinstance(obj, Text):
-            self._build_text_ui(obj)
+            type_name = TYPE_NAMES_RU.get(type(obj), "Объект")
+            self.header_label.setText(f"{type_name} #{obj.uid}")
+
+            if isinstance(obj, Pad):
+                self._build_pad_ui(obj)
+            elif isinstance(obj, Line):
+                self._build_line_ui(obj)
+            elif isinstance(obj, Circle):
+                self._build_circle_ui(obj)
+            elif isinstance(obj, Arc):
+                self._build_arc_ui(obj)
+            elif isinstance(obj, Text):
+                self._build_text_ui(obj)
+
+            self.header_label.show()
+            self.form_widget.show()
+            self.buttons_widget.show()
+            self.main_layout.invalidate()
+        finally:
+            self.setUpdatesEnabled(True)
+            self.updateGeometry()
+            self.update()
+
+    def refresh_values(self):
+        obj = self.current_object
+        if not obj or self._building:
+            return
+
+        self.setUpdatesEnabled(False)
+        try:
+            if isinstance(obj, Pad):
+                self._widgets["x"].setValue(obj.x)
+                self._widgets["y"].setValue(obj.y)
+                self._widgets["width"].setValue(obj.width)
+                self._widgets["height"].setValue(obj.height)
+                self._widgets["drill"].setValue(obj.drill or 0.0)
+            elif isinstance(obj, Line):
+                self._widgets["x"].setValue(obj.x)
+                self._widgets["y"].setValue(obj.y)
+                self._widgets["x2"].setValue(obj.x2)
+                self._widgets["y2"].setValue(obj.y2)
+                self._widgets["width"].setValue(obj.width)
+            elif isinstance(obj, Circle):
+                self._widgets["x"].setValue(obj.x)
+                self._widgets["y"].setValue(obj.y)
+                self._widgets["diameter"].setValue(obj.radius * 2)
+                self._widgets["width"].setValue(obj.width)
+            elif isinstance(obj, Arc):
+                self._widgets["x"].setValue(obj.x)
+                self._widgets["y"].setValue(obj.y)
+                self._widgets["sx"].setValue(obj.sx)
+                self._widgets["sy"].setValue(obj.sy)
+                self._widgets["angle"].setValue(obj.angle)
+                self._widgets["width"].setValue(obj.width)
+            elif isinstance(obj, Text):
+                self._widgets["x"].setValue(obj.x)
+                self._widgets["y"].setValue(obj.y)
+                self._widgets["size"].setValue(obj.size)
+                self._widgets["text"].setText(obj.text)
+                self._widgets["visible"].setChecked(obj.visible)
+        finally:
+            self.setUpdatesEnabled(True)
 
     def _make_label(self, text):
         label = QLabel(text)
@@ -167,12 +228,10 @@ class PropertiesPanel(QWidget):
         self._widgets[key] = field_widget
 
     def _add_layers_block(self, initial_layers, multi):
-        # Заголовок "Слои:" отдельной строкой
         header = QLabel("Слои:")
         header.setStyleSheet("background: transparent; color: #a9b7c6;")
         self.form_layout.addRow(header)
 
-        # Сама таблица — на следующей строке, растянута по всей ширине формы
         layers_table = LayersTable(multi=multi)
         layers_table.set_layers(initial_layers)
         self.form_layout.addRow(layers_table)
@@ -192,12 +251,11 @@ class PropertiesPanel(QWidget):
         view.setSpacing(0)
         return view
 
-    def _make_pad_type_combo(self, current_type):
+    def _make_combo(self, items, current_index=0):
         combo = QComboBox()
-        for ptype in PAD_TYPE_ORDER:
-            combo.addItem(PAD_TYPE_NAMES[ptype], ptype)
-        idx = PAD_TYPE_ORDER.index(current_type) if current_type in PAD_TYPE_ORDER else 0
-        combo.setCurrentIndex(idx)
+        for label, data in items:
+            combo.addItem(label, data)
+        combo.setCurrentIndex(current_index)
         combo.setView(self._make_combo_view())
         combo.setStyleSheet(
             "QComboBox { background: transparent; color: #ffffff;"
@@ -210,7 +268,10 @@ class PropertiesPanel(QWidget):
         return combo
 
     def _build_pad_ui(self, pad):
-        pad_type_combo = self._make_pad_type_combo(pad.pad_type)
+        pad_type_combo = self._make_combo(
+            [(PAD_TYPE_NAMES[pt], pt) for pt in PAD_TYPE_ORDER],
+            PAD_TYPE_ORDER.index(pad.pad_type) if pad.pad_type in PAD_TYPE_ORDER else 0,
+        )
         pad_type_combo.currentIndexChanged.connect(
             lambda _i, p=pad, c=pad_type_combo: self._on_pad_type_changed(p, c)
         )
@@ -226,26 +287,17 @@ class PropertiesPanel(QWidget):
         self._add_spinbox("Высота, мм:", pad.height, 0.1, 50.0, "height")
         self._add_spinbox("Отверстие, мм:", pad.drill or 0.0, 0.0, 50.0, "drill")
 
-        shape_combo = QComboBox()
-        shape_combo.addItem("Круг", PadShape.CIRCLE)
-        shape_combo.addItem("Квадрат", PadShape.RECT)
-        shape_combo.setCurrentIndex(0 if pad.shape == PadShape.CIRCLE else 1)
-        shape_combo.setView(self._make_combo_view())
-        shape_combo.setStyleSheet(
-            "QComboBox { background: transparent; color: #ffffff;"
-            " border: none; border-bottom: 1px solid #555555;"
-            " padding: 2px 2px; }"
-            " QComboBox:hover { border-bottom: 1px solid #7a7a7a; }"
-            " QComboBox:focus { border-bottom: 1px solid #365880; }"
-            " QComboBox::drop-down { border: none; width: 14px; }"
+        shape_combo = self._make_combo(
+            [("Круг", PadShape.CIRCLE), ("Квадрат", PadShape.RECT)],
+            0 if pad.shape == PadShape.CIRCLE else 1,
         )
         self._add_row("Форма:", shape_combo, "shape")
 
         self._add_layers_block(pad.layers, multi=True)
 
     def _build_line_ui(self, line):
-        self._add_spinbox("X1, мм:", line.x1, -500.0, 500.0, "x1")
-        self._add_spinbox("Y1, мм:", line.y1, -500.0, 500.0, "y1")
+        self._add_spinbox("X1, мм:", line.x, -500.0, 500.0, "x")
+        self._add_spinbox("Y1, мм:", line.y, -500.0, 500.0, "y")
         self._add_spinbox("X2, мм:", line.x2, -500.0, 500.0, "x2")
         self._add_spinbox("Y2, мм:", line.y2, -500.0, 500.0, "y2")
         self._add_spinbox("Толщина, мм:", line.width, 0.01, 5.0, "width")
@@ -259,8 +311,8 @@ class PropertiesPanel(QWidget):
         self._add_layers_block([circle.layer], multi=False)
 
     def _build_arc_ui(self, arc):
-        self._add_spinbox("Центр X, мм:", arc.cx, -500.0, 500.0, "cx")
-        self._add_spinbox("Центр Y, мм:", arc.cy, -500.0, 500.0, "cy")
+        self._add_spinbox("Центр X, мм:", arc.x, -500.0, 500.0, "x")
+        self._add_spinbox("Центр Y, мм:", arc.y, -500.0, 500.0, "y")
         self._add_spinbox("Начало X, мм:", arc.sx, -500.0, 500.0, "sx")
         self._add_spinbox("Начало Y, мм:", arc.sy, -500.0, 500.0, "sy")
         self._add_spinbox("Угол, °:", arc.angle, -359.0, 359.0, "angle")
@@ -313,54 +365,66 @@ class PropertiesPanel(QWidget):
             return
 
         if isinstance(obj, Pad):
-            obj.x = self._widgets["x"].value()
-            obj.y = self._widgets["y"].value()
-            obj.number = self._widgets["number"].text()
-            obj.width = self._widgets["width"].value()
-            obj.height = self._widgets["height"].value()
-            obj.drill = self._widgets["drill"].value()
-            obj.shape = self._widgets["shape"].currentData()
-            obj.pad_type = self._widgets["pad_type"].currentData()
-            new_layers = self._widgets["layers_table"].selected_layers()
-            if new_layers:
-                obj.layers = new_layers
-            obj.graphics_item.setPos(obj.x, obj.y)
+            self._apply_pad(obj)
         elif isinstance(obj, Line):
-            obj.x1 = self._widgets["x1"].value()
-            obj.y1 = self._widgets["y1"].value()
-            obj.x2 = self._widgets["x2"].value()
-            obj.y2 = self._widgets["y2"].value()
-            obj.width = self._widgets["width"].value()
-            layers = self._widgets["layers_table"].selected_layers()
-            if layers:
-                obj.layer = layers[0]
+            self._apply_line(obj)
         elif isinstance(obj, Circle):
-            obj.x = self._widgets["x"].value()
-            obj.y = self._widgets["y"].value()
-            obj.radius = self._widgets["diameter"].value() / 2
-            obj.width = self._widgets["width"].value()
-            layers = self._widgets["layers_table"].selected_layers()
-            if layers:
-                obj.layer = layers[0]
+            self._apply_circle(obj)
         elif isinstance(obj, Arc):
-            obj.cx = self._widgets["cx"].value()
-            obj.cy = self._widgets["cy"].value()
-            obj.sx = self._widgets["sx"].value()
-            obj.sy = self._widgets["sy"].value()
-            obj.angle = self._widgets["angle"].value()
-            obj.width = self._widgets["width"].value()
-            layers = self._widgets["layers_table"].selected_layers()
-            if layers:
-                obj.layer = layers[0]
+            self._apply_arc(obj)
         elif isinstance(obj, Text):
-            obj.x = self._widgets["x"].value()
-            obj.y = self._widgets["y"].value()
-            obj.size = self._widgets["size"].value()
-            text_value = self._widgets["text"].text()
-            obj.text = text_value if text_value else "Text"
-            obj.visible = self._widgets["visible"].isChecked()
-            layers = self._widgets["layers_table"].selected_layers()
-            if layers:
-                obj.layer = layers[0]
+            self._apply_text(obj)
 
         obj.graphics_item.update_geometry()
+
+    def _apply_pad(self, obj):
+        obj.x = self._widgets["x"].value()
+        obj.y = self._widgets["y"].value()
+        obj.number = self._widgets["number"].text()
+        obj.width = self._widgets["width"].value()
+        obj.height = self._widgets["height"].value()
+        obj.drill = self._widgets["drill"].value()
+        obj.shape = self._widgets["shape"].currentData()
+        obj.pad_type = self._widgets["pad_type"].currentData()
+        new_layers = self._widgets["layers_table"].selected_layers()
+        if new_layers:
+            obj.layers = new_layers
+        obj.graphics_item.setPos(obj.x, obj.y)
+
+    def _apply_line(self, obj):
+        obj.x = self._widgets["x"].value()
+        obj.y = self._widgets["y"].value()
+        obj.x2 = self._widgets["x2"].value()
+        obj.y2 = self._widgets["y2"].value()
+        obj.width = self._widgets["width"].value()
+        self._apply_single_layer(obj)
+
+    def _apply_circle(self, obj):
+        obj.x = self._widgets["x"].value()
+        obj.y = self._widgets["y"].value()
+        obj.radius = self._widgets["diameter"].value() / 2
+        obj.width = self._widgets["width"].value()
+        self._apply_single_layer(obj)
+
+    def _apply_arc(self, obj):
+        obj.x = self._widgets["x"].value()
+        obj.y = self._widgets["y"].value()
+        obj.sx = self._widgets["sx"].value()
+        obj.sy = self._widgets["sy"].value()
+        obj.angle = self._widgets["angle"].value()
+        obj.width = self._widgets["width"].value()
+        self._apply_single_layer(obj)
+
+    def _apply_text(self, obj):
+        obj.x = self._widgets["x"].value()
+        obj.y = self._widgets["y"].value()
+        obj.size = self._widgets["size"].value()
+        text_value = self._widgets["text"].text()
+        obj.text = text_value if text_value else "Text"
+        obj.visible = self._widgets["visible"].isChecked()
+        self._apply_single_layer(obj)
+
+    def _apply_single_layer(self, obj):
+        layers = self._widgets["layers_table"].selected_layers()
+        if layers:
+            obj.layer = layers[0]

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-                               QPushButton, QListWidget, QListWidgetItem)
+                               QPushButton, QListWidget, QListWidgetItem, QMenu)
 from PySide6.QtCore import Qt, Signal
 from constants import Styles
 
@@ -22,6 +22,8 @@ class LibraryPanel(QWidget):
     add_module_requested = Signal()
     library_selected = Signal(str)
     module_selected = Signal(str)
+    module_rename_requested = Signal(str)
+    module_delete_requested = Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -48,6 +50,8 @@ class LibraryPanel(QWidget):
         self.module_list_widget = QListWidget()
         self.module_list_widget.setStyleSheet(Styles.LIST_BG)
         self.module_list_widget.itemClicked.connect(self._on_module_clicked)
+        self.module_list_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.module_list_widget.customContextMenuRequested.connect(self._on_module_context_menu)
         layout.addWidget(self.module_list_widget, 1)
 
     def _make_header(self, title, tooltip):
@@ -82,6 +86,27 @@ class LibraryPanel(QWidget):
         if name:
             self.module_selected.emit(name)
 
+    def _on_module_context_menu(self, pos):
+        item = self.module_list_widget.itemAt(pos)
+        if not item:
+            return
+
+        name = item.data(Qt.ItemDataRole.UserRole)
+        if not name:
+            return
+
+        menu = QMenu(self)
+        menu.setStyleSheet(Styles.MAIN_WINDOW)
+
+        act_rename = menu.addAction("Переименовать...")
+        act_delete = menu.addAction("Удалить")
+
+        action = menu.exec(self.module_list_widget.mapToGlobal(pos))
+        if action == act_rename:
+            self.module_rename_requested.emit(name)
+        elif action == act_delete:
+            self.module_delete_requested.emit(name)
+
     def set_libraries(self, paths):
         self.library_list_widget.clear()
         for path in paths:
@@ -103,3 +128,25 @@ class LibraryPanel(QWidget):
             item = self.module_list_widget.item(i)
             name = item.data(Qt.ItemDataRole.UserRole)
             item.setText(f"{name} *" if name in unsaved_names else name)
+
+    def highlight_library(self, path):
+        if not path:
+            self.library_list_widget.clearSelection()
+            return
+        for i in range(self.library_list_widget.count()):
+            item = self.library_list_widget.item(i)
+            if item.data(Qt.ItemDataRole.UserRole) == path:
+                self.library_list_widget.setCurrentItem(item)
+                return
+        self.library_list_widget.clearSelection()
+
+    def highlight_module(self, name):
+        if not name:
+            self.module_list_widget.clearSelection()
+            return
+        for i in range(self.module_list_widget.count()):
+            item = self.module_list_widget.item(i)
+            if item.data(Qt.ItemDataRole.UserRole) == name:
+                self.module_list_widget.setCurrentItem(item)
+                return
+        self.module_list_widget.clearSelection()

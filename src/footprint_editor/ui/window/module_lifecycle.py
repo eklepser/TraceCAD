@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 
 from footprint_editor.kicad.exporter import build_kicad_module_text
+from footprint_editor.core.models import TextType
 
 
 class ModuleLifecycleService:
@@ -39,6 +40,7 @@ class ModuleLifecycleService:
 
     def refresh_module_list_display(self):
         self.library_panel.mark_unsaved(set(self.unsaved_modules.keys()))
+        self.library_panel.highlight_module(self.current_module_name)
 
     def build_kicad_module_text(self):
         return build_kicad_module_text(self.footprint)
@@ -60,3 +62,15 @@ class ModuleLifecycleService:
         else:
             title = f"TraceCAD: {self.footprint.name}"
         self.setWindowTitle(title)
+
+    def get_next_module_name(self):
+        existing = set()
+        if self.current_library_path and self.current_library_path in self.library_modules:
+            existing.update(self.library_modules[self.current_library_path].keys())
+        
+        i = 1
+        while True:
+            name = f"New_Footprint_{i}"
+            if name not in existing:
+                return name
+            i += 1

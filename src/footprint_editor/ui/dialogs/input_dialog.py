@@ -1,6 +1,5 @@
 from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                                QLineEdit, QPushButton)
-from PySide6.QtCore import Signal
 from constants import Styles
 from footprint_editor.ui.dialogs.headerless_dialog import HeaderlessDialog
 

@@ -27,6 +27,7 @@ class ArcDialog(HeaderlessDialog):
         self.angle_spin.setDecimals(1)
         self.angle_spin.setValue(90.0)
         self.angle_spin.setStyleSheet(Styles.INPUT_BG)
+        self.angle_spin.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
         self.angle_spin.valueChanged.connect(self.angle_changed.emit)
         row.addWidget(self.angle_spin, 1)
         layout.addLayout(row)

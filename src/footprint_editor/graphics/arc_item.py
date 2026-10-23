@@ -15,12 +15,12 @@ class ArcGraphicsItem(BaseGraphicsItem):
 
     def _build_path(self):
         m = self.model
-        key = (m.cx, m.cy, m.sx, m.sy, m.angle)
+        key = (m.x, m.y, m.sx, m.sy, m.angle)
         if self._path_key == key and self._path_cache is not None:
             return self._path_cache
 
         path = QPainterPath()
-        pts = arc_sample_points(m.cx, m.cy, m.sx, m.sy, m.angle, 64)
+        pts = arc_sample_points(m.x, m.y, m.sx, m.sy, m.angle, 64)
         if not pts:
             self._path_cache = path
             self._path_key = key
@@ -34,12 +34,12 @@ class ArcGraphicsItem(BaseGraphicsItem):
 
     def boundingRect(self):
         b = self._build_path().boundingRect()
-        extra = self.model.width / 2.0 + 0.2
+        extra = self.model.width / 2.0 + 0.5
         return b.adjusted(-extra, -extra, extra, extra)
 
     def shape(self):
         stroker = QPainterPathStroker()
-        stroker.setWidth(max(0.3, self.model.width * 2.0))
+        stroker.setWidth(max(0.5, self.model.width * 2.0))
         return stroker.createStroke(self._build_path())
 
     def paint(self, painter, option, widget):
@@ -61,8 +61,8 @@ class ArcGraphicsItem(BaseGraphicsItem):
     def apply_drag_delta(self, start, dx, dy):
         if getattr(self.model, 'locked', False):
             return
-        self.model.cx = start[1] + dx
-        self.model.cy = start[2] + dy
+        self.model.x = start[1] + dx
+        self.model.y = start[2] + dy
         self.model.sx = start[3] + dx
         self.model.sy = start[4] + dy
         self._path_cache = None

@@ -1,14 +1,19 @@
 from PySide6.QtCore import Qt, QPointF
-from PySide6.QtGui import QPen, QColor, QPainterPath
+from PySide6.QtGui import QPen, QColor, QPainterPath, QBrush
 from constants import Colors, Sizes
 from footprint_editor.graphics.text_path import build_text_path
 from footprint_editor.core.arc_geometry import arc_sample_points
 
 
+MAX_GRID_POINTS_VISUAL = 60
+
+
 def _effective_step(span, grid_size, max_points):
+    if span <= 0 or grid_size <= 0:
+        return grid_size
     if span / grid_size <= max_points:
         return grid_size
-    factor = 2
+    factor = 1
     while span / (grid_size * factor) > max_points:
         factor *= 2
     return grid_size * factor
@@ -16,7 +21,8 @@ def _effective_step(span, grid_size, max_points):
 
 def draw_grid(painter, rect, view):
     grid_size = view.grid_size
-    if grid_size * view.transform().m11() < Sizes.MIN_CELL_PX:
+    scale = view.transform().m11()
+    if grid_size * scale < Sizes.MIN_CELL_PX:
         return
 
     left = int(rect.left() // grid_size) * grid_size
@@ -24,8 +30,8 @@ def draw_grid(painter, rect, view):
     top = int(rect.top() // grid_size) * grid_size
     bottom = int(rect.bottom() // grid_size) * grid_size
 
-    step_x = _effective_step(right - left, grid_size, Sizes.MAX_GRID_POINTS)
-    step_y = _effective_step(bottom - top, grid_size, Sizes.MAX_GRID_POINTS)
+    step_x = _effective_step(right - left, grid_size, MAX_GRID_POINTS_VISUAL)
+    step_y = _effective_step(bottom - top, grid_size, MAX_GRID_POINTS_VISUAL)
 
     pen = QPen(view.grid_color, 0)
     pen.setCosmetic(True)

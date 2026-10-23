@@ -1,9 +1,19 @@
+from pathlib import Path
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtCore import Signal, Qt, QSize
 from constants import Styles
 
 
 BUTTON_SIZE = 40
+ICONS_DIR = Path(__file__).resolve().parent.parent.parent / "resources" / "icons"
+
+
+def _load_icon(name, fallback_text):
+    path = ICONS_DIR / f"{name}.svg"
+    if path.exists():
+        return QIcon(str(path)), ""
+    return QIcon(), fallback_text
 
 
 class AuxBar(QWidget):
@@ -19,19 +29,19 @@ class AuxBar(QWidget):
         layout.setContentsMargins(8, 6, 8, 6)
         layout.setSpacing(8)
 
-        self.btn_undo = self._make_button("↶", "Отменить (Ctrl+Z)")
+        self.btn_undo = self._make_button("undo", "↶", "Отменить (Ctrl+Z)")
         self.btn_undo.clicked.connect(self.undo_requested.emit)
         layout.addWidget(self.btn_undo)
 
-        self.btn_redo = self._make_button("↷", "Повторить (Ctrl+Shift+Z)")
+        self.btn_redo = self._make_button("redo", "↷", "Повторить (Ctrl+Shift+Z)")
         self.btn_redo.clicked.connect(self.redo_requested.emit)
         layout.addWidget(self.btn_redo)
 
-        self.btn_select = self._make_button("■", "Выделение (Esc)", checkable=True)
+        self.btn_select = self._make_button("select", "■", "Выделение (Esc)", checkable=True)
         self.btn_select.clicked.connect(self.select_requested.emit)
         layout.addWidget(self.btn_select)
 
-        self.btn_delete = self._make_button("🗑", "Удалить (Del)")
+        self.btn_delete = self._make_button("delete", "🗑", "Удалить (Del)")
         self.btn_delete.clicked.connect(self.delete_requested.emit)
         layout.addWidget(self.btn_delete)
 
@@ -42,8 +52,14 @@ class AuxBar(QWidget):
         self.set_select_active(True)
         self.set_delete_enabled(False)
 
-    def _make_button(self, symbol, tip, checkable=False):
-        btn = QPushButton(symbol)
+    def _make_button(self, icon_name, fallback_text, tip, checkable=False):
+        btn = QPushButton()
+        icon, text = _load_icon(icon_name, fallback_text)
+        if not icon.isNull():
+            btn.setIcon(icon)
+            btn.setIconSize(QSize(24, 24))
+        else:
+            btn.setText(text)
         btn.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
         btn.setToolTip(tip)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)

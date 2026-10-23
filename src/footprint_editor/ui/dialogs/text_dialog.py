@@ -35,12 +35,21 @@ class TextDialog(HeaderlessDialog):
         self.size_spin.setDecimals(2)
         self.size_spin.setValue(1.0)
         self.size_spin.setStyleSheet(Styles.INPUT_BG)
+        self.size_spin.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
         self.size_spin.valueChanged.connect(self.size_changed.emit)
         size_row.addWidget(self.size_spin, 1)
         layout.addLayout(size_row)
 
         self.visible_check = QCheckBox("Видимый")
         self.visible_check.setChecked(True)
+        self.visible_check.setStyleSheet(
+            "QCheckBox { color: #a9b7c6; spacing: 8px; }"
+            "QCheckBox::indicator { width: 14px; height: 14px;"
+            " border: 1px solid #d8d8d8; background-color: #2b2b2b;"
+            " border-radius: 2px; }"
+            "QCheckBox::indicator:checked {"
+            " border: 1px solid #ffffff; background-color: #365880; }"
+        )
         self.visible_check.stateChanged.connect(
             lambda state: self.visible_changed.emit(state == Qt.CheckState.Checked.value)
         )

@@ -48,7 +48,7 @@ def _text_block(text, idx):
 def _line_block(line):
     lid = layer_to_id(line.layer)
     return (
-        f"DS {mm_to_kicad(line.x1)} {mm_to_kicad(line.y1)} "
+        f"DS {mm_to_kicad(line.x)} {mm_to_kicad(line.y)} "
         f"{mm_to_kicad(line.x2)} {mm_to_kicad(line.y2)} "
         f"{mm_to_kicad(line.width)} {lid}"
     )
@@ -65,7 +65,7 @@ def _circle_block(circle):
 def _arc_block(arc):
     lid = layer_to_id(arc.layer)
     return (
-        f"DA {mm_to_kicad(arc.cx)} {mm_to_kicad(arc.cy)} "
+        f"DA {mm_to_kicad(arc.x)} {mm_to_kicad(arc.y)} "
         f"{mm_to_kicad(arc.sx)} {mm_to_kicad(arc.sy)} "
         f"{int(round(arc.angle * 10))} {mm_to_kicad(arc.width)} {lid}"
     )
