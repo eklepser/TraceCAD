@@ -1,24 +1,26 @@
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene
-from PySide6.QtCore import Qt, QPointF, Signal
+from PySide6.QtCore import Qt, QPointF, Signal, QTimer
 from PySide6.QtGui import QColor, QWheelEvent, QMouseEvent, QPainter, QPen
 
-from constants import Colors, Sizes, Steps
+from constants import Colors, Sizes, Steps, VK_W, VK_A, VK_S, VK_D
 
 
 class BoardCanvas(QGraphicsView):
     zoom_changed = Signal(float)
     mouse_moved = Signal(float, float)
+    ratsnest_update_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._panning = False
         self._pan_start = None
+        self.show_grid = True
 
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setMouseTracking(True)
         self.viewport().setMouseTracking(True)
-        self.setDragMode(QGraphicsView.DragMode.NoDrag)
+        self.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
         self.setRubberBandSelectionMode(Qt.ItemSelectionMode.IntersectsItemShape)
         self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -26,6 +28,7 @@ class BoardCanvas(QGraphicsView):
         self.setFrameShadow(QGraphicsView.Shadow.Plain)
         self.setLineWidth(1)
         self.setStyleSheet("QGraphicsView { border: 1px solid #ffffff; }")
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
@@ -44,10 +47,22 @@ class BoardCanvas(QGraphicsView):
 
         self._snap_pos = None
 
+        self.pressed_keys = set()
+        self.pan_speed_px = Sizes.PAN_SPEED_PX
+        self.pan_timer = QTimer(self)
+        self.pan_timer.setInterval(Sizes.PAN_TIMER_INTERVAL)
+        self.pan_timer.timeout.connect(self._pan_step)
+        self._scroll_acc_x = 0.0
+        self._scroll_acc_y = 0.0
+
     def apply_theme(self):
         self.grid_color = QColor(*Colors.GRID)
         self.background_color = QColor(*Colors.BACKGROUND)
         self.setBackgroundBrush(self.background_color)
+        self.viewport().update()
+
+    def set_grid_size(self, size_mm):
+        self.grid_size = size_mm
         self.viewport().update()
 
     def snap_to_grid(self, x, y):
@@ -56,6 +71,8 @@ class BoardCanvas(QGraphicsView):
 
     def drawBackground(self, painter, rect):
         super().drawBackground(painter, rect)
+        if not self.show_grid:
+            return
         g = self.grid_size
         scale = self.transform().m11()
         if g * scale < Sizes.MIN_CELL_PX:
@@ -66,17 +83,31 @@ class BoardCanvas(QGraphicsView):
         top = int(rect.top() // g) * g
         bottom = int(rect.bottom() // g) * g
 
+        step_x = g
+        step_y = g
+        max_points = 60
+        if (right - left) / g > max_points:
+            factor = 1
+            while (right - left) / (g * factor) > max_points:
+                factor *= 2
+            step_x = g * factor
+        if (bottom - top) / g > max_points:
+            factor = 1
+            while (bottom - top) / (g * factor) > max_points:
+                factor *= 2
+            step_y = g * factor
+
         pen = QPen(self.grid_color, 0)
         pen.setCosmetic(True)
         painter.setPen(pen)
 
-        x = left
-        while x <= right:
-            y = top
-            while y <= bottom:
+        y = top
+        while y <= bottom:
+            x = left
+            while x <= right:
                 painter.drawPoint(QPointF(x, y))
-                y += g
-            x += g
+                x += step_x
+            y += step_y
 
     def drawForeground(self, painter, rect):
         super().drawForeground(painter, rect)
@@ -142,3 +173,27 @@ class BoardCanvas(QGraphicsView):
         self.mouse_moved.emit(snapped.x(), snapped.y())
         self.viewport().update()
         super().mouseMoveEvent(event)
+
+    def _pan_step(self):
+        dx = dy = 0
+        if VK_W in self.pressed_keys:
+            dy -= 1
+        if VK_S in self.pressed_keys:
+            dy += 1
+        if VK_A in self.pressed_keys:
+            dx -= 1
+        if VK_D in self.pressed_keys:
+            dx += 1
+        if dx == 0 and dy == 0:
+            return
+
+        self._scroll_acc_x += dx * self.pan_speed_px
+        self._scroll_acc_y += dy * self.pan_speed_px
+        ix = int(self._scroll_acc_x)
+        iy = int(self._scroll_acc_y)
+        self._scroll_acc_x -= ix
+        self._scroll_acc_y -= iy
+
+        if ix or iy:
+            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + ix)
+            self.verticalScrollBar().setValue(self.verticalScrollBar().value() + iy)

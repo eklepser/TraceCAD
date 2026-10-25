@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QTableWidget,
+from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QTableWidget,
                                QTableWidgetItem, QPushButton, QHeaderView, QLabel)
 from constants import Styles
 from pbe_editor.ui.dialogs.headerless_dialog import HeaderlessDialog

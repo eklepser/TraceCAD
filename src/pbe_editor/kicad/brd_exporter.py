@@ -23,7 +23,7 @@ def _pad_block(pad, net_code, net_name):
         at_attr = 'CONN'
         at_mask = '00808000'
 
-    ne_line = f'Ne {net_code} "{net_name}"' if net_code > 0 else 'Ne 0 ""'
+    ne_line = f'Ne {net_code} "{net_name}"' if net_code > 0 and net_name else 'Ne 0 ""'
 
     return [
         "$PAD",
