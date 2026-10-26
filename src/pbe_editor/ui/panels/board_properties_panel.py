@@ -2,12 +2,12 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QHBoxLayout, Q
                                QDoubleSpinBox, QLineEdit, QComboBox, QListView,
                                QPushButton, QTableWidget, QTableWidgetItem, QHeaderView,
                                QListWidget, QListWidgetItem, QTreeWidget, QTreeWidgetItem,
-                               QCheckBox)
+                               QCheckBox, QAbstractItemView)
 from PySide6.QtGui import QColor, QPixmap, QIcon
 from PySide6.QtCore import Qt, Signal
 
 from constants import Styles
-from constants.board_settings import DRAWABLE_LAYERS
+from constants.board_settings import DRAWABLE_LAYERS, LAYER_NAMES_RU
 from pbe_editor.graphics.module_item import BoardModuleGraphicsItem
 from pbe_editor.graphics.board_line_item import (
     BoardLineGraphicsItem, BoardCircleGraphicsItem, BoardArcGraphicsItem,
@@ -25,6 +25,11 @@ CHECKBOX_QSS = (
     "QCheckBox::indicator:checked {"
     " border: 1px solid #ffffff; background-color: #365880; }"
 )
+
+
+def _layer_label(name):
+    ru = LAYER_NAMES_RU.get(name)
+    return f"{name} ({ru})" if ru else name
 
 
 class BoardPropertiesPanel(QWidget):
@@ -97,6 +102,7 @@ class BoardPropertiesPanel(QWidget):
         ll_layout.setSpacing(4)
         self.line_layers_list = QListWidget()
         self.line_layers_list.setStyleSheet(Styles.LIST_BG)
+        self.line_layers_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.line_layers_list.itemClicked.connect(self._on_layer_clicked)
         ll_layout.addWidget(self.line_layers_list)
 
@@ -175,15 +181,19 @@ class BoardPropertiesPanel(QWidget):
         self.header_label.setText("Слой линии")
         self.header_label.show()
         self.line_layers_list.clear()
+        selected_item = None
         for name, color in DRAWABLE_LAYERS:
-            item = QListWidgetItem(name)
+            item = QListWidgetItem(_layer_label(name))
             item.setData(Qt.ItemDataRole.UserRole, name)
             pix = QPixmap(14, 14)
             pix.fill(QColor(*color))
             item.setIcon(QIcon(pix))
-            if name == current_layer:
-                item.setSelected(True)
             self.line_layers_list.addItem(item)
+            if name == current_layer:
+                selected_item = item
+        if selected_item is not None:
+            self.line_layers_list.setCurrentItem(selected_item)
+            self.line_layers_list.scrollToItem(selected_item)
         self.line_layers_widget.show()
         self.form_widget.hide()
         self.pins_label.hide()
@@ -388,7 +398,7 @@ class BoardPropertiesPanel(QWidget):
         return combo
 
     def _line_layer_combo(self, layer):
-        choices = [(n, n) for n, _ in DRAWABLE_LAYERS]
+        choices = [(_layer_label(n), n) for n, _ in DRAWABLE_LAYERS]
         idx = 0
         for i, (_, data) in enumerate(choices):
             if data == layer:
@@ -502,6 +512,7 @@ class BoardPropertiesPanel(QWidget):
             l.y2 = self._widgets["y2"].value()
             l.width = self._widgets["width"].value()
             l.layer = self._widgets["layer"].currentData()
+            obj.setPos(l.x1, l.y1)
             obj.prepareGeometryChange(); obj.update()
         elif isinstance(obj, BoardCircleGraphicsItem):
             c = obj.model
@@ -510,6 +521,7 @@ class BoardPropertiesPanel(QWidget):
             c.radius = self._widgets["radius"].value()
             c.width = self._widgets["width"].value()
             c.layer = self._widgets["layer"].currentData()
+            obj.setPos(c.x, c.y)
             obj.prepareGeometryChange(); obj.update()
         elif isinstance(obj, BoardArcGraphicsItem):
             a = obj.model
@@ -520,6 +532,7 @@ class BoardPropertiesPanel(QWidget):
             a.angle = self._widgets["angle"].value()
             a.width = self._widgets["width"].value()
             a.layer = self._widgets["layer"].currentData()
+            obj.setPos(a.x, a.y)
             obj.prepareGeometryChange(); obj.update()
         elif isinstance(obj, BoardTextGraphicsItem):
             t = obj.model
@@ -529,4 +542,5 @@ class BoardPropertiesPanel(QWidget):
             t.text = self._widgets["text"].text() or "Text"
             t.visible = self._widgets["visible"].isChecked()
             t.layer = self._widgets["layer"].currentData()
+            obj.setPos(t.x, t.y)
             obj.prepareGeometryChange(); obj.update()

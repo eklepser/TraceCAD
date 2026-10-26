@@ -1,10 +1,10 @@
 from pathlib import Path
 
-from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QLabel,
-                               QListWidgetItem, QFileDialog,
+from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+                               QListWidget, QListWidgetItem, QFileDialog,
                                QMessageBox, QComboBox, QToolBar, QStatusBar,
                                QDockWidget, QApplication, QMenuBar,
-                               QHBoxLayout, QGraphicsItem)
+                               QGraphicsItem)
 from PySide6.QtGui import QAction, QActionGroup, QGuiApplication
 from PySide6.QtCore import Qt, QSettings, QEvent
 
@@ -18,9 +18,10 @@ from constants.board_settings import (
     SETTINGS_KEY_BRD_LIBS, SETTINGS_KEY_BRD_LAST,
     DEFAULT_LINE_LAYER, DEFAULT_LINE_WIDTH,
 )
-from footprint_editor.kicad.importer import parse_kicad_mod
+from pbe_editor.kicad.importer import parse_kicad_mod
 from pbe_editor.core.board_models import (
     Board, BoardModule, BoardLine, BoardCircle, BoardArc, BoardText, PadNet,
+    prefix_from_footprint_name,
 )
 from pbe_editor.core.board_manager import BoardManager
 from pbe_editor.core.netlist_parser import parse_netlist
@@ -28,8 +29,8 @@ from pbe_editor.kicad.brd_exporter import build_brd_text
 from pbe_editor.kicad.brd_importer import parse_brd
 from pbe_editor.ui.board_canvas import BoardCanvas
 from pbe_editor.ui.dialogs.nets_dialog import NetsDialog
+from footprint_editor.ui.dialogs.libraries_dialog import LibrariesManagerDialog
 from pbe_editor.ui.panels.board_right_panel import BoardRightPanel
-from pbe_editor.ui.panels.board_library_panel import BoardLibraryPanel
 from pbe_editor.ui.panels.drawing_tool_bar import BoardDrawingToolBar, BoardTool
 from pbe_editor.ui.panels.aux_bar import BoardAuxBar
 from pbe_editor.graphics.module_item import BoardModuleGraphicsItem
@@ -82,6 +83,7 @@ class BoardEditorWindow(QMainWindow):
 
         self._load_library_paths()
         self._refresh_library_modules()
+        self._refresh_module_list()
         self._apply_grid_series(self.grid_mode, initial=True)
 
         self._set_tool(BoardTool.SELECT)
@@ -105,6 +107,7 @@ class BoardEditorWindow(QMainWindow):
         self.canvas.canvas_clicked.connect(self._on_canvas_clicked)
         self.canvas.canvas_right_clicked.connect(self._on_canvas_right_clicked)
         self.canvas.selection_changed.connect(self._on_selection_changed)
+        self.canvas.content_changed.connect(self._commit_snapshot)
         self.manager = BoardManager(self.board, self.canvas.scene, self.canvas)
 
         self.aux_bar = BoardAuxBar()
@@ -166,10 +169,25 @@ class BoardEditorWindow(QMainWindow):
         act_open.triggered.connect(self._on_open_board)
         file_menu.addAction(act_open)
 
-        act_save = QAction("Сохранить плату...", self)
+        act_save = QAction("Сохранить", self)
         act_save.setShortcut("Ctrl+S")
         act_save.triggered.connect(self._on_save_board)
         file_menu.addAction(act_save)
+
+        act_save_as = QAction("Сохранить как...", self)
+        act_save_as.setShortcut("Ctrl+Shift+S")
+        act_save_as.triggered.connect(self._on_save_board_as)
+        file_menu.addAction(act_save_as)
+
+        file_menu.addSeparator()
+
+        act_add_lib = QAction("Добавить библиотеку...", self)
+        act_add_lib.triggered.connect(self._add_library)
+        file_menu.addAction(act_add_lib)
+
+        act_manage_lib = QAction("Подключенные библиотеки...", self)
+        act_manage_lib.triggered.connect(self._manage_libraries)
+        file_menu.addAction(act_manage_lib)
 
         file_menu.addSeparator()
         act_exit = QAction("Выход", self)
@@ -229,12 +247,32 @@ class BoardEditorWindow(QMainWindow):
         view_menu.addAction(act_full)
 
     def _init_docks(self):
-        self.library_dock = QDockWidget("", self)
-        self.library_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-        self.library_panel = BoardLibraryPanel()
-        self.library_dock.setWidget(self.library_panel)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.library_dock)
-        self._hide_dock_title(self.library_dock)
+        self.module_dock = QDockWidget("", self)
+        self.module_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+
+        panel = QWidget()
+        panel.setMinimumWidth(160)
+        panel.setMaximumWidth(320)
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(6)
+
+        header = QHBoxLayout()
+        header.setContentsMargins(0, 0, 0, 0)
+        title = QLabel("Модули на плате")
+        title.setStyleSheet(Styles.SECTION_LABEL)
+        header.addWidget(title)
+        header.addStretch()
+        layout.addLayout(header)
+
+        self.module_list = QListWidget()
+        self.module_list.setStyleSheet(Styles.LIST_BG)
+        self.module_list.itemClicked.connect(self._on_module_list_clicked)
+        layout.addWidget(self.module_list, 1)
+
+        self.module_dock.setWidget(panel)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.module_dock)
+        self._hide_dock_title(self.module_dock)
 
         self.properties_dock = QDockWidget("", self)
         self.properties_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
@@ -316,7 +354,6 @@ class BoardEditorWindow(QMainWindow):
         return False
 
     def _wire_panels(self):
-        self.library_panel.module_selected.connect(self._on_module_list_clicked)
         self.right_panel.properties_panel.btn_apply.clicked.connect(self._on_apply_properties)
         self.right_panel.properties_panel.line_layer_selected.connect(self._on_line_layer_selected)
         self.right_panel.properties_panel.module_selected.connect(self._on_module_picked_from_panel)
@@ -345,20 +382,19 @@ class BoardEditorWindow(QMainWindow):
                                  BoardCircleGraphicsItem, BoardArcGraphicsItem,
                                  BoardTextGraphicsItem, RatsnestGraphicsItem)):
                 self.right_panel.properties_panel.show_object(item)
-                if isinstance(item, BoardModuleGraphicsItem):
-                    self.library_panel.highlight_module(item.module.uid)
                 return
         self.right_panel.properties_panel.clear_panel()
 
-    def _on_module_list_clicked(self, uid):
-        if self.current_tool != BoardTool.SELECT:
-            return
-        item = self.manager.items.get(uid)
-        if item is not None:
-            self.canvas.scene.clearSelection()
-            item.setSelected(True)
-            self.right_panel.properties_panel.show_object(item)
-            self.canvas.centerOn(item)
+    def _on_module_list_clicked(self, list_item):
+        idx = self.module_list.row(list_item)
+        if 0 <= idx < len(self.board.modules):
+            module = self.board.modules[idx]
+            item = self.manager.items.get(module.uid)
+            if item is not None:
+                self.canvas.scene.clearSelection()
+                item.setSelected(True)
+                self.right_panel.properties_panel.show_object(item)
+                self.canvas.centerOn(item)
 
     def _apply_theme(self):
         app = QApplication.instance()
@@ -368,10 +404,9 @@ class BoardEditorWindow(QMainWindow):
         self.log_label.setStyleSheet(Styles.LOG_LABEL)
         self.right_panel.setStyleSheet(Styles.RIGHT_PANEL)
         self.right_panel.apply_theme()
-        self.library_panel.apply_theme()
         self.tool_bar.apply_theme()
         self.aux_bar.apply_theme()
-        self.library_dock.setStyleSheet(Styles.MAIN_WINDOW)
+        self.module_dock.setStyleSheet(Styles.MAIN_WINDOW)
 
     def _load_grid_mode(self):
         mode = self._settings.value(SETTINGS_KEY_BRD_GRID_MODE, "1x", type=str)
@@ -432,13 +467,13 @@ class BoardEditorWindow(QMainWindow):
         self._settings.sync()
 
     def _refresh_library_modules(self):
+        self.library_modules = {}
         for path in self.library_paths:
-            if path not in self.library_modules:
-                try:
-                    footprints = parse_kicad_mod(path)
-                    self.library_modules[path] = {fp.name: fp for fp in footprints}
-                except Exception as e:
-                    self.show_log(f"Ошибка библиотеки {Path(path).name}: {e}")
+            try:
+                footprints = parse_kicad_mod(path)
+                self.library_modules[path] = {fp.name: fp for fp in footprints}
+            except Exception as e:
+                self.show_log(f"Ошибка библиотеки {Path(path).name}: {e}")
 
     def _find_footprint(self, name):
         for lib_data in self.library_modules.values():
@@ -447,7 +482,11 @@ class BoardEditorWindow(QMainWindow):
         return None
 
     def _refresh_module_list(self):
-        self.library_panel.set_modules(self.board.modules)
+        self.module_list.clear()
+        for module in self.board.modules:
+            item = QListWidgetItem(f"{module.reference}  [{module.footprint.name}]")
+            item.setToolTip(f"{module.reference} = {module.value}")
+            self.module_list.addItem(item)
 
     def _add_library(self):
         path, _ = QFileDialog.getOpenFileName(self, "Добавить библиотеку .mod", "",
@@ -461,6 +500,20 @@ class BoardEditorWindow(QMainWindow):
             self.right_panel.properties_panel.show_module_picker(self.library_modules)
         self.show_log(f"Библиотека добавлена: {Path(path).name}")
 
+    def _manage_libraries(self):
+        dlg = LibrariesManagerDialog(self.library_paths, self)
+        if dlg.exec() != LibrariesManagerDialog.Accepted:
+            return
+        new_paths = dlg.get_library_paths()
+        if new_paths == self.library_paths:
+            return
+        self.library_paths = new_paths
+        self._save_library_paths()
+        self._refresh_library_modules()
+        if self.current_tool == BoardTool.ADD_MODULE:
+            self.right_panel.properties_panel.show_module_picker(self.library_modules)
+        self.show_log(f"Библиотек: {len(self.library_paths)}")
+
     def _next_module_uid(self):
         if not self.board.modules:
             return 1
@@ -470,21 +523,6 @@ class BoardEditorWindow(QMainWindow):
         if not self.board.lines:
             return 1
         return max(l.uid for l in self.board.lines) + 1
-
-    def _next_circle_uid(self):
-        if not self.board.circles:
-            return 1
-        return max(c.uid for c in self.board.circles) + 1
-
-    def _next_arc_uid(self):
-        if not self.board.arcs:
-            return 1
-        return max(a.uid for a in self.board.arcs) + 1
-
-    def _next_text_uid(self):
-        if not self.board.texts:
-            return 1
-        return max(t.uid for t in self.board.texts) + 1
 
     def _on_import_net(self):
         path, _ = QFileDialog.getOpenFileName(self, "Открыть сетлист", "",
@@ -571,7 +609,18 @@ class BoardEditorWindow(QMainWindow):
         self._reset_history()
 
     def _on_save_board(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Сохранить плату", "",
+        if not self.board.filename:
+            self._on_save_board_as()
+            return
+        try:
+            text = build_brd_text(self.board)
+            Path(self.board.filename).write_text(text, encoding='utf-8')
+            self.show_log(f"Плата сохранена: {Path(self.board.filename).name}")
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить: {e}")
+
+    def _on_save_board_as(self):
+        path, _ = QFileDialog.getSaveFileName(self, "Сохранить плату как", "",
                                               "KiCad Board (*.brd);;All Files (*)")
         if not path:
             return
@@ -581,6 +630,7 @@ class BoardEditorWindow(QMainWindow):
             text = build_brd_text(self.board)
             Path(path).write_text(text, encoding='utf-8')
             self.board.filename = path
+            self.setWindowTitle(f"TraceCAD: {Path(path).name}")
             self.show_log(f"Плата сохранена: {Path(path).name}")
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить: {e}")
@@ -702,9 +752,10 @@ class BoardEditorWindow(QMainWindow):
             self.show_log("Сначала выберите модуль справа")
             return
         import copy
+        prefix = prefix_from_footprint_name(fp.name)
         module = BoardModule(
             footprint=copy.deepcopy(fp),
-            reference=self.board.auto_reference("REF"),
+            reference=self.board.auto_reference(prefix),
             value=fp.value,
             x=x, y=y, angle=0.0, layer="F.Cu",
             uid=self._next_module_uid(),
@@ -829,16 +880,38 @@ class BoardEditorWindow(QMainWindow):
 
     def _rotate_selected(self):
         items = [it for it in self.canvas.scene.selectedItems()
-                 if isinstance(it, BoardModuleGraphicsItem)]
+                 if isinstance(it, (BoardModuleGraphicsItem, BoardLineGraphicsItem,
+                                    BoardArcGraphicsItem))]
         if not items:
             return
         for item in items:
-            item.module.angle = (item.module.angle + 90.0) % 360.0
-            item.setRotation(item.module.angle)
-            item.prepareGeometryChange()
-            item.update()
+            if isinstance(item, BoardModuleGraphicsItem):
+                item.module.angle = (item.module.angle + 90.0) % 360.0
+                item.setRotation(item.module.angle)
+                item.prepareGeometryChange()
+                item.update()
+            elif isinstance(item, BoardLineGraphicsItem):
+                l = item.model
+                cx = (l.x1 + l.x2) / 2.0
+                cy = (l.y1 + l.y2) / 2.0
+                dx1, dy1 = l.x1 - cx, l.y1 - cy
+                dx2, dy2 = l.x2 - cx, l.y2 - cy
+                l.x1, l.y1 = cx - dy1, cy + dx1
+                l.x2, l.y2 = cx - dy2, cy + dx2
+                item.setPos(l.x1, l.y1)
+                item.prepareGeometryChange()
+                item.update()
+            elif isinstance(item, BoardArcGraphicsItem):
+                a = item.model
+                dx, dy = a.sx - a.x, a.sy - a.y
+                a.sx = a.x - dy
+                a.sy = a.y + dx
+                item.setPos(a.x, a.y)
+                item.prepareGeometryChange()
+                item.update()
         self.manager.rebuild_ratsnest()
         self._commit_snapshot()
+        self.show_log(f"Повёрнуто: {len(items)} элементов")
 
     def _snapshot(self):
         import copy

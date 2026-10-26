@@ -2,8 +2,9 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 import copy
 import math
+import re
 
-from footprint_editor.core.models import Footprint
+from pbe_editor.core.models import Footprint
 
 
 POWER_NET_NAMES = {"GND", "VCC", "VDD", "VSS", "+5V", "+3V3", "+3.3V", "-5V", "-12V", "+12V"}
@@ -20,6 +21,27 @@ def is_gnd_net(name: str) -> bool:
     if not name:
         return False
     return name.upper() in {n.upper() for n in GND_NET_NAMES}
+
+
+_PREFIX_HINTS = [
+    (re.compile(r"^diode", re.IGNORECASE), "VD"),
+    (re.compile(r"^d_bridge", re.IGNORECASE), "VD"),
+    (re.compile(r"^tran", re.IGNORECASE), "VT"),
+    (re.compile(r"^cap", re.IGNORECASE), "C"),
+    (re.compile(r"^res|^r$", re.IGNORECASE), "R"),
+    (re.compile(r"^con", re.IGNORECASE), "X"),
+    (re.compile(r"^7seg", re.IGNORECASE), "HG"),
+    (re.compile(r"^k\d", re.IGNORECASE), "DD"),
+    (re.compile(r"^led", re.IGNORECASE), "LED"),
+]
+
+
+def prefix_from_footprint_name(name: str) -> str:
+    for rx, prefix in _PREFIX_HINTS:
+        if rx.search(name or ""):
+            return prefix
+    letters = re.findall(r"[A-Za-zА-Яа-я]+", name or "")
+    return (letters[0][:3] if letters else "U").upper()
 
 
 def _deepcopy_no_graphics(self, memo):
@@ -91,7 +113,7 @@ class BoardLine:
     x2: float
     y2: float
     layer: str = "Edge.Cuts"
-    width: float = 0.15
+    width: float = 0.381
     uid: int = 0
     graphics_item: object = None
 
@@ -105,7 +127,7 @@ class BoardCircle:
     y: float
     radius: float
     layer: str = "Edge.Cuts"
-    width: float = 0.15
+    width: float = 0.381
     uid: int = 0
     graphics_item: object = None
 
@@ -121,7 +143,7 @@ class BoardArc:
     sy: float
     angle: float = 90.0
     layer: str = "Edge.Cuts"
-    width: float = 0.15
+    width: float = 0.381
     uid: int = 0
     graphics_item: object = None
 
@@ -189,17 +211,17 @@ class Board:
             result[code].sort(key=lambda x: (x[0].reference, x[1]))
         return result
 
-    def all_references(self):
-        return {m.reference for m in self.modules}
-
-    def auto_reference(self, prefix: str = "REF") -> str:
-        existing = self.all_references()
+    def auto_reference(self, prefix: str = "U") -> str:
+        used = set()
+        for m in self.modules:
+            ref = m.reference or ""
+            mm = re.match(r"^([A-Za-zА-Яа-я]+)(\d+)$", ref)
+            if mm and mm.group(1).upper() == prefix.upper():
+                used.add(int(mm.group(2)))
         i = 1
-        while True:
-            name = f"{prefix}{i}"
-            if name not in existing:
-                return name
+        while i in used:
             i += 1
+        return f"{prefix}{i}"
 
     def find_pad_at(self, scene_x: float, scene_y: float, tolerance: float):
         best = None

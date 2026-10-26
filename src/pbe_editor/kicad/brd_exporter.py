@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from footprint_editor.core.models import PadShape, PadType, TextType
-from footprint_editor.kicad.units import mm_to_kicad
-from footprint_editor.kicad.layers import layer_to_id
+from pbe_editor.core.models import PadShape, PadType, TextType
+from pbe_editor.kicad.units import mm_to_kicad
+from pbe_editor.kicad.pbe_layers import layer_to_id, drawseg_layer_to_id
 
 
 def _pad_block(pad, net_code, net_name):
@@ -80,7 +80,7 @@ def _module_block(module, board):
 
 
 def _drawsegment_line(line):
-    lid = layer_to_id(line.layer)
+    lid = drawseg_layer_to_id(line.layer)
     return [
         "$DRAWSEGMENT",
         f"Po 0 {mm_to_kicad(line.x1)} {mm_to_kicad(line.y1)} "
@@ -91,7 +91,7 @@ def _drawsegment_line(line):
 
 
 def _drawsegment_circle(circle):
-    lid = layer_to_id(circle.layer)
+    lid = drawseg_layer_to_id(circle.layer)
     xc = mm_to_kicad(circle.x); yc = mm_to_kicad(circle.y)
     xp = mm_to_kicad(circle.x + circle.radius); yp = mm_to_kicad(circle.y)
     return [
@@ -103,7 +103,7 @@ def _drawsegment_circle(circle):
 
 
 def _drawsegment_arc(arc):
-    lid = layer_to_id(arc.layer)
+    lid = drawseg_layer_to_id(arc.layer)
     angle10 = int(round(arc.angle * 10))
     return [
         "$DRAWSEGMENT",
@@ -115,7 +115,7 @@ def _drawsegment_arc(arc):
 
 
 def _textpcb_block(text):
-    lid = layer_to_id(text.layer)
+    lid = drawseg_layer_to_id(text.layer)
     x_k = mm_to_kicad(text.x); y_k = mm_to_kicad(text.y)
     size_k = mm_to_kicad(text.size)
     return [

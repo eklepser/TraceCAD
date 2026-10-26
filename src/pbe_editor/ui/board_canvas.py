@@ -12,6 +12,7 @@ class BoardCanvas(QGraphicsView):
     canvas_clicked = Signal(float, float)
     canvas_right_clicked = Signal()
     selection_changed = Signal()
+    content_changed = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -174,7 +175,6 @@ class BoardCanvas(QGraphicsView):
             event.accept()
             return
         if event.button() == Qt.MouseButton.LeftButton:
-            # Если текущий dragMode — RubberBand (режим выделения) — пусть Qt сам обрабатывает
             if self.dragMode() == QGraphicsView.DragMode.RubberBandDrag:
                 items = self.items(event.position().toPoint())
                 selectable = [it for it in items if it.flags() & QGraphicsItem.GraphicsItemFlag.ItemIsSelectable]
@@ -188,7 +188,6 @@ class BoardCanvas(QGraphicsView):
                     self.canvas_clicked.emit(snapped.x(), snapped.y())
                 super().mousePressEvent(event)
                 return
-            # Иначе — рисование: клик по пустому месту
             items = self.items(event.position().toPoint())
             selectable = [it for it in items if it.flags() & QGraphicsItem.GraphicsItemFlag.ItemIsSelectable]
             if not selectable:

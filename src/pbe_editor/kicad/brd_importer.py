@@ -3,12 +3,14 @@ import math
 from pathlib import Path
 from typing import Optional
 
-from footprint_editor.core.models import (
+from pbe_editor.core.models import (
     Footprint, Pad, PadShape, PadType, Line, Circle, Arc, Text, TextType,
     default_layers_for_pad_type,
 )
-from footprint_editor.kicad.units import kicad_to_mm
-from footprint_editor.kicad.layers import LAYER_ID_TO_INTERNAL, layer_from_id
+from pbe_editor.kicad.units import kicad_to_mm
+from pbe_editor.kicad.pbe_layers import (
+    LAYER_ID_TO_INTERNAL, layer_from_id, drawseg_layer_from_id,
+)
 from pbe_editor.core.board_models import (
     Board, BoardModule, BoardLine, BoardCircle, BoardArc, BoardText, PadNet, Net,
 )
@@ -22,10 +24,8 @@ def parse_brd(filepath: str) -> Board:
 def _parse_de_body(body, default_layer=28):
     m = re.search(r'^De\s+(\d+)([^\r\n]*)', body, re.MULTILINE)
     if not m:
-        print(f"[_parse_de_body] нет строки De, default_layer={default_layer}")
-        return layer_from_id(default_layer), 0.0
-    raw_lid = m.group(1)
-    lid = int(raw_lid)
+        return drawseg_layer_from_id(default_layer), 0.0
+    lid = int(m.group(1))
     tail = m.group(2).split()
     angle = 0.0
     if len(tail) >= 2:
@@ -33,13 +33,10 @@ def _parse_de_body(body, default_layer=28):
             angle = float(tail[1]) / 10.0
         except ValueError:
             pass
-    print(f"[_parse_de_body] De raw_id={raw_lid} tail={tail} angle={angle}")
-    layer = layer_from_id(lid)
-    return layer, angle
+    return drawseg_layer_from_id(lid), angle
 
 
 def parse_brd_content(content: str) -> Board:
-    print("\n========== parse_brd_content START ==========")
     board = Board()
     board.filename = None
 
@@ -53,25 +50,18 @@ def parse_brd_content(content: str) -> Board:
     arc_uid = 1
     text_uid = 1
 
-    ds_iter = list(re.finditer(r'\$DRAWSEGMENT(.*?)\$EndDRAWSEGMENT', content, re.DOTALL))
-    print(f"[parse] найдено $DRAWSEGMENT: {len(ds_iter)}")
-    for i, ds_match in enumerate(ds_iter):
+    for ds_match in re.finditer(r'\$DRAWSEGMENT(.*?)\$EndDRAWSEGMENT', content, re.DOTALL):
         body = ds_match.group(1)
-        print(f"\n--- $DRAWSEGMENT #{i} ---")
-        print(f"body:\n{body.strip()}")
         layer_name, de_angle = _parse_de_body(body)
 
         po_match = re.search(r'^Po\s+([-\d\s]+)', body, re.MULTILINE)
         if not po_match:
-            print("  [!] нет строки Po, пропускаем")
             continue
         nums = [int(x) for x in po_match.group(1).split() if x]
         if not nums:
-            print("  [!] Po пустой, пропускаем")
             continue
         shape = nums[0]
         rest = nums[1:]
-        print(f"  shape={shape}, rest={rest}, layer_name={layer_name!r}, de_angle={de_angle}")
 
         if shape == 0:
             if len(rest) == 6 and rest[0] == 0:
@@ -79,9 +69,7 @@ def parse_brd_content(content: str) -> Board:
             elif len(rest) >= 5:
                 x1, y1, x2, y2, thick = rest[0], rest[1], rest[2], rest[3], rest[4]
             else:
-                print("  [!] недостаточно чисел для линии")
                 continue
-            print(f"  → LINE ({x1},{y1})->({x2},{y2}) thick={thick} layer={layer_name}")
             board.lines.append(BoardLine(
                 x1=kicad_to_mm(x1), y1=kicad_to_mm(y1),
                 x2=kicad_to_mm(x2), y2=kicad_to_mm(y2),
@@ -96,12 +84,10 @@ def parse_brd_content(content: str) -> Board:
             elif len(rest) >= 5:
                 xc, yc, xp, yp, thick = rest[0], rest[1], rest[2], rest[3], rest[4]
             else:
-                print("  [!] недостаточно чисел для окружности")
                 continue
             xc_m = kicad_to_mm(xc); yc_m = kicad_to_mm(yc)
             xp_m = kicad_to_mm(xp); yp_m = kicad_to_mm(yp)
             r = math.hypot(xp_m - xc_m, yp_m - yc_m)
-            print(f"  → CIRCLE c=({xc_m},{yc_m}) r={r} layer={layer_name}")
             board.circles.append(BoardCircle(
                 x=xc_m, y=yc_m, radius=r,
                 layer=layer_name, width=kicad_to_mm(thick), uid=circle_uid,
@@ -115,9 +101,7 @@ def parse_brd_content(content: str) -> Board:
             elif len(rest) >= 5:
                 cx, cy, sx, sy, thick = rest[0], rest[1], rest[2], rest[3], rest[4]
             else:
-                print("  [!] недостаточно чисел для дуги")
                 continue
-            print(f"  → ARC c=({cx},{cy}) s=({sx},{sy}) angle={de_angle} thick={thick} layer={layer_name}")
             board.arcs.append(BoardArc(
                 x=kicad_to_mm(cx), y=kicad_to_mm(cy),
                 sx=kicad_to_mm(sx), sy=kicad_to_mm(sy),
@@ -128,7 +112,6 @@ def parse_brd_content(content: str) -> Board:
 
     for tp_match in re.finditer(r'\$TEXTPCB(.*?)\$EndTEXTPCB', content, re.DOTALL):
         body = tp_match.group(1)
-        print(f"\n--- $TEXTPCB ---\nbody:\n{body.strip()}")
         layer_name, _ = _parse_de_body(body)
         te_match = re.search(r'^Te\s+"([^"]*)"', body, re.MULTILINE)
         text_value = te_match.group(1) if te_match else "Text"
@@ -136,15 +119,15 @@ def parse_brd_content(content: str) -> Board:
             r'^Po\s+(-?\d+)\s+(-?\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)',
             body, re.MULTILINE
         )
-        if not po_match:
-            print("  [!] нет Po, пропускаем")
-            continue
-        x = kicad_to_mm(po_match.group(1))
-        y = kicad_to_mm(po_match.group(2))
-        w = kicad_to_mm(po_match.group(3))
-        h = kicad_to_mm(po_match.group(4))
+        if po_match:
+            x = kicad_to_mm(po_match.group(1))
+            y = kicad_to_mm(po_match.group(2))
+            w = kicad_to_mm(po_match.group(3))
+            h = kicad_to_mm(po_match.group(4))
+        else:
+            x = y = 0.0
+            w = h = kicad_to_mm(400)
         size = max(w, h) if max(w, h) > 0 else 1.0
-        print(f"  → TEXT '{text_value}' at ({x},{y}) layer={layer_name}")
         board.texts.append(BoardText(
             x=x, y=y, text=text_value, size=size,
             layer=layer_name, visible=True, uid=text_uid,
@@ -160,7 +143,6 @@ def parse_brd_content(content: str) -> Board:
         next_uid += 1
         board.modules.append(module)
 
-    print("========== parse_brd_content END ==========\n")
     return board
 
 
@@ -235,8 +217,7 @@ def parse_module(name: str, body: str, uid: int) -> Optional[BoardModule]:
         x=x, y=y, angle=angle, layer="F.Cu", uid=uid,
     )
 
-    pad_pattern = re.compile(r'\$PAD(.*?)\$EndPAD', re.DOTALL)
-    for pad_match in pad_pattern.finditer(body):
+    for pad_match in re.finditer(r'\$PAD(.*?)\$EndPAD', body, re.DOTALL):
         pad, pad_net = _parse_pad(pad_match.group(1))
         if pad is not None:
             fp.pads.append(pad)
