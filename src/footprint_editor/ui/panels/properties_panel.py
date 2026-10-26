@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QHBoxLayout, QLabel,
-                               QDoubleSpinBox, QComboBox, QLineEdit, QCheckBox,
-                               QPushButton, QListView)
+                               QComboBox, QLineEdit, QCheckBox,
+                               QPushButton, QListView, QSizePolicy)
+from PySide6.QtGui import QDoubleValidator
 from PySide6.QtCore import Qt
 from footprint_editor.core.models import (
     Pad, Line, Circle, Arc, Text, PadShape, PadType, TextType,
@@ -26,7 +27,6 @@ PAD_TYPE_NAMES = {
 
 PAD_TYPE_ORDER = [PadType.STANDARD, PadType.SMD, PadType.CONN]
 
-
 CHECKBOX_QSS = (
     "QCheckBox { color: #a9b7c6; spacing: 8px; background: transparent; }"
     "QCheckBox::indicator { width: 14px; height: 14px;"
@@ -36,6 +36,40 @@ CHECKBOX_QSS = (
     "QCheckBox::indicator:checked {"
     " border: 1px solid #ffffff; background-color: #365880; }"
 )
+
+
+class NumericLineEdit(QLineEdit):
+    def __init__(self, value=0.0, decimals=4, min_val=-1e9, max_val=1e9, parent=None):
+        super().__init__(parent)
+        self._decimals = decimals
+        self._min = min_val
+        self._max = max_val
+        validator = QDoubleValidator(min_val, max_val, decimals, self)
+        validator.setNotation(QDoubleValidator.Notation.StandardNotation)
+        self.setValidator(validator)
+        self.setText(self._format(value))
+        self.setMinimumWidth(100)
+        self.setMinimumHeight(24)
+
+    def _format(self, value):
+        return f"{value:.{self._decimals}f}"
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self.selectAll()
+
+    def value(self):
+        text = self.text().strip().replace(',', '.')
+        if not text:
+            return 0.0
+        try:
+            v = float(text)
+        except ValueError:
+            return 0.0
+        return max(self._min, min(v, self._max))
+
+    def setValue(self, value):
+        self.setText(self._format(value))
 
 
 class PropertiesPanel(QWidget):
@@ -53,11 +87,13 @@ class PropertiesPanel(QWidget):
         self.form_widget = QWidget()
         self.form_widget.setObjectName("PropertiesTable")
         self.form_widget.setStyleSheet(self._form_widget_qss())
+        self.form_widget.setSizePolicy(QSizePolicy.Policy.Expanding,
+                                       QSizePolicy.Policy.Preferred)
         self.form_layout = QFormLayout(self.form_widget)
         self.form_layout.setContentsMargins(8, 8, 8, 8)
         self.form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.form_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-        self.form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        self.form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
         self.form_layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.DontWrapRows)
         self.form_layout.setHorizontalSpacing(8)
         self.form_layout.setVerticalSpacing(4)
@@ -95,29 +131,24 @@ class PropertiesPanel(QWidget):
         return (
             "QWidget#PropertiesTable { background-color: #2b2b2b;"
             " border: 1px solid #555555; }"
-            " QWidget#PropertiesTable QLabel { background: transparent; }"
-            " QWidget#PropertiesTable QLineEdit,"
-            " QWidget#PropertiesTable QDoubleSpinBox,"
-            " QWidget#PropertiesTable QComboBox {"
+            " QWidget#PropertiesTable QLabel { background: transparent; color: #a9b7c6; }"
+            " QWidget#PropertiesTable QLineEdit {"
             "   background: transparent; color: #ffffff;"
-            "   border: none; border-bottom: 1px solid #555555;"
-            "   padding: 2px 2px;"
+            "   border: 1px solid transparent;"
+            "   border-bottom: 1px solid #555555;"
+            "   padding: 2px 6px;"
             " }"
-            " QWidget#PropertiesTable QLineEdit:focus,"
-            " QWidget#PropertiesTable QDoubleSpinBox:focus,"
-            " QWidget#PropertiesTable QComboBox:focus {"
+            " QWidget#PropertiesTable QLineEdit:focus {"
             "   border-bottom: 1px solid #365880;"
             " }"
-            " QWidget#PropertiesTable QLineEdit:hover,"
-            " QWidget#PropertiesTable QDoubleSpinBox:hover,"
-            " QWidget#PropertiesTable QComboBox:hover {"
-            "   border-bottom: 1px solid #7a7a7a;"
+            " QWidget#PropertiesTable QComboBox {"
+            "   background: transparent; color: #ffffff;"
+            "   border: 1px solid transparent;"
+            "   border-bottom: 1px solid #555555;"
+            "   padding: 2px 6px;"
             " }"
             " QWidget#PropertiesTable QComboBox::drop-down {"
             "   border: none; width: 14px; }"
-            " QWidget#PropertiesTable QDoubleSpinBox::up-button,"
-            " QWidget#PropertiesTable QDoubleSpinBox::down-button {"
-            "   background: transparent; border: none; width: 12px; }"
         )
 
     def apply_theme(self):
@@ -257,11 +288,12 @@ class PropertiesPanel(QWidget):
             combo.addItem(label, data)
         combo.setCurrentIndex(current_index)
         combo.setView(self._make_combo_view())
+        combo.setMinimumWidth(100)
+        combo.setMinimumHeight(24)
         combo.setStyleSheet(
             "QComboBox { background: transparent; color: #ffffff;"
-            " border: none; border-bottom: 1px solid #555555;"
-            " padding: 2px 2px; }"
-            " QComboBox:hover { border-bottom: 1px solid #7a7a7a; }"
+            " border: 1px solid transparent; border-bottom: 1px solid #555555;"
+            " padding: 2px 6px; }"
             " QComboBox:focus { border-bottom: 1px solid #365880; }"
             " QComboBox::drop-down { border: none; width: 14px; }"
         )
@@ -281,6 +313,8 @@ class PropertiesPanel(QWidget):
         self._add_spinbox("Y, мм:", pad.y, -500.0, 500.0, "y")
 
         text_input = QLineEdit(pad.number)
+        text_input.setMinimumWidth(100)
+        text_input.setMinimumHeight(24)
         self._add_row("Номер:", text_input, "number")
 
         self._add_spinbox("Ширина, мм:", pad.width, 0.1, 50.0, "width")
@@ -315,7 +349,7 @@ class PropertiesPanel(QWidget):
         self._add_spinbox("Центр Y, мм:", arc.y, -500.0, 500.0, "y")
         self._add_spinbox("Начало X, мм:", arc.sx, -500.0, 500.0, "sx")
         self._add_spinbox("Начало Y, мм:", arc.sy, -500.0, 500.0, "sy")
-        self._add_spinbox("Угол, °:", arc.angle, -359.0, 359.0, "angle")
+        self._add_spinbox("Угол, °:", arc.angle, -359.0, 359.0, "angle", decimals=1)
         self._add_spinbox("Толщина, мм:", arc.width, 0.01, 5.0, "width")
         self._add_layers_block([arc.layer], multi=False)
 
@@ -325,6 +359,8 @@ class PropertiesPanel(QWidget):
         self._add_spinbox("Размер, мм:", text.size, 0.05, 10.0, "size")
 
         text_input = QLineEdit(text.text)
+        text_input.setMinimumWidth(100)
+        text_input.setMinimumHeight(24)
         self._add_row("Текст:", text_input, "text")
 
         visible_check = QCheckBox()
@@ -334,14 +370,10 @@ class PropertiesPanel(QWidget):
 
         self._add_layers_block([text.layer], multi=False)
 
-    def _add_spinbox(self, label, value, min_val, max_val, key):
-        spin = QDoubleSpinBox()
-        spin.setRange(min_val, max_val)
-        spin.setSingleStep(0.01)
-        spin.setDecimals(4)
-        spin.setValue(value)
-        spin.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
-        self._add_row(label, spin, key)
+    def _add_spinbox(self, label, value, min_val, max_val, key, step=0.01, decimals=4, readonly=False):
+        le = NumericLineEdit(value, decimals, min_val, max_val)
+        le.setReadOnly(readonly)
+        self._add_row(label, le, key)
 
     def _on_pad_type_changed(self, pad, combo):
         new_type = combo.currentData()

@@ -8,14 +8,20 @@ from constants import Styles
 class BoardTool:
     SELECT = "select"
     ADD_LINE = "add_line"
+    ADD_CIRCLE = "add_circle"
+    ADD_ARC = "add_arc"
+    ADD_TEXT = "add_text"
     ADD_MODULE = "add_module"
     ADD_NET = "add_net"
 
 
 TOOL_BUTTONS = [
-    (BoardTool.ADD_LINE, "╱", "Линия слоя (1)"),
-    (BoardTool.ADD_MODULE, "⬛", "Добавить модуль (2)"),
-    (BoardTool.ADD_NET, "→", "Соединить выводы (3)"),
+    (BoardTool.ADD_LINE, "╱", "Линия (1)"),
+    (BoardTool.ADD_CIRCLE, "◯", "Окружность (2)"),
+    (BoardTool.ADD_ARC, "◜", "Дуга (3)"),
+    (BoardTool.ADD_TEXT, "Т", "Текст (4)"),
+    (BoardTool.ADD_MODULE, "⬛", "Добавить модуль (5)"),
+    (BoardTool.ADD_NET, "→", "Соединить выводы (6)"),
 ]
 
 ICONS_DIR = Path(__file__).resolve().parent.parent.parent / "resources" / "icons"

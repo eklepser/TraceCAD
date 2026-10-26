@@ -1,9 +1,9 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QHBoxLayout, QLabel,
-                               QDoubleSpinBox, QLineEdit, QComboBox, QListView,
+                               QLineEdit, QComboBox, QListView,
                                QPushButton, QTableWidget, QTableWidgetItem, QHeaderView,
                                QListWidget, QListWidgetItem, QTreeWidget, QTreeWidgetItem,
-                               QCheckBox, QAbstractItemView)
-from PySide6.QtGui import QColor, QPixmap, QIcon
+                               QCheckBox, QAbstractItemView, QSizePolicy)
+from PySide6.QtGui import QDoubleValidator, QColor, QPixmap, QIcon
 from PySide6.QtCore import Qt, Signal
 
 from constants import Styles
@@ -32,6 +32,40 @@ def _layer_label(name):
     return f"{name} ({ru})" if ru else name
 
 
+class NumericLineEdit(QLineEdit):
+    def __init__(self, value=0.0, decimals=4, min_val=-1e9, max_val=1e9, parent=None):
+        super().__init__(parent)
+        self._decimals = decimals
+        self._min = min_val
+        self._max = max_val
+        validator = QDoubleValidator(min_val, max_val, decimals, self)
+        validator.setNotation(QDoubleValidator.Notation.StandardNotation)
+        self.setValidator(validator)
+        self.setText(self._format(value))
+        self.setMinimumWidth(100)
+        self.setMinimumHeight(24)
+
+    def _format(self, value):
+        return f"{value:.{self._decimals}f}"
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self.selectAll()
+
+    def value(self):
+        text = self.text().strip().replace(',', '.')
+        if not text:
+            return 0.0
+        try:
+            v = float(text)
+        except ValueError:
+            return 0.0
+        return max(self._min, min(v, self._max))
+
+    def setValue(self, value):
+        self.setText(self._format(value))
+
+
 class BoardPropertiesPanel(QWidget):
     line_layer_selected = Signal(str)
     module_selected = Signal(object)
@@ -54,11 +88,13 @@ class BoardPropertiesPanel(QWidget):
         self.form_widget = QWidget()
         self.form_widget.setObjectName("PropertiesTable")
         self.form_widget.setStyleSheet(self._form_widget_qss())
+        self.form_widget.setSizePolicy(QSizePolicy.Policy.Expanding,
+                                       QSizePolicy.Policy.Preferred)
         self.form_layout = QFormLayout(self.form_widget)
         self.form_layout.setContentsMargins(8, 8, 8, 8)
         self.form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.form_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-        self.form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        self.form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
         self.form_layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.DontWrapRows)
         self.form_layout.setHorizontalSpacing(8)
         self.form_layout.setVerticalSpacing(4)
@@ -148,17 +184,22 @@ class BoardPropertiesPanel(QWidget):
         return (
             "QWidget#PropertiesTable { background-color: #2b2b2b;"
             " border: 1px solid #555555; }"
-            " QWidget#PropertiesTable QLabel { background: transparent; }"
-            " QWidget#PropertiesTable QLineEdit,"
-            " QWidget#PropertiesTable QDoubleSpinBox,"
+            " QWidget#PropertiesTable QLabel { background: transparent; color: #a9b7c6; }"
+            " QWidget#PropertiesTable QLineEdit {"
+            "   background: transparent; color: #ffffff;"
+            "   border: 1px solid transparent;"
+            "   border-bottom: 1px solid #555555;"
+            "   padding: 2px 6px;"
+            " }"
+            " QWidget#PropertiesTable QLineEdit:focus {"
+            "   border-bottom: 1px solid #365880;"
+            " }"
             " QWidget#PropertiesTable QComboBox {"
             "   background: transparent; color: #ffffff;"
-            "   border: none; border-bottom: 1px solid #555555;"
-            "   padding: 2px 2px; }"
-            " QWidget#PropertiesTable QLineEdit:focus,"
-            " QWidget#PropertiesTable QDoubleSpinBox:focus,"
-            " QWidget#PropertiesTable QComboBox:focus {"
-            "   border-bottom: 1px solid #365880; }"
+            "   border: 1px solid transparent;"
+            "   border-bottom: 1px solid #555555;"
+            "   padding: 2px 6px;"
+            " }"
             " QWidget#PropertiesTable QComboBox::drop-down {"
             "   border: none; width: 14px; }"
         )
@@ -372,14 +413,9 @@ class BoardPropertiesPanel(QWidget):
         self._widgets[key] = field_widget
 
     def _add_spinbox(self, label, value, min_val, max_val, key, step=0.01, decimals=4, readonly=False):
-        spin = QDoubleSpinBox()
-        spin.setRange(min_val, max_val)
-        spin.setSingleStep(step)
-        spin.setDecimals(decimals)
-        spin.setValue(value)
-        spin.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
-        spin.setReadOnly(readonly)
-        self._add_row(label, spin, key)
+        le = NumericLineEdit(value, decimals, min_val, max_val)
+        le.setReadOnly(readonly)
+        self._add_row(label, le, key)
 
     def _make_combo(self, items, current_index=0):
         combo = QComboBox()
@@ -395,6 +431,8 @@ class BoardPropertiesPanel(QWidget):
             "  background-color: #365880; color: white; }"
         )
         combo.setView(view)
+        combo.setMinimumWidth(100)
+        combo.setMinimumHeight(24)
         return combo
 
     def _line_layer_combo(self, layer):
@@ -409,14 +447,23 @@ class BoardPropertiesPanel(QWidget):
     def _build_module_ui(self, module):
         self._add_spinbox("X, мм:", module.x, -100000.0, 100000.0, "x")
         self._add_spinbox("Y, мм:", module.y, -100000.0, 100000.0, "y")
-        self._add_spinbox("Угол, °:", module.angle, -359.0, 359.0, "angle", step=1.0, decimals=1)
-        self._add_row("Имя:", QLineEdit(module.reference), "name")
-        self._add_row("Значение:", QLineEdit(module.value), "value")
+        self._add_spinbox("Угол, °:", module.angle, -359.0, 359.0, "angle", decimals=1)
+        name_input = QLineEdit(module.reference)
+        name_input.setMinimumWidth(100)
+        name_input.setMinimumHeight(24)
+        self._add_row("Имя:", name_input, "name")
+        val_input = QLineEdit(module.value)
+        val_input.setMinimumWidth(100)
+        val_input.setMinimumHeight(24)
+        self._add_row("Значение:", val_input, "value")
         self._add_row("Слой:", self._make_combo(
             [("F.Cu", "F.Cu"), ("B.Cu", "B.Cu")],
             0 if module.layer == "F.Cu" else 1,
         ), "layer")
-        fp_input = QLineEdit(module.footprint.name); fp_input.setReadOnly(True)
+        fp_input = QLineEdit(module.footprint.name)
+        fp_input.setReadOnly(True)
+        fp_input.setMinimumWidth(100)
+        fp_input.setMinimumHeight(24)
         self._add_row("Корпус:", fp_input, "footprint")
         self._fill_pins_table(module)
 
@@ -459,19 +506,26 @@ class BoardPropertiesPanel(QWidget):
         self._add_spinbox("X, мм:", text.x, -100000.0, 100000.0, "x")
         self._add_spinbox("Y, мм:", text.y, -100000.0, 100000.0, "y")
         self._add_spinbox("Размер, мм:", text.size, 0.05, 50.0, "size")
-        self._add_row("Текст:", QLineEdit(text.text), "text")
+        text_input = QLineEdit(text.text)
+        text_input.setMinimumWidth(100)
+        text_input.setMinimumHeight(24)
+        self._add_row("Текст:", text_input, "text")
         visible = QCheckBox(); visible.setChecked(text.visible); visible.setStyleSheet(CHECKBOX_QSS)
         self._add_row("Видимый:", visible, "visible")
         self._add_row("Слой:", self._line_layer_combo(text.layer), "layer")
 
     def _build_ratsnest_ui(self, item):
         code_input = QLineEdit(str(item.net_code)); code_input.setReadOnly(True)
+        code_input.setMinimumWidth(100); code_input.setMinimumHeight(24)
         self._add_row("Код цепи:", code_input, "net_code")
         name_input = QLineEdit(item.net_name); name_input.setReadOnly(True)
+        name_input.setMinimumWidth(100); name_input.setMinimumHeight(24)
         self._add_row("Имя цепи:", name_input, "net_name")
         a_input = QLineEdit(item.label_a); a_input.setReadOnly(True)
+        a_input.setMinimumWidth(100); a_input.setMinimumHeight(24)
         self._add_row("Пин A:", a_input, "label_a")
         b_input = QLineEdit(item.label_b); b_input.setReadOnly(True)
+        b_input.setMinimumWidth(100); b_input.setMinimumHeight(24)
         self._add_row("Пин B:", b_input, "label_b")
         if item.is_gnd:
             power_text = "GND"
@@ -480,6 +534,7 @@ class BoardPropertiesPanel(QWidget):
         else:
             power_text = "Нет"
         p_input = QLineEdit(power_text); p_input.setReadOnly(True)
+        p_input.setMinimumWidth(100); p_input.setMinimumHeight(24)
         self._add_row("Тип цепи:", p_input, "is_power")
 
     def _reset_changes(self):

@@ -1,8 +1,10 @@
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem
 from PySide6.QtCore import Qt, QPointF, Signal, QTimer
-from PySide6.QtGui import QColor, QWheelEvent, QMouseEvent, QPainter, QPen
+from PySide6.QtGui import QColor, QWheelEvent, QMouseEvent, QPainter, QPen, QPainterPath
 
 from constants import Colors, Sizes, Steps, VK_W, VK_A, VK_S, VK_D
+from pbe_editor.core.arc_geometry import arc_sample_points
+from pbe_editor.graphics.text_path import build_text_path
 
 
 class BoardCanvas(QGraphicsView):
@@ -19,6 +21,9 @@ class BoardCanvas(QGraphicsView):
         self._panning = False
         self._pan_start = None
         self.show_grid = True
+        self.show_snap = True
+        self._highlight_pad_pos = None
+        self._highlight_pad_radius = 0.0
 
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -36,7 +41,7 @@ class BoardCanvas(QGraphicsView):
 
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
-        self.scene.setSceneRect(-500, -500, 1000, 1000)
+        self.scene.setSceneRect(-2000, -2000, 4000, 4000)
         self.scene.selectionChanged.connect(self.selection_changed.emit)
 
         self.grid_size = float(Steps.DEFAULT_GRID)
@@ -44,7 +49,7 @@ class BoardCanvas(QGraphicsView):
         self.background_color = QColor(*Colors.BACKGROUND)
         self.setBackgroundBrush(self.background_color)
 
-        self.base_scale = Sizes.BASE_SCALE
+        self.base_scale = Sizes.BASE_SCALE / 4.0
         self.scale(self.base_scale, self.base_scale)
         self.zoom_steps = Steps.ZOOM
         self.zoom_index = self.zoom_steps.index(1.0)
@@ -62,6 +67,13 @@ class BoardCanvas(QGraphicsView):
 
         self._ghost_line_start = None
         self._ghost_line_end = None
+        self._ghost_circle_center = None
+        self._ghost_circle_radius = 0.0
+        self._ghost_arc = None
+        self._ghost_text_pos = None
+        self._ghost_text_content = ""
+        self._ghost_text_size = 1.0
+        self._ghost_text_visible = True
 
     def apply_theme(self):
         self.grid_color = QColor(*Colors.GRID)
@@ -72,6 +84,23 @@ class BoardCanvas(QGraphicsView):
     def set_grid_size(self, size_mm):
         self.grid_size = size_mm
         self.viewport().update()
+
+    def set_show_snap(self, show):
+        self.show_snap = show
+        if not show:
+            self._snap_pos = None
+        self.viewport().update()
+
+    def set_highlight_pad(self, pos, radius):
+        self._highlight_pad_pos = QPointF(pos)
+        self._highlight_pad_radius = radius
+        self.viewport().update()
+
+    def clear_highlight_pad(self):
+        if self._highlight_pad_pos is not None:
+            self._highlight_pad_pos = None
+            self._highlight_pad_radius = 0.0
+            self.viewport().update()
 
     def snap_to_grid(self, x, y):
         g = self.grid_size
@@ -85,6 +114,38 @@ class BoardCanvas(QGraphicsView):
     def clear_ghost_line(self):
         self._ghost_line_start = None
         self._ghost_line_end = None
+        self.viewport().update()
+
+    def set_ghost_circle(self, cx, cy, r):
+        self._ghost_circle_center = QPointF(cx, cy)
+        self._ghost_circle_radius = r
+        self.viewport().update()
+
+    def clear_ghost_circle(self):
+        self._ghost_circle_center = None
+        self._ghost_circle_radius = 0.0
+        self.viewport().update()
+
+    def set_ghost_arc(self, cx, cy, sx, sy, angle):
+        self._ghost_arc = (cx, cy, sx, sy, angle)
+        self.viewport().update()
+
+    def clear_ghost_arc(self):
+        self._ghost_arc = None
+        self.viewport().update()
+
+    def set_ghost_text(self, x, y, text, size, visible):
+        self._ghost_text_pos = QPointF(x, y)
+        self._ghost_text_content = text
+        self._ghost_text_size = size
+        self._ghost_text_visible = visible
+        self.viewport().update()
+
+    def clear_ghost_text(self):
+        self._ghost_text_pos = None
+        self._ghost_text_content = ""
+        self._ghost_text_size = 1.0
+        self._ghost_text_visible = True
         self.viewport().update()
 
     def drawBackground(self, painter, rect):
@@ -134,7 +195,7 @@ class BoardCanvas(QGraphicsView):
         painter.drawLine(QPointF(rect.left(), 0), QPointF(rect.right(), 0))
         painter.drawLine(QPointF(0, rect.top()), QPointF(0, rect.bottom()))
 
-        if self._snap_pos:
+        if self._snap_pos and self.show_snap:
             cross = Sizes.CROSS_SIZE / self.transform().m11()
             p = QPen(QColor(*Colors.SNAP_CROSS), 0)
             p.setCosmetic(True)
@@ -144,12 +205,56 @@ class BoardCanvas(QGraphicsView):
             painter.drawLine(QPointF(x - cross, y), QPointF(x + cross, y))
             painter.drawLine(QPointF(x, y - cross), QPointF(x, y + cross))
 
+        if self._highlight_pad_pos is not None and self._highlight_pad_radius > 0:
+            hp = QPen(QColor(255, 200, 0), 0)
+            hp.setCosmetic(True)
+            hp.setWidth(2)
+            painter.setPen(hp)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawEllipse(self._highlight_pad_pos,
+                                self._highlight_pad_radius,
+                                self._highlight_pad_radius)
+
+        ghost_pen = QPen(QColor(*Colors.GHOST_LINE), 0)
+        ghost_pen.setCosmetic(True)
+        ghost_pen.setStyle(Qt.PenStyle.DashLine)
+        painter.setPen(ghost_pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+
         if self._ghost_line_start and self._ghost_line_end:
-            gp = QPen(QColor(*Colors.GHOST_LINE), 0)
-            gp.setCosmetic(True)
-            gp.setStyle(Qt.PenStyle.DashLine)
-            painter.setPen(gp)
             painter.drawLine(self._ghost_line_start, self._ghost_line_end)
+
+        if self._ghost_circle_center and self._ghost_circle_radius > 0:
+            painter.drawEllipse(self._ghost_circle_center,
+                                self._ghost_circle_radius,
+                                self._ghost_circle_radius)
+
+        if self._ghost_arc is not None:
+            cx, cy, sx, sy, angle = self._ghost_arc
+            pts = arc_sample_points(cx, cy, sx, sy, angle, 64)
+            if len(pts) >= 2:
+                path = QPainterPath()
+                path.moveTo(pts[0][0], pts[0][1])
+                for px, py in pts[1:]:
+                    path.lineTo(px, py)
+                painter.drawPath(path)
+
+        if self._ghost_text_pos and self._ghost_text_content:
+            path = build_text_path(
+                self._ghost_text_content,
+                self._ghost_text_size * Sizes.TEXT_FONT_MULTIPLIER,
+                center=True,
+            )
+            if not path.isEmpty():
+                color = QColor(*Colors.GHOST_TEXT)
+                if not self._ghost_text_visible:
+                    color = color.lighter(50)
+                painter.save()
+                painter.translate(self._ghost_text_pos)
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(color)
+                painter.drawPath(path)
+                painter.restore()
 
     def wheelEvent(self, event: QWheelEvent):
         if event.angleDelta().y() > 0:
@@ -217,7 +322,10 @@ class BoardCanvas(QGraphicsView):
             return
         scene_pos = self.mapToScene(event.position().toPoint())
         snapped = self.snap_to_grid(scene_pos.x(), scene_pos.y())
-        self._snap_pos = QPointF(snapped.x(), snapped.y())
+        if self.show_snap:
+            self._snap_pos = QPointF(snapped.x(), snapped.y())
+        else:
+            self._snap_pos = None
         self.mouse_moved.emit(snapped.x(), snapped.y())
         self.viewport().update()
         super().mouseMoveEvent(event)

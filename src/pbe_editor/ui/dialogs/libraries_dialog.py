@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QTableWidget,
                                QFileDialog, QMessageBox, QLabel)
 from PySide6.QtCore import Qt
 from constants import Styles
-from footprint_editor.ui.dialogs.headerless_dialog import HeaderlessDialog
+from pbe_editor.ui.dialogs.headerless_dialog import HeaderlessDialog
 
 
 class LibrariesManagerDialog(HeaderlessDialog):
@@ -57,6 +57,7 @@ class LibrariesManagerDialog(HeaderlessDialog):
         btns.addWidget(self.btn_close)
 
         layout.addLayout(btns)
+
         self._refresh()
 
     def _refresh(self):

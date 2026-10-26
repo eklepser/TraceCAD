@@ -24,13 +24,16 @@ DARK_STYLES = {
         "QLabel { color: #d8d8d8; }"
         "QLineEdit, QDoubleSpinBox {"
         "  background-color: #3c3f41; color: #ffffff;"
-        "  border: 1px solid #555555; padding: 5px; }"
+        "  border: 1px solid #555555; padding: 4px 8px; }"
         "QLineEdit:focus, QDoubleSpinBox:focus { border: 1px solid #365880; }"
+        "QDoubleSpinBox QLineEdit {"
+        "  background: transparent; color: #ffffff;"
+        "  border: none; padding: 0px; }"
         "QCheckBox { color: #d8d8d8; spacing: 6px; }"
     ),
     "INPUT_BG": (
         "background-color: #3c3f41; color: #ffffff;"
-        "border: 1px solid #555555; padding: 5px;"
+        "border: 1px solid #555555; padding: 4px 8px; min-height: 24px;"
     ),
     "BUTTON_OK": "background-color: #365880; color: white; border: none; padding: 5px 14px;",
     "BUTTON_CANCEL": "background-color: #555555; color: white; border: none; padding: 5px 14px;",

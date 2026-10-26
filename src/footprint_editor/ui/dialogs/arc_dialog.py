@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
-                               QDoubleSpinBox, QPushButton)
+                               QLineEdit, QPushButton)
+from PySide6.QtGui import QDoubleValidator
 from PySide6.QtCore import Signal
 from constants import Styles
 from footprint_editor.ui.dialogs.headerless_dialog import HeaderlessDialog
@@ -10,6 +11,7 @@ class ArcDialog(HeaderlessDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent, title="Дуга")
+        self.setMinimumWidth(320)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(14, 14, 14, 14)
@@ -21,15 +23,15 @@ class ArcDialog(HeaderlessDialog):
 
         row = QHBoxLayout()
         row.addWidget(QLabel("Угол (°):"))
-        self.angle_spin = QDoubleSpinBox()
-        self.angle_spin.setRange(-359.0, 359.0)
-        self.angle_spin.setSingleStep(15.0)
-        self.angle_spin.setDecimals(1)
-        self.angle_spin.setValue(90.0)
-        self.angle_spin.setStyleSheet(Styles.INPUT_BG)
-        self.angle_spin.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
-        self.angle_spin.valueChanged.connect(self.angle_changed.emit)
-        row.addWidget(self.angle_spin, 1)
+        self.angle_edit = QLineEdit("90.0")
+        validator = QDoubleValidator(-359.0, 359.0, 1, self.angle_edit)
+        validator.setNotation(QDoubleValidator.Notation.StandardNotation)
+        self.angle_edit.setValidator(validator)
+        self.angle_edit.setStyleSheet(Styles.INPUT_BG)
+        self.angle_edit.setMinimumWidth(140)
+        self.angle_edit.setMinimumHeight(28)
+        self.angle_edit.textChanged.connect(self._on_angle_text_changed)
+        row.addWidget(self.angle_edit, 1)
         layout.addLayout(row)
 
         btns = QHBoxLayout()
@@ -46,5 +48,15 @@ class ArcDialog(HeaderlessDialog):
         btns.addWidget(self.btn_cancel)
         layout.addLayout(btns)
 
+    def _on_angle_text_changed(self, text):
+        try:
+            value = float(text.replace(',', '.'))
+        except ValueError:
+            return
+        self.angle_changed.emit(value)
+
     def get_angle(self):
-        return self.angle_spin.value()
+        try:
+            return float(self.angle_edit.text().replace(',', '.'))
+        except ValueError:
+            return 90.0

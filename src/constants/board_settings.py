@@ -1,4 +1,4 @@
-SETTINGS_KEY_BRD_LIBS = "brd_library_paths"
+SETTINGS_KEY_BRD_LIBS = "library_paths"
 SETTINGS_KEY_BRD_LAST = "brd_last_file"
 
 BOARD_UNIT_INCH = 0.000100

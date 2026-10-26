@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
-                               QLineEdit, QDoubleSpinBox, QCheckBox, QPushButton)
+                               QLineEdit, QCheckBox, QPushButton)
+from PySide6.QtGui import QDoubleValidator
 from PySide6.QtCore import Qt, Signal
 from constants import Styles
 from footprint_editor.ui.dialogs.headerless_dialog import HeaderlessDialog
@@ -12,6 +13,7 @@ class TextDialog(HeaderlessDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent, title="Текст")
+        self.setMinimumWidth(400)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(14, 14, 14, 14)
@@ -24,20 +26,22 @@ class TextDialog(HeaderlessDialog):
         self.text_input = QLineEdit()
         self.text_input.setPlaceholderText("Введите текст...")
         self.text_input.setStyleSheet(Styles.INPUT_BG)
+        self.text_input.setMinimumWidth(300)
+        self.text_input.setMinimumHeight(28)
         self.text_input.textChanged.connect(self.text_changed.emit)
         layout.addWidget(self.text_input)
 
         size_row = QHBoxLayout()
         size_row.addWidget(QLabel("Размер:"))
-        self.size_spin = QDoubleSpinBox()
-        self.size_spin.setRange(0.05, 10.0)
-        self.size_spin.setSingleStep(0.1)
-        self.size_spin.setDecimals(2)
-        self.size_spin.setValue(1.0)
-        self.size_spin.setStyleSheet(Styles.INPUT_BG)
-        self.size_spin.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
-        self.size_spin.valueChanged.connect(self.size_changed.emit)
-        size_row.addWidget(self.size_spin, 1)
+        self.size_edit = QLineEdit("1.00")
+        validator = QDoubleValidator(0.05, 10.0, 2, self.size_edit)
+        validator.setNotation(QDoubleValidator.Notation.StandardNotation)
+        self.size_edit.setValidator(validator)
+        self.size_edit.setStyleSheet(Styles.INPUT_BG)
+        self.size_edit.setMinimumWidth(140)
+        self.size_edit.setMinimumHeight(28)
+        self.size_edit.textChanged.connect(self._on_size_text_changed)
+        size_row.addWidget(self.size_edit, 1)
         layout.addLayout(size_row)
 
         self.visible_check = QCheckBox("Видимый")
@@ -71,11 +75,21 @@ class TextDialog(HeaderlessDialog):
 
         self.text_input.returnPressed.connect(self.accept)
 
+    def _on_size_text_changed(self, text):
+        try:
+            value = float(text.replace(',', '.'))
+        except ValueError:
+            return
+        self.size_changed.emit(value)
+
     def get_text(self):
         return self.text_input.text()
 
     def get_size(self):
-        return self.size_spin.value()
+        try:
+            return float(self.size_edit.text().replace(',', '.'))
+        except ValueError:
+            return 1.0
 
     def get_visible(self):
         return self.visible_check.isChecked()

@@ -1,12 +1,14 @@
+import copy
+
 from pathlib import Path
 
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QListWidget, QListWidgetItem, QFileDialog,
                                QMessageBox, QComboBox, QToolBar, QStatusBar,
                                QDockWidget, QApplication, QMenuBar,
-                               QGraphicsItem)
+                               QGraphicsItem, QDialog)
 from PySide6.QtGui import QAction, QActionGroup, QGuiApplication
-from PySide6.QtCore import Qt, QSettings, QEvent
+from PySide6.QtCore import Qt, QSettings, QEvent, QPointF
 
 from constants import (
     Styles, apply_theme, GRID_SERIES, GRID_SERIES_LABEL,
@@ -29,7 +31,10 @@ from pbe_editor.kicad.brd_exporter import build_brd_text
 from pbe_editor.kicad.brd_importer import parse_brd
 from pbe_editor.ui.board_canvas import BoardCanvas
 from pbe_editor.ui.dialogs.nets_dialog import NetsDialog
-from footprint_editor.ui.dialogs.libraries_dialog import LibrariesManagerDialog
+from pbe_editor.ui.dialogs.text_dialog import TextDialog
+from pbe_editor.ui.dialogs.arc_dialog import ArcDialog
+from pbe_editor.ui.dialogs.libraries_dialog import LibrariesManagerDialog
+from pbe_editor.ui.dialogs.custom_question_dialog import CustomQuestionDialog
 from pbe_editor.ui.panels.board_right_panel import BoardRightPanel
 from pbe_editor.ui.panels.drawing_tool_bar import BoardDrawingToolBar, BoardTool
 from pbe_editor.ui.panels.aux_bar import BoardAuxBar
@@ -63,7 +68,16 @@ class BoardEditorWindow(QMainWindow):
 
         self.current_tool = BoardTool.SELECT
         self._line_start = None
+        self._circle_center_point = None
+        self._arc_center_point = None
+        self._arc_start_point = None
+        self._text_position = None
         self._net_start = None
+
+        self._clipboard = []
+        self._current_mouse_pos = QPointF(0, 0)
+
+        self._modified = False
         self._undo_stack = []
         self._redo_stack = []
         self._current_snapshot = None
@@ -204,7 +218,19 @@ class BoardEditorWindow(QMainWindow):
         act_redo.setShortcut("Ctrl+Shift+Z")
         act_redo.triggered.connect(self.redo)
         edit_menu.addAction(act_redo)
+
         edit_menu.addSeparator()
+
+        act_copy = QAction("Копировать", self)
+        act_copy.setShortcut("Ctrl+C")
+        act_copy.triggered.connect(self._copy_selected)
+        edit_menu.addAction(act_copy)
+
+        act_paste = QAction("Вставить", self)
+        act_paste.setShortcut("Ctrl+V")
+        act_paste.triggered.connect(self._paste)
+        edit_menu.addAction(act_paste)
+
         act_delete = QAction("Удалить", self)
         act_delete.setShortcut("Del")
         act_delete.triggered.connect(self._delete_selected)
@@ -524,6 +550,21 @@ class BoardEditorWindow(QMainWindow):
             return 1
         return max(l.uid for l in self.board.lines) + 1
 
+    def _next_circle_uid(self):
+        if not self.board.circles:
+            return 1
+        return max(c.uid for c in self.board.circles) + 1
+
+    def _next_arc_uid(self):
+        if not self.board.arcs:
+            return 1
+        return max(a.uid for a in self.board.arcs) + 1
+
+    def _next_text_uid(self):
+        if not self.board.texts:
+            return 1
+        return max(t.uid for t in self.board.texts) + 1
+
     def _on_import_net(self):
         path, _ = QFileDialog.getOpenFileName(self, "Открыть сетлист", "",
                                               "Netlist (*.net);;All Files (*)")
@@ -569,6 +610,7 @@ class BoardEditorWindow(QMainWindow):
         self.setWindowTitle(f"TraceCAD: {self.board.name}")
         self.show_log(f"Импортировано модулей: {len(self.board.modules)}")
         self._reset_history()
+        self._modified = True
         if missing:
             QMessageBox.information(self, "Импорт завершён",
                 "Импорт выполнен, но не найдены посадочные места:\n" + "\n".join(missing))
@@ -580,6 +622,7 @@ class BoardEditorWindow(QMainWindow):
             return
         self._load_board_from_path(path)
 
+    
     def _load_board_from_path(self, path):
         try:
             board = parse_brd(path)
@@ -589,6 +632,7 @@ class BoardEditorWindow(QMainWindow):
         self.manager.clear()
         self.board = board
         self.manager.board = self.board
+        self.board.name = Path(path).stem
 
         for module in self.board.modules:
             self.manager.add_module(module)
@@ -607,6 +651,7 @@ class BoardEditorWindow(QMainWindow):
         self.setWindowTitle(f"TraceCAD: {Path(path).name}")
         self.show_log(f"Плата загружена: {Path(path).name} ({len(self.board.modules)} модулей)")
         self._reset_history()
+        self._modified = False
 
     def _on_save_board(self):
         if not self.board.filename:
@@ -615,6 +660,7 @@ class BoardEditorWindow(QMainWindow):
         try:
             text = build_brd_text(self.board)
             Path(self.board.filename).write_text(text, encoding='utf-8')
+            self._modified = False
             self.show_log(f"Плата сохранена: {Path(self.board.filename).name}")
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить: {e}")
@@ -630,6 +676,8 @@ class BoardEditorWindow(QMainWindow):
             text = build_brd_text(self.board)
             Path(path).write_text(text, encoding='utf-8')
             self.board.filename = path
+            self.board.name = Path(path).stem
+            self._modified = False
             self.setWindowTitle(f"TraceCAD: {Path(path).name}")
             self.show_log(f"Плата сохранена: {Path(path).name}")
         except Exception as e:
@@ -647,13 +695,53 @@ class BoardEditorWindow(QMainWindow):
         self.manager.rebuild_ratsnest()
 
     def _on_mouse_moved(self, x, y):
+        self._current_mouse_pos = QPointF(x, y)
         self.coords_label.setText(f"X: {x:.4f}, Y: {y:.4f}")
-        if self.current_tool == BoardTool.ADD_LINE and self._line_start:
+        tool = self.current_tool
+
+        if tool == BoardTool.ADD_NET:
+            tol = self.canvas.grid_size * 1.5
+            hit = self.board.find_pad_at(x, y, tol)
+            if hit is not None:
+                module, pad_number = hit
+                pos = module.get_pad_absolute(pad_number)
+                pad = None
+                for p in module.footprint.pads:
+                    if p.number == pad_number:
+                        pad = p
+                        break
+                if pos and pad:
+                    radius = max(pad.width, pad.height) * 0.8
+                    self.canvas.set_highlight_pad(QPointF(*pos), radius)
+                else:
+                    self.canvas.clear_highlight_pad()
+            else:
+                self.canvas.clear_highlight_pad()
+
+            if self._net_start:
+                sx, sy = self._net_start[2]
+                self.canvas.set_ghost_line(sx, sy, x, y)
+            return
+
+        self.canvas.clear_highlight_pad()
+
+        if tool == BoardTool.ADD_LINE and self._line_start:
             sx, sy = self._line_start
             self.canvas.set_ghost_line(sx, sy, x, y)
-        elif self.current_tool == BoardTool.ADD_NET and self._net_start:
-            sx, sy = self._net_start[2]
-            self.canvas.set_ghost_line(sx, sy, x, y)
+        elif tool == BoardTool.ADD_CIRCLE and self._circle_center_point:
+            cx, cy = self._circle_center_point
+            g = self.canvas.grid_size
+            r = round(((x - cx) ** 2 + (y - cy) ** 2) ** 0.5 / g) * g
+            self.canvas.set_ghost_circle(cx, cy, r)
+        elif tool == BoardTool.ADD_ARC and self._arc_center_point and self._arc_start_point is None:
+            cx, cy = self._arc_center_point
+            self.canvas.set_ghost_line(cx, cy, x, y)
+        elif tool == BoardTool.ADD_TEXT and self._text_position:
+            tx, ty = self._text_position
+            self.canvas.set_ghost_text(tx, ty, "", 1.0, True)
+        else:
+            self.canvas.clear_ghost_line()
+            self.canvas.clear_ghost_circle()
 
     def _update_zoom_label(self, zoom):
         self.zoom_label.setText(f" {int(zoom * 100)}% ")
@@ -682,8 +770,21 @@ class BoardEditorWindow(QMainWindow):
     def _set_tool(self, tool):
         self.current_tool = tool
         self._line_start = None
+        self._circle_center_point = None
+        self._arc_center_point = None
+        self._arc_start_point = None
+        self._text_position = None
         self._net_start = None
         self.canvas.clear_ghost_line()
+        self.canvas.clear_ghost_circle()
+        self.canvas.clear_ghost_arc()
+        self.canvas.clear_ghost_text()
+        self.canvas.clear_highlight_pad()
+
+        if tool in (BoardTool.SELECT, BoardTool.ADD_NET):
+            self.canvas.set_show_snap(False)
+        else:
+            self.canvas.set_show_snap(True)
 
         if tool == BoardTool.SELECT:
             self._set_selectable_all(True)
@@ -697,7 +798,8 @@ class BoardEditorWindow(QMainWindow):
             self.aux_bar.set_select_active(False)
             self.tool_bar.set_active(tool)
             self.canvas.setDragMode(self.canvas.DragMode.NoDrag)
-            if tool == BoardTool.ADD_LINE:
+            if tool in (BoardTool.ADD_LINE, BoardTool.ADD_CIRCLE,
+                        BoardTool.ADD_ARC, BoardTool.ADD_TEXT):
                 self.right_panel.properties_panel.show_line_layer_picker(self._line_layer)
             elif tool == BoardTool.ADD_MODULE:
                 self.right_panel.properties_panel.show_module_picker(self.library_modules)
@@ -710,15 +812,45 @@ class BoardEditorWindow(QMainWindow):
         self.canvas.scene.clearSelection()
 
     def _on_canvas_clicked(self, x, y):
-        if self.current_tool == BoardTool.ADD_LINE:
+        tool = self.current_tool
+        if tool == BoardTool.ADD_LINE:
             self._on_add_line_click(x, y)
-        elif self.current_tool == BoardTool.ADD_MODULE:
+        elif tool == BoardTool.ADD_CIRCLE:
+            self._on_add_circle_click(x, y)
+        elif tool == BoardTool.ADD_ARC:
+            self._on_add_arc_click(x, y)
+        elif tool == BoardTool.ADD_TEXT:
+            self._on_add_text_click(x, y)
+        elif tool == BoardTool.ADD_MODULE:
             self._on_add_module_click(x, y)
-        elif self.current_tool == BoardTool.ADD_NET:
+        elif tool == BoardTool.ADD_NET:
             self._on_add_net_click(x, y)
 
     def _on_canvas_right_clicked(self):
         self._exit_to_select_mode()
+
+    def _add_graphic_item(self, model, kind):
+        if kind == "line":
+            self.board.lines.append(model)
+            item = self.manager.add_line(model)
+        elif kind == "circle":
+            self.board.circles.append(model)
+            item = self.manager.add_circle(model)
+        elif kind == "arc":
+            self.board.arcs.append(model)
+            item = self.manager.add_arc(model)
+        elif kind == "text":
+            self.board.texts.append(model)
+            item = self.manager.add_text(model)
+        else:
+            return None
+        if self.current_tool != BoardTool.SELECT:
+            try:
+                item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+                item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
+            except RuntimeError:
+                pass
+        return item
 
     def _on_add_line_click(self, x, y):
         if self._line_start is None:
@@ -733,25 +865,110 @@ class BoardEditorWindow(QMainWindow):
             layer=self._line_layer, width=DEFAULT_LINE_WIDTH,
             uid=self._next_line_uid(),
         )
-        self.board.lines.append(line)
-        self.manager.add_line(line)
-        if self.current_tool != BoardTool.SELECT:
-            try:
-                line.graphics_item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
-                line.graphics_item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
-            except RuntimeError:
-                pass
+        self._add_graphic_item(line, "line")
         self._line_start = (x, y)
         self.canvas.set_ghost_line(x, y, x, y)
         self._commit_snapshot()
         self.show_log(f"Линия {self._line_layer}: добавлена")
+
+    def _on_add_circle_click(self, x, y):
+        g = self.canvas.grid_size
+        if self._circle_center_point is None:
+            self._circle_center_point = (x, y)
+            self.canvas.set_ghost_circle(x, y, 0.0)
+            return
+        cx, cy = self._circle_center_point
+        r = round(((x - cx) ** 2 + (y - cy) ** 2) ** 0.5 / g) * g
+        if r > 0:
+            circle = BoardCircle(
+                x=cx, y=cy, radius=r,
+                layer=self._line_layer, width=DEFAULT_LINE_WIDTH,
+                uid=self._next_circle_uid(),
+            )
+            self._add_graphic_item(circle, "circle")
+            self._commit_snapshot()
+            self.show_log(f"Окружность {self._line_layer}: добавлена")
+        self._circle_center_point = None
+        self.canvas.clear_ghost_circle()
+
+    def _on_add_arc_click(self, x, y):
+        if self._arc_center_point is None:
+            self._arc_center_point = (x, y)
+            self.canvas.set_ghost_line(x, y, x, y)
+            return
+        if self._arc_start_point is None:
+            self._arc_start_point = (x, y)
+            cx, cy = self._arc_center_point
+            self.canvas.set_ghost_line(cx, cy, x, y)
+            self._show_arc_dialog()
+            return
+        self._arc_center_point = (x, y)
+        self._arc_start_point = None
+        self.canvas.set_ghost_line(x, y, x, y)
+
+    def _show_arc_dialog(self):
+        cx, cy = self._arc_center_point
+        sx, sy = self._arc_start_point
+
+        dlg = ArcDialog(self)
+        dlg.angle_changed.connect(
+            lambda a: self.canvas.set_ghost_arc(cx, cy, sx, sy, a)
+        )
+        self.canvas.set_ghost_arc(cx, cy, sx, sy, dlg.get_angle())
+
+        if dlg.exec() == QDialog.Accepted:
+            arc = BoardArc(
+                x=cx, y=cy, sx=sx, sy=sy,
+                angle=dlg.get_angle(),
+                layer=self._line_layer, width=DEFAULT_LINE_WIDTH,
+                uid=self._next_arc_uid(),
+            )
+            self._add_graphic_item(arc, "arc")
+            self._commit_snapshot()
+            self.show_log(f"Дуга {self._line_layer}: добавлена")
+
+        self._arc_center_point = None
+        self._arc_start_point = None
+        self.canvas.clear_ghost_arc()
+
+    def _on_add_text_click(self, x, y):
+        self._text_position = (x, y)
+        self.canvas.set_ghost_text(x, y, "", 1.0, True)
+
+        dialog = TextDialog(self)
+        dialog.text_changed.connect(
+            lambda t: self.canvas.set_ghost_text(
+                self._text_position[0], self._text_position[1],
+                t, dialog.get_size(), dialog.get_visible()))
+        dialog.size_changed.connect(
+            lambda s: self.canvas.set_ghost_text(
+                self._text_position[0], self._text_position[1],
+                dialog.get_text(), s, dialog.get_visible()))
+        dialog.visible_changed.connect(
+            lambda v: self.canvas.set_ghost_text(
+                self._text_position[0], self._text_position[1],
+                dialog.get_text(), dialog.get_size(), v))
+
+        if dialog.exec() == QDialog.Accepted:
+            text_value = dialog.get_text() or "Text"
+            tx, ty = self._text_position
+            text = BoardText(
+                x=tx, y=ty, text=text_value,
+                size=dialog.get_size(), visible=dialog.get_visible(),
+                layer=self._line_layer, uid=self._next_text_uid(),
+            )
+            self._add_graphic_item(text, "text")
+            self._commit_snapshot()
+            self.show_log(f"Текст {self._line_layer}: добавлен")
+
+        self._text_position = None
+        self.canvas.clear_ghost_text()
 
     def _on_add_module_click(self, x, y):
         fp = self._selected_footprint
         if fp is None:
             self.show_log("Сначала выберите модуль справа")
             return
-        import copy
         prefix = prefix_from_footprint_name(fp.name)
         module = BoardModule(
             footprint=copy.deepcopy(fp),
@@ -761,11 +978,11 @@ class BoardEditorWindow(QMainWindow):
             uid=self._next_module_uid(),
         )
         self.board.modules.append(module)
-        self.manager.add_module(module)
+        item = self.manager.add_module(module)
         if self.current_tool != BoardTool.SELECT:
             try:
-                module.graphics_item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
-                module.graphics_item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
+                item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+                item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
             except RuntimeError:
                 pass
         self.manager.rebuild_ratsnest()
@@ -913,8 +1130,111 @@ class BoardEditorWindow(QMainWindow):
         self._commit_snapshot()
         self.show_log(f"Повёрнуто: {len(items)} элементов")
 
+    def _model_center(self, m):
+        if isinstance(m, BoardModule):
+            return m.x, m.y
+        if isinstance(m, BoardLine):
+            return (m.x1 + m.x2) / 2.0, (m.y1 + m.y2) / 2.0
+        if isinstance(m, (BoardCircle, BoardArc, BoardText)):
+            return m.x, m.y
+        return 0.0, 0.0
+
+    def _translate_model(self, m, dx, dy):
+        if isinstance(m, BoardModule):
+            m.x += dx
+            m.y += dy
+        elif isinstance(m, BoardLine):
+            m.x1 += dx
+            m.y1 += dy
+            m.x2 += dx
+            m.y2 += dy
+        elif isinstance(m, BoardArc):
+            m.x += dx
+            m.y += dy
+            m.sx += dx
+            m.sy += dy
+        elif isinstance(m, (BoardCircle, BoardText)):
+            m.x += dx
+            m.y += dy
+
+    def _copy_selected(self):
+        self._clipboard = []
+        for item in self.canvas.scene.selectedItems():
+            if isinstance(item, BoardModuleGraphicsItem):
+                self._clipboard.append(copy.deepcopy(item.module))
+            elif isinstance(item, BoardLineGraphicsItem):
+                self._clipboard.append(copy.deepcopy(item.model))
+            elif isinstance(item, BoardCircleGraphicsItem):
+                self._clipboard.append(copy.deepcopy(item.model))
+            elif isinstance(item, BoardArcGraphicsItem):
+                self._clipboard.append(copy.deepcopy(item.model))
+            elif isinstance(item, BoardTextGraphicsItem):
+                self._clipboard.append(copy.deepcopy(item.model))
+        if self._clipboard:
+            self.show_log(f"Скопировано: {len(self._clipboard)} элементов")
+
+    def _clipboard_center(self):
+        if not self._clipboard:
+            return 0.0, 0.0
+        sx = sy = 0.0
+        n = 0
+        for m in self._clipboard:
+            px, py = self._model_center(m)
+            sx += px
+            sy += py
+            n += 1
+        return (sx / n, sy / n) if n else (0.0, 0.0)
+
+    def _paste(self):
+        if not self._clipboard:
+            return
+        self.canvas.scene.clearSelection()
+        cx, cy = self._clipboard_center()
+        dx = self._current_mouse_pos.x() - cx
+        dy = self._current_mouse_pos.y() - cy
+        grid = self.canvas.grid_size
+        dx = round(dx / grid) * grid
+        dy = round(dy / grid) * grid
+
+        for model in self._clipboard:
+            new_model = copy.deepcopy(model)
+            if isinstance(new_model, BoardModule):
+                new_model.uid = self._next_module_uid()
+                new_model.reference = self.board.auto_reference(
+                    prefix_from_footprint_name(new_model.footprint.name))
+                self._translate_model(new_model, dx, dy)
+                self.board.modules.append(new_model)
+                item = self.manager.add_module(new_model)
+            elif isinstance(new_model, BoardLine):
+                new_model.uid = self._next_line_uid()
+                self._translate_model(new_model, dx, dy)
+                self.board.lines.append(new_model)
+                item = self.manager.add_line(new_model)
+            elif isinstance(new_model, BoardCircle):
+                new_model.uid = self._next_circle_uid()
+                self._translate_model(new_model, dx, dy)
+                self.board.circles.append(new_model)
+                item = self.manager.add_circle(new_model)
+            elif isinstance(new_model, BoardArc):
+                new_model.uid = self._next_arc_uid()
+                self._translate_model(new_model, dx, dy)
+                self.board.arcs.append(new_model)
+                item = self.manager.add_arc(new_model)
+            elif isinstance(new_model, BoardText):
+                new_model.uid = self._next_text_uid()
+                self._translate_model(new_model, dx, dy)
+                self.board.texts.append(new_model)
+                item = self.manager.add_text(new_model)
+            else:
+                continue
+            item.setSelected(True)
+
+        self._refresh_module_list()
+        self.manager.rebuild_ratsnest()
+        self._commit_snapshot()
+        self.show_log(f"Вставлено: {len(self._clipboard)} элементов")
+
     def _snapshot(self):
-        import copy
         return {
             "modules": copy.deepcopy(self.board.modules),
             "lines": copy.deepcopy(self.board.lines),
@@ -925,7 +1245,6 @@ class BoardEditorWindow(QMainWindow):
         }
 
     def _restore_snapshot(self, snap):
-        import copy
         self.board.modules = copy.deepcopy(snap["modules"])
         self.board.lines = copy.deepcopy(snap["lines"])
         self.board.circles = copy.deepcopy(snap["circles"])
@@ -956,6 +1275,7 @@ class BoardEditorWindow(QMainWindow):
         self._update_history_buttons()
 
     def _commit_snapshot(self):
+        self._modified = True
         if self._current_snapshot is None:
             self._current_snapshot = self._snapshot()
             return
@@ -973,6 +1293,7 @@ class BoardEditorWindow(QMainWindow):
         self._current_snapshot = self._undo_stack.pop()
         self._restore_snapshot(self._current_snapshot)
         self._update_history_buttons()
+        self._modified = True
         self.show_log("отменено")
 
     def redo(self):
@@ -982,6 +1303,7 @@ class BoardEditorWindow(QMainWindow):
         self._current_snapshot = self._redo_stack.pop()
         self._restore_snapshot(self._current_snapshot)
         self._update_history_buttons()
+        self._modified = True
         self.show_log("повторено")
 
     def _update_history_buttons(self):
@@ -1007,5 +1329,20 @@ class BoardEditorWindow(QMainWindow):
         self._settings.sync()
 
     def closeEvent(self, event):
+        if self._modified:
+            dlg = CustomQuestionDialog(
+                self,
+                title="Несохранённые изменения",
+                message=f"Сохранить изменения в плате '{self.board.name}' перед выходом?"
+            )
+            result = dlg.exec()
+            if result == CustomQuestionDialog.ResultSave:
+                self._on_save_board()
+                if self._modified:
+                    event.ignore()
+                    return
+            elif result == CustomQuestionDialog.ResultCancel:
+                event.ignore()
+                return
         self._save_last_board()
         super().closeEvent(event)
