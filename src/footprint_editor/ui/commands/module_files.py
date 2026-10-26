@@ -1,12 +1,10 @@
 import copy
-import re
 from pathlib import Path
 
 from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
 
 from footprint_editor.core.models import Footprint, Text, TextType
-from footprint_editor.kicad.importer import parse_kicad_mod
-from footprint_editor.kicad.exporter import build_kicad_module_text
+from kicad.mod_importer import parse_kicad_mod
 from footprint_editor.ui.dialogs.input_dialog import InputDialog
 
 
@@ -34,10 +32,10 @@ class ModuleFilesMixin:
             return
 
         self.w.stash_current_module()
-        
+
         new_fp = Footprint(name=name, reference=name, value="VAL**")
         self.w.load_footprint(new_fp, mark_unsaved=False)
-        
+
         for t in self.w.footprint.texts:
             if t.text_type == TextType.REFERENCE:
                 t.text = name
@@ -45,10 +43,10 @@ class ModuleFilesMixin:
                     t.graphics_item.prepareGeometryChange()
                     t.graphics_item.update()
                 break
-                
+
         if self.w.current_library_path:
             try:
-                self._replace_module_in_library(self.w.current_library_path, name)
+                self._write_module_to_library(self.w.current_library_path, name, self.w.footprint)
                 self.w.reload_current_library()
                 self.w.show_log(f"Создан корпус: {name}")
             except Exception as e:
@@ -72,48 +70,3 @@ class ModuleFilesMixin:
             self.w.load_footprint(copy.deepcopy(footprints[0]))
         except Exception as e:
             QMessageBox.critical(self.w, "Ошибка", f"Не удалось открыть файл: {e}")
-
-    def save_current(self):
-        if not self.w.current_library_path:
-            self._save_current_as()
-            return
-        try:
-            self._replace_module_in_library(
-                self.w.current_library_path, self.w.current_module_name
-            )
-            self.w.reload_current_library()
-            self.w.unsaved_modules.pop(self.w.current_module_name, None)
-            self.w.mark_saved()
-            self.w.show_log(f"Модуль сохранён: {self.w.current_module_name}")
-        except Exception as e:
-            QMessageBox.critical(self.w, "Ошибка", f"Не удалось сохранить: {e}")
-
-    def _save_current_as(self):
-        path, _ = QFileDialog.getSaveFileName(
-            self.w, "Сохранить модуль", "",
-            "KiCad Module (*.mod);;All Files (*)"
-        )
-        if not path:
-            return
-        if not path.lower().endswith('.mod'):
-            path += '.mod'
-        self.w.export_to_kicad(path)
-        self.w.unsaved_modules.pop(self.w.current_module_name, None)
-        self.w.mark_saved()
-        self.w.show_log(f"Модуль сохранён: {Path(path).name}")
-
-    def _replace_module_in_library(self, path, module_name):
-        content = Path(path).read_text(encoding='utf-8', errors='ignore')
-        pattern = re.compile(
-            r'\$MODULE\s+' + re.escape(module_name) + r'\b.*?\$EndMODULE[^\n]*\n',
-            re.DOTALL
-        )
-        content = pattern.sub('', content)
-        module_text = build_kicad_module_text(self.w.footprint)
-        end_marker = "$EndLIBRARY"
-        if end_marker in content:
-            idx = content.rfind(end_marker)
-            content = content[:idx] + module_text + "\n" + end_marker + "\n"
-        else:
-            content = content.rstrip() + "\n" + module_text + "\n" + end_marker + "\n"
-        Path(path).write_text(content, encoding='utf-8')

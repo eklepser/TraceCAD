@@ -3,11 +3,16 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QHBoxLayout, Q
                                QPushButton, QTableWidget, QTableWidgetItem, QHeaderView,
                                QListWidget, QListWidgetItem, QTreeWidget, QTreeWidgetItem,
                                QCheckBox, QAbstractItemView, QSizePolicy)
-from PySide6.QtGui import QDoubleValidator, QColor, QPixmap, QIcon
+from PySide6.QtGui import QColor, QPixmap, QIcon
 from PySide6.QtCore import Qt, Signal
 
 from constants import Styles
 from constants.board_settings import DRAWABLE_LAYERS, LAYER_NAMES_RU
+from common.ui.qss import (
+    CHECKBOX_QSS, COMBO_VIEW_QSS, TABLE_QSS,
+    form_widget_qss, inline_combo_qss,
+)
+from common.ui.widgets.numeric_line_edit import NumericLineEdit
 from pbe_editor.graphics.module_item import BoardModuleGraphicsItem
 from pbe_editor.graphics.board_line_item import (
     BoardLineGraphicsItem, BoardCircleGraphicsItem, BoardArcGraphicsItem,
@@ -16,54 +21,9 @@ from pbe_editor.graphics.board_line_item import (
 from pbe_editor.graphics.ratsnest_item import RatsnestGraphicsItem
 
 
-CHECKBOX_QSS = (
-    "QCheckBox { color: #a9b7c6; spacing: 8px; background: transparent; }"
-    "QCheckBox::indicator { width: 14px; height: 14px;"
-    " border: 1px solid #d8d8d8; background-color: #2b2b2b;"
-    " border-radius: 2px; }"
-    "QCheckBox::indicator:hover { border: 1px solid #ffffff; }"
-    "QCheckBox::indicator:checked {"
-    " border: 1px solid #ffffff; background-color: #365880; }"
-)
-
-
 def _layer_label(name):
     ru = LAYER_NAMES_RU.get(name)
     return f"{name} ({ru})" if ru else name
-
-
-class NumericLineEdit(QLineEdit):
-    def __init__(self, value=0.0, decimals=4, min_val=-1e9, max_val=1e9, parent=None):
-        super().__init__(parent)
-        self._decimals = decimals
-        self._min = min_val
-        self._max = max_val
-        validator = QDoubleValidator(min_val, max_val, decimals, self)
-        validator.setNotation(QDoubleValidator.Notation.StandardNotation)
-        self.setValidator(validator)
-        self.setText(self._format(value))
-        self.setMinimumWidth(100)
-        self.setMinimumHeight(24)
-
-    def _format(self, value):
-        return f"{value:.{self._decimals}f}"
-
-    def focusInEvent(self, event):
-        super().focusInEvent(event)
-        self.selectAll()
-
-    def value(self):
-        text = self.text().strip().replace(',', '.')
-        if not text:
-            return 0.0
-        try:
-            v = float(text)
-        except ValueError:
-            return 0.0
-        return max(self._min, min(v, self._max))
-
-    def setValue(self, value):
-        self.setText(self._format(value))
 
 
 class BoardPropertiesPanel(QWidget):
@@ -87,7 +47,7 @@ class BoardPropertiesPanel(QWidget):
 
         self.form_widget = QWidget()
         self.form_widget.setObjectName("PropertiesTable")
-        self.form_widget.setStyleSheet(self._form_widget_qss())
+        self.form_widget.setStyleSheet(form_widget_qss())
         self.form_widget.setSizePolicy(QSizePolicy.Policy.Expanding,
                                        QSizePolicy.Policy.Preferred)
         self.form_layout = QFormLayout(self.form_widget)
@@ -109,12 +69,7 @@ class BoardPropertiesPanel(QWidget):
         self.pins_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.pins_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.pins_table.verticalHeader().setVisible(False)
-        self.pins_table.setStyleSheet(
-            "QTableWidget { background-color: #1e1e1e; color: #cfcfcf;"
-            " gridline-color: #3c3f41; border: 1px solid #3c3f41; }"
-            "QHeaderView::section { background-color: #2b2b2b; color: #a9b7c6;"
-            " border: 0px; border-right: 1px solid #3c3f41; padding: 4px; }"
-        )
+        self.pins_table.setStyleSheet(TABLE_QSS)
         self.pins_table.setMinimumHeight(140)
         self.pins_label.hide()
         self.pins_table.hide()
@@ -180,33 +135,9 @@ class BoardPropertiesPanel(QWidget):
         self._building = False
         self._mode = self.MODE_OBJECT
 
-    def _form_widget_qss(self):
-        return (
-            "QWidget#PropertiesTable { background-color: #2b2b2b;"
-            " border: 1px solid #555555; }"
-            " QWidget#PropertiesTable QLabel { background: transparent; color: #a9b7c6; }"
-            " QWidget#PropertiesTable QLineEdit {"
-            "   background: transparent; color: #ffffff;"
-            "   border: 1px solid transparent;"
-            "   border-bottom: 1px solid #555555;"
-            "   padding: 2px 6px;"
-            " }"
-            " QWidget#PropertiesTable QLineEdit:focus {"
-            "   border-bottom: 1px solid #365880;"
-            " }"
-            " QWidget#PropertiesTable QComboBox {"
-            "   background: transparent; color: #ffffff;"
-            "   border: 1px solid transparent;"
-            "   border-bottom: 1px solid #555555;"
-            "   padding: 2px 6px;"
-            " }"
-            " QWidget#PropertiesTable QComboBox::drop-down {"
-            "   border: none; width: 14px; }"
-        )
-
     def apply_theme(self):
         self.header_label.setStyleSheet(Styles.SECTION_LABEL)
-        self.form_widget.setStyleSheet(self._form_widget_qss())
+        self.form_widget.setStyleSheet(form_widget_qss())
         self.btn_apply.setStyleSheet(Styles.APPLY_BUTTON)
         self.btn_reset.setStyleSheet(Styles.BUTTON_CANCEL)
         self.line_layers_list.setStyleSheet(Styles.LIST_BG)
@@ -423,16 +354,11 @@ class BoardPropertiesPanel(QWidget):
             combo.addItem(label, data)
         combo.setCurrentIndex(current_index)
         view = QListView()
-        view.setStyleSheet(
-            "QListView { background-color: #2b2b2b; color: #a9b7c6;"
-            " border: 1px solid #555555; outline: 0; }"
-            "QListView::item { padding: 4px 8px; }"
-            "QListView::item:selected {"
-            "  background-color: #365880; color: white; }"
-        )
+        view.setStyleSheet(COMBO_VIEW_QSS)
         combo.setView(view)
         combo.setMinimumWidth(100)
         combo.setMinimumHeight(24)
+        combo.setStyleSheet(inline_combo_qss())
         return combo
 
     def _line_layer_combo(self, layer):

@@ -3,9 +3,9 @@ from PySide6.QtGui import QPen, QBrush, QColor, QPainterPath
 from PySide6.QtCore import QRectF, QPointF, Qt
 
 from constants import Colors, Sizes
-from pbe_editor.core.arc_geometry import arc_sample_points
+from common.arc_geometry import arc_sample_points
+from common.graphics.text_path import build_text_path
 from pbe_editor.core.models import PadShape, PadType
-from pbe_editor.graphics.text_path import build_text_path
 
 
 STANDARD_COLOR = (180, 160, 80)

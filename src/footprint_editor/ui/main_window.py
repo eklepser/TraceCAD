@@ -9,6 +9,7 @@ from constants import (
     LEFT_PANEL_MIN_WIDTH, RIGHT_PANEL_MAX_WIDTH,
     apply_theme,
 )
+from common.ui.panels.aux_bar import AuxBar
 from footprint_editor.core.models import Footprint
 from footprint_editor.core.manager import FootprintManager
 from footprint_editor.core.history import History
@@ -18,7 +19,6 @@ from footprint_editor.ui.commands import CommandHandler
 from footprint_editor.ui.panels.right_panel import RightPanel
 from footprint_editor.ui.panels.library_panel import LibraryPanel
 from footprint_editor.ui.panels.drawing_tool_bar import DrawingToolBar
-from footprint_editor.ui.panels.aux_bar import AuxBar
 from footprint_editor.ui.window import (
     SessionService, HistoryService, ModuleLifecycleService,
     ToolsService, GridService, StatusService, KeyboardService,
@@ -57,7 +57,7 @@ class FootprintEditorWindow(
         self.history = History()
 
         self._apply_startup_geometry()
-        self._update_window_title()
+        self.setWindowTitle("TraceCad FE")
 
         self.commands = CommandHandler(self)
 
@@ -107,7 +107,7 @@ class FootprintEditorWindow(
 
         self.manager = FootprintManager(self.footprint, self.canvas.scene, self.canvas)
 
-        self.aux_bar = AuxBar()
+        self.aux_bar = AuxBar(object_name="AuxBar")
         self.aux_bar.undo_requested.connect(self.undo)
         self.aux_bar.redo_requested.connect(self.redo)
         self.aux_bar.select_requested.connect(lambda: self._set_tool(Tool.SELECT))
@@ -168,6 +168,16 @@ class FootprintEditorWindow(
         act_lib_open.triggered.connect(self.commands.open_library)
         lib_menu.addAction(act_lib_open)
 
+        act_lib_save = QAction("Сохранить", self)
+        act_lib_save.setShortcut("Ctrl+S")
+        act_lib_save.triggered.connect(self.commands.save_library)
+        lib_menu.addAction(act_lib_save)
+
+        act_lib_save_as = QAction("Сохранить как...", self)
+        act_lib_save_as.setShortcut("Ctrl+Shift+S")
+        act_lib_save_as.triggered.connect(self.commands.save_library_as)
+        lib_menu.addAction(act_lib_save_as)
+
         act_lib_manage = QAction("Управление", self)
         act_lib_manage.triggered.connect(self.commands.manage_libraries)
         lib_menu.addAction(act_lib_manage)
@@ -180,16 +190,6 @@ class FootprintEditorWindow(
         act_mod_open = QAction("Открыть файл...", self)
         act_mod_open.triggered.connect(self.commands.open_module_file)
         mod_menu.addAction(act_mod_open)
-
-        act_mod_save = QAction("Сохранить", self)
-        act_mod_save.setShortcut("Ctrl+S")
-        act_mod_save.triggered.connect(self.commands.save_current)
-        mod_menu.addAction(act_mod_save)
-
-        act_mod_save_as = QAction("Сохранить как...", self)
-        act_mod_save_as.setShortcut("Ctrl+Shift+S")
-        act_mod_save_as.triggered.connect(self.commands._save_current_as)
-        mod_menu.addAction(act_mod_save_as)
 
         file_menu.addSeparator()
 

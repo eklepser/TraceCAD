@@ -1,8 +1,8 @@
 from PySide6.QtCore import Qt, QPointF
-from PySide6.QtGui import QPen, QColor, QPainterPath, QBrush
+from PySide6.QtGui import QPen, QColor, QPainterPath
 from constants import Colors, Sizes
-from footprint_editor.graphics.text_path import build_text_path
-from footprint_editor.core.arc_geometry import arc_sample_points
+from common.graphics.text_path import build_text_path
+from common.arc_geometry import arc_sample_points
 
 
 MAX_GRID_POINTS_VISUAL = 60

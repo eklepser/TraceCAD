@@ -1,13 +1,16 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QHBoxLayout, QLabel,
                                QComboBox, QLineEdit, QCheckBox,
                                QPushButton, QListView, QSizePolicy)
-from PySide6.QtGui import QDoubleValidator
 from PySide6.QtCore import Qt
 from footprint_editor.core.models import (
     Pad, Line, Circle, Arc, Text, PadShape, PadType, TextType,
-    default_layers_for_pad_type
+    default_layers_for_pad_type,
 )
 from constants import Styles
+from common.ui.qss import (
+    CHECKBOX_QSS, COMBO_VIEW_QSS, form_widget_qss, inline_combo_qss,
+)
+from common.ui.widgets.numeric_line_edit import NumericLineEdit
 from footprint_editor.ui.panels.layers_table import LayersTable
 
 
@@ -27,50 +30,6 @@ PAD_TYPE_NAMES = {
 
 PAD_TYPE_ORDER = [PadType.STANDARD, PadType.SMD, PadType.CONN]
 
-CHECKBOX_QSS = (
-    "QCheckBox { color: #a9b7c6; spacing: 8px; background: transparent; }"
-    "QCheckBox::indicator { width: 14px; height: 14px;"
-    " border: 1px solid #d8d8d8; background-color: #2b2b2b;"
-    " border-radius: 2px; }"
-    "QCheckBox::indicator:hover { border: 1px solid #ffffff; }"
-    "QCheckBox::indicator:checked {"
-    " border: 1px solid #ffffff; background-color: #365880; }"
-)
-
-
-class NumericLineEdit(QLineEdit):
-    def __init__(self, value=0.0, decimals=4, min_val=-1e9, max_val=1e9, parent=None):
-        super().__init__(parent)
-        self._decimals = decimals
-        self._min = min_val
-        self._max = max_val
-        validator = QDoubleValidator(min_val, max_val, decimals, self)
-        validator.setNotation(QDoubleValidator.Notation.StandardNotation)
-        self.setValidator(validator)
-        self.setText(self._format(value))
-        self.setMinimumWidth(100)
-        self.setMinimumHeight(24)
-
-    def _format(self, value):
-        return f"{value:.{self._decimals}f}"
-
-    def focusInEvent(self, event):
-        super().focusInEvent(event)
-        self.selectAll()
-
-    def value(self):
-        text = self.text().strip().replace(',', '.')
-        if not text:
-            return 0.0
-        try:
-            v = float(text)
-        except ValueError:
-            return 0.0
-        return max(self._min, min(v, self._max))
-
-    def setValue(self, value):
-        self.setText(self._format(value))
-
 
 class PropertiesPanel(QWidget):
     def __init__(self, parent=None):
@@ -86,7 +45,7 @@ class PropertiesPanel(QWidget):
 
         self.form_widget = QWidget()
         self.form_widget.setObjectName("PropertiesTable")
-        self.form_widget.setStyleSheet(self._form_widget_qss())
+        self.form_widget.setStyleSheet(form_widget_qss())
         self.form_widget.setSizePolicy(QSizePolicy.Policy.Expanding,
                                        QSizePolicy.Policy.Preferred)
         self.form_layout = QFormLayout(self.form_widget)
@@ -127,33 +86,9 @@ class PropertiesPanel(QWidget):
         self._widgets = {}
         self._building = False
 
-    def _form_widget_qss(self):
-        return (
-            "QWidget#PropertiesTable { background-color: #2b2b2b;"
-            " border: 1px solid #555555; }"
-            " QWidget#PropertiesTable QLabel { background: transparent; color: #a9b7c6; }"
-            " QWidget#PropertiesTable QLineEdit {"
-            "   background: transparent; color: #ffffff;"
-            "   border: 1px solid transparent;"
-            "   border-bottom: 1px solid #555555;"
-            "   padding: 2px 6px;"
-            " }"
-            " QWidget#PropertiesTable QLineEdit:focus {"
-            "   border-bottom: 1px solid #365880;"
-            " }"
-            " QWidget#PropertiesTable QComboBox {"
-            "   background: transparent; color: #ffffff;"
-            "   border: 1px solid transparent;"
-            "   border-bottom: 1px solid #555555;"
-            "   padding: 2px 6px;"
-            " }"
-            " QWidget#PropertiesTable QComboBox::drop-down {"
-            "   border: none; width: 14px; }"
-        )
-
     def apply_theme(self):
         self.header_label.setStyleSheet(Styles.SECTION_LABEL)
-        self.form_widget.setStyleSheet(self._form_widget_qss())
+        self.form_widget.setStyleSheet(form_widget_qss())
         self.btn_apply.setStyleSheet(Styles.APPLY_BUTTON)
         self.btn_reset.setStyleSheet(Styles.BUTTON_CANCEL)
 
@@ -271,13 +206,7 @@ class PropertiesPanel(QWidget):
 
     def _make_combo_view(self):
         view = QListView()
-        view.setStyleSheet(
-            "QListView { background-color: #2b2b2b; color: #a9b7c6;"
-            " border: 1px solid #555555; outline: 0; }"
-            "QListView::item { padding: 4px 8px; }"
-            "QListView::item:selected {"
-            "  background-color: #365880; color: white; }"
-        )
+        view.setStyleSheet(COMBO_VIEW_QSS)
         view.setMinimumWidth(140)
         view.setSpacing(0)
         return view
@@ -290,13 +219,7 @@ class PropertiesPanel(QWidget):
         combo.setView(self._make_combo_view())
         combo.setMinimumWidth(100)
         combo.setMinimumHeight(24)
-        combo.setStyleSheet(
-            "QComboBox { background: transparent; color: #ffffff;"
-            " border: 1px solid transparent; border-bottom: 1px solid #555555;"
-            " padding: 2px 6px; }"
-            " QComboBox:focus { border-bottom: 1px solid #365880; }"
-            " QComboBox::drop-down { border: none; width: 14px; }"
-        )
+        combo.setStyleSheet(inline_combo_qss())
         return combo
 
     def _build_pad_ui(self, pad):

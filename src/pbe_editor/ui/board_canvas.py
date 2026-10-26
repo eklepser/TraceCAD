@@ -3,8 +3,8 @@ from PySide6.QtCore import Qt, QPointF, Signal, QTimer
 from PySide6.QtGui import QColor, QWheelEvent, QMouseEvent, QPainter, QPen, QPainterPath
 
 from constants import Colors, Sizes, Steps, VK_W, VK_A, VK_S, VK_D
-from pbe_editor.core.arc_geometry import arc_sample_points
-from pbe_editor.graphics.text_path import build_text_path
+from common.arc_geometry import arc_sample_points
+from common.graphics.text_path import build_text_path
 
 
 class BoardCanvas(QGraphicsView):

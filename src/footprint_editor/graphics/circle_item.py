@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QGraphicsItem, QStyle
+from PySide6.QtWidgets import QStyle
 from PySide6.QtGui import QPen, QColor, QPainterPath, QPainterPathStroker
 from PySide6.QtCore import QRectF, QPointF, Qt
 from footprint_editor.graphics.base import BaseGraphicsItem

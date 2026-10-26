@@ -4,8 +4,8 @@ from PySide6.QtCore import QLineF, QRectF, QPointF, Qt
 
 from constants import Colors, Sizes
 from constants.board_settings import LAYER_COLORS
-from pbe_editor.core.arc_geometry import arc_sample_points
-from pbe_editor.graphics.text_path import build_text_path
+from common.arc_geometry import arc_sample_points
+from common.graphics.text_path import build_text_path
 
 
 def _layer_color(layer):

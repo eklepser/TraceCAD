@@ -1,8 +1,8 @@
-from PySide6.QtWidgets import QGraphicsItem, QStyle
+from PySide6.QtWidgets import QStyle
 from PySide6.QtGui import QColor
 from PySide6.QtCore import QRectF, Qt
 from footprint_editor.graphics.base import BaseGraphicsItem
-from footprint_editor.graphics.text_path import build_text_path
+from common.graphics.text_path import build_text_path
 from footprint_editor.core.models import TextType
 from constants import Colors, Sizes
 

@@ -51,8 +51,7 @@ class LineGraphicsItem(BaseGraphicsItem):
         eps = 0.0001
         if is_start:
             return abs(self.model.x - self.model.x2) < eps and abs(self.model.y - self.model.y2) < eps
-        else:
-            return abs(x - self.model.x) < eps and abs(y - self.model.y) < eps
+        return abs(x - self.model.x) < eps and abs(y - self.model.y) < eps
 
     def paint(self, painter, option, widget):
         if option.state & QStyle.StateFlag.State_Selected:

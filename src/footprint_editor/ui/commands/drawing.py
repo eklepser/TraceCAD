@@ -2,8 +2,8 @@ import math
 from PySide6.QtWidgets import QDialog
 from constants import Tool, Sizes
 from footprint_editor.core.models import Pad, PadShape, PadType, Line, Circle, Arc, Text
-from footprint_editor.ui.dialogs.text_dialog import TextDialog
-from footprint_editor.ui.dialogs.arc_dialog import ArcDialog
+from common.ui.dialogs.text_dialog import TextDialog
+from common.ui.dialogs.arc_dialog import ArcDialog
 
 
 class DrawingCommandsMixin:

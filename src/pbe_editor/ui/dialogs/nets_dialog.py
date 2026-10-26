@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QTableWidget,
                                QTableWidgetItem, QPushButton, QHeaderView, QLabel)
 from constants import Styles
-from pbe_editor.ui.dialogs.headerless_dialog import HeaderlessDialog
+from common.ui.dialogs.headerless_dialog import HeaderlessDialog
 
 
 class NetsDialog(HeaderlessDialog):

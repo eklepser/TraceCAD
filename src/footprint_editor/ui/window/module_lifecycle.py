@@ -1,8 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from footprint_editor.kicad.exporter import build_kicad_module_text
-from footprint_editor.core.models import TextType
+from kicad.mod_exporter import build_kicad_module_text
 
 
 class ModuleLifecycleService:
@@ -24,7 +23,6 @@ class ModuleLifecycleService:
         if mark_unsaved is None:
             mark_unsaved = module.name in self.unsaved_modules
         self._modified = mark_unsaved
-        self._update_window_title()
         self.refresh_module_list_display()
         self.history.reset(self.footprint)
         self._update_history_buttons()
@@ -55,19 +53,11 @@ class ModuleLifecycleService:
         ]
         Path(filepath).write_text("\n".join(lines), encoding='utf-8')
 
-    def _update_window_title(self):
-        if self.current_library_path:
-            lib_name = Path(self.current_library_path).stem
-            title = f"TraceCAD: {lib_name}/{self.footprint.name}"
-        else:
-            title = f"TraceCAD: {self.footprint.name}"
-        self.setWindowTitle(title)
-
     def get_next_module_name(self):
         existing = set()
         if self.current_library_path and self.current_library_path in self.library_modules:
             existing.update(self.library_modules[self.current_library_path].keys())
-        
+
         i = 1
         while True:
             name = f"New_Footprint_{i}"

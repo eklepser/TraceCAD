@@ -3,8 +3,8 @@ from constants import (
     SETTINGS_KEY_LAST_LIB, SETTINGS_KEY_LAST_MODULE,
     SETTINGS_KEY_LIBS, SETTINGS_KEY_GRID_MODE,
 )
-from footprint_editor.kicad.importer import parse_kicad_mod
-from footprint_editor.ui.dialogs.custom_question_dialog import CustomQuestionDialog
+from kicad.mod_importer import parse_kicad_mod
+from common.ui.dialogs.custom_question_dialog import CustomQuestionDialog
 
 
 class SessionService:
@@ -47,8 +47,6 @@ class SessionService:
                 module = _copy.deepcopy(self.library_modules[last_lib][last_mod])
                 self.load_footprint(module)
                 self.show_log(f"Восстановлен: {Path(last_lib).stem}/{last_mod}")
-            else:
-                self._update_window_title()
 
             self.refresh_module_list_display()
 
@@ -65,15 +63,15 @@ class SessionService:
         self._settings.sync()
 
     def closeEvent(self, event):
-        if self._modified:
+        if self._modified or self.unsaved_modules:
             dlg = CustomQuestionDialog(
                 self,
                 title="Несохранённые изменения",
-                message=f"Сохранить изменения в корпусе '{self.current_module_name}' перед выходом?"
+                message="Сохранить изменения в библиотеке перед выходом?"
             )
             result = dlg.exec()
             if result == CustomQuestionDialog.ResultSave:
-                self.commands.save_current()
+                self.commands.save_library()
             elif result == CustomQuestionDialog.ResultCancel:
                 event.ignore()
                 return

@@ -1,13 +1,15 @@
 import copy
 import re
+import shutil
 from pathlib import Path
 
 from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
 
-from footprint_editor.kicad.importer import parse_kicad_mod
-from footprint_editor.ui.dialogs.libraries_dialog import LibrariesManagerDialog
+from kicad.mod_importer import parse_kicad_mod
+from kicad.mod_exporter import build_kicad_module_text
+from common.ui.dialogs.libraries_dialog import LibrariesManagerDialog
+from common.ui.dialogs.custom_question_dialog import CustomQuestionDialog
 from footprint_editor.ui.dialogs.input_dialog import InputDialog
-from footprint_editor.ui.dialogs.custom_question_dialog import CustomQuestionDialog
 
 
 class LibrariesMixin:
@@ -58,6 +60,102 @@ class LibrariesMixin:
         self.select_library(path)
         self.w.show_log(f"Библиотека создана: {Path(path).name}")
 
+    def save_library(self):
+        if not self.w.current_library_path:
+            self.save_library_as()
+            return
+
+        lib_path = self.w.current_library_path
+        if not Path(lib_path).exists():
+            QMessageBox.warning(
+                self.w, "Ошибка",
+                f"Файл библиотеки не найден:\n{lib_path}"
+            )
+            return
+
+        try:
+            modules_to_save = dict(self.w.unsaved_modules)
+            if self.w.current_module_name:
+                modules_to_save[self.w.current_module_name] = self.w.footprint
+
+            for name, module in modules_to_save.items():
+                self._write_module_to_library(lib_path, name, module)
+
+            self.w.unsaved_modules.clear()
+            self.w.mark_saved()
+            self.w.reload_current_library()
+            self.w.save_library_paths()
+            self.w.show_log(f"Библиотека сохранена: {Path(lib_path).name}")
+        except Exception as e:
+            QMessageBox.critical(self.w, "Ошибка", f"Не удалось сохранить библиотеку: {e}")
+
+    def save_library_as(self):
+        src = self.w.current_library_path
+        if not src:
+            QMessageBox.information(
+                self.w, "Информация",
+                "Сначала выберите библиотеку в левой панели."
+            )
+            return
+        if not Path(src).exists():
+            QMessageBox.warning(
+                self.w, "Ошибка",
+                f"Исходный файл библиотеки не найден:\n{src}"
+            )
+            return
+
+        suggested = str(Path(src).with_name(Path(src).stem + "_copy.mod"))
+        path, _ = QFileDialog.getSaveFileName(
+            self.w, "Сохранить библиотеку как", suggested,
+            "KiCad Library (*.mod);;All Files (*)"
+        )
+        if not path:
+            return
+        if not path.lower().endswith('.mod'):
+            path += '.mod'
+
+        if Path(path).resolve() == Path(src).resolve():
+            QMessageBox.information(
+                self.w, "Информация",
+                "Новый путь совпадает с текущим — ничего не меняем."
+            )
+            return
+
+        if Path(path).exists():
+            answer = QMessageBox.question(
+                self.w, "Перезаписать?",
+                f"Файл уже существует:\n{path}\n\nПерезаписать?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                return
+
+        try:
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(src, path)
+        except Exception as e:
+            QMessageBox.critical(
+                self.w, "Ошибка",
+                f"Не удалось сохранить библиотеку: {e}"
+            )
+            return
+
+        if path not in self.w.library_paths:
+            self.w.library_paths.append(path)
+            self.w.save_library_paths()
+            self.w.refresh_library_list()
+
+        try:
+            footprints = parse_kicad_mod(path)
+            self.w.library_modules[path] = {fp.name: fp for fp in footprints}
+        except Exception as e:
+            self.w.show_log(f"Библиотека скопирована, но не разобрана: {e}")
+            return
+
+        self.select_library(path)
+        self.w.show_log(f"Библиотека сохранена как: {Path(path).name}")
+
     def manage_libraries(self):
         dlg = LibrariesManagerDialog(self.w.library_paths, self.w)
         if dlg.exec() != QDialog.Accepted:
@@ -88,7 +186,6 @@ class LibrariesMixin:
         self.w.library_panel.highlight_library(path)
 
         self.w.refresh_module_list_display()
-        self.w._update_window_title()
         self.w.show_log(f"Библиотека: {Path(path).name}")
 
     def select_module(self, name):
@@ -143,20 +240,14 @@ class LibrariesMixin:
             self.w.unsaved_modules[new_name].name = new_name
 
         self._remove_module_from_library_file(lib_path, old_name)
-        
+
         if is_current:
-            self._replace_module_in_library(lib_path, new_name)
+            self._write_module_to_library(lib_path, new_name, self.w.footprint)
         else:
             module = lib_data.get(old_name)
             if module:
                 module.name = new_name
-                old_text = build_kicad_module_text(module)
-                content = Path(lib_path).read_text(encoding='utf-8', errors='ignore')
-                end_marker = "$EndLIBRARY"
-                if end_marker in content:
-                    idx = content.rfind(end_marker)
-                    content = content[:idx] + old_text + "\n" + end_marker + "\n"
-                    Path(lib_path).write_text(content, encoding='utf-8')
+                self._write_module_to_library(lib_path, new_name, module)
 
         if old_name in lib_data:
             lib_data[new_name] = lib_data.pop(old_name)
@@ -164,7 +255,6 @@ class LibrariesMixin:
 
         if is_current:
             self.w.current_module_name = new_name
-            self.w._update_window_title()
 
         self.w.reload_current_library()
         self.w.refresh_module_list_display()
@@ -175,8 +265,8 @@ class LibrariesMixin:
             return
 
         dlg = CustomQuestionDialog(
-            self.w, 
-            title="Удаление корпуса", 
+            self.w,
+            title="Удаление корпуса",
             message=f"Вы уверены, что хотите удалить корпус '{name}'?"
         )
         result = dlg.exec()
@@ -199,11 +289,26 @@ class LibrariesMixin:
                 from footprint_editor.core.models import Footprint
                 self.w.load_footprint(Footprint(name="Empty"))
                 self.w.current_module_name = "Empty"
-                self.w._update_window_title()
 
         self.w.reload_current_library()
         self.w.refresh_module_list_display()
         self.w.show_log(f"Корпус удалён: {name}")
+
+    def _write_module_to_library(self, path, module_name, module):
+        content = Path(path).read_text(encoding='utf-8', errors='ignore')
+        pattern = re.compile(
+            r'\$MODULE\s+' + re.escape(module_name) + r'\b.*?\$EndMODULE[^\n]*\n',
+            re.DOTALL
+        )
+        content = pattern.sub('', content)
+        module_text = build_kicad_module_text(module)
+        end_marker = "$EndLIBRARY"
+        if end_marker in content:
+            idx = content.rfind(end_marker)
+            content = content[:idx] + module_text + "\n" + end_marker + "\n"
+        else:
+            content = content.rstrip() + "\n" + module_text + "\n" + end_marker + "\n"
+        Path(path).write_text(content, encoding='utf-8')
 
     def _remove_module_from_library_file(self, path, module_name):
         content = Path(path).read_text(encoding='utf-8', errors='ignore')
