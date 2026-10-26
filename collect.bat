@@ -2,28 +2,32 @@
 setlocal enabledelayedexpansion
 chcp 65001 >nul
 
-set "OUTPUT=project_code.txt"
-set "ROOT=%~dp0"
+if "%~1"=="" (
+    set /p "ROOT=Введите корневую папку: "
+) else (
+    set "ROOT=%~1"
+)
 
-:: Очистить/создать выходной файл
-> "%OUTPUT%" echo.
+if not exist "%ROOT%" (
+    echo Папка не найдена: %ROOT%
+    pause
+    exit /b 1
+)
 
-:: Расширения файлов, которые нужно собрать (можно расширить)
+set "OUTPUT=%CD%\project_code.txt"
 set "EXTS=.py .js .ts .jsx .tsx .html .css .scss .json .md .txt .java .c .cpp .h .hpp .cs .go .rs .php .rb .sql .yml .yaml .xml .sh .bat .cmd .ini .cfg .toml .vue .svelte"
+
+> "%OUTPUT%" echo.
 
 for /r "%ROOT%" %%F in (*) do (
     set "FILE=%%F"
     set "EXT=%%~xF"
 
-    :: Пропускаем сам выходной файл
-    if /I not "%%~nxF"=="%OUTPUT%" (
-
-        :: Пропускаем папки с мусором
+    if /I not "%%~nxF"=="project_code.txt" (
         set "SKIP="
         echo !FILE! | findstr /I /C:"\node_modules\\" /C:"\.git\\" /C:"\venv\\" /C:"\.venv\\" /C:"\__pycache__\\" /C:"\dist\\" /C:"\build\\" /C:"\target\\" >nul && set "SKIP=1"
 
         if not defined SKIP (
-            :: Проверяем расширение
             echo !EXTS! | findstr /I /C:"!EXT!" >nul
             if !errorlevel! == 0 (
                 echo ============================================================>> "%OUTPUT%"

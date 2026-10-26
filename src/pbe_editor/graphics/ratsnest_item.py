@@ -6,6 +6,8 @@ from constants import Colors
 
 
 class RatsnestGraphicsItem(QGraphicsItem):
+    _next_uid = [1]
+
     def __init__(self, p1: QPointF, p2: QPointF, net_code: int = 0,
                  net_name: str = "", is_power: bool = False,
                  is_gnd: bool = False,
@@ -19,6 +21,8 @@ class RatsnestGraphicsItem(QGraphicsItem):
         self.is_gnd = is_gnd
         self.label_a = label_a
         self.label_b = label_b
+        self.uid = RatsnestGraphicsItem._next_uid[0]
+        RatsnestGraphicsItem._next_uid[0] += 1
         self.setZValue(1)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
         self.setAcceptedMouseButtons(Qt.MouseButton.LeftButton | Qt.MouseButton.RightButton)

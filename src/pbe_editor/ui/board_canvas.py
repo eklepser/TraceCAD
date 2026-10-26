@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QGraphicsView, QGraphicsScene
+from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem
 from PySide6.QtCore import Qt, QPointF, Signal, QTimer
 from PySide6.QtGui import QColor, QWheelEvent, QMouseEvent, QPainter, QPen
 
@@ -9,6 +9,9 @@ class BoardCanvas(QGraphicsView):
     zoom_changed = Signal(float)
     mouse_moved = Signal(float, float)
     ratsnest_update_requested = Signal()
+    canvas_clicked = Signal(float, float)
+    canvas_right_clicked = Signal()
+    selection_changed = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -33,6 +36,7 @@ class BoardCanvas(QGraphicsView):
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
         self.scene.setSceneRect(-500, -500, 1000, 1000)
+        self.scene.selectionChanged.connect(self.selection_changed.emit)
 
         self.grid_size = float(Steps.DEFAULT_GRID)
         self.grid_color = QColor(*Colors.GRID)
@@ -55,6 +59,9 @@ class BoardCanvas(QGraphicsView):
         self._scroll_acc_x = 0.0
         self._scroll_acc_y = 0.0
 
+        self._ghost_line_start = None
+        self._ghost_line_end = None
+
     def apply_theme(self):
         self.grid_color = QColor(*Colors.GRID)
         self.background_color = QColor(*Colors.BACKGROUND)
@@ -68,6 +75,16 @@ class BoardCanvas(QGraphicsView):
     def snap_to_grid(self, x, y):
         g = self.grid_size
         return QPointF(round(x / g) * g, round(y / g) * g)
+
+    def set_ghost_line(self, x1, y1, x2, y2):
+        self._ghost_line_start = QPointF(x1, y1)
+        self._ghost_line_end = QPointF(x2, y2)
+        self.viewport().update()
+
+    def clear_ghost_line(self):
+        self._ghost_line_start = None
+        self._ghost_line_end = None
+        self.viewport().update()
 
     def drawBackground(self, painter, rect):
         super().drawBackground(painter, rect)
@@ -100,7 +117,6 @@ class BoardCanvas(QGraphicsView):
         pen = QPen(self.grid_color, 0)
         pen.setCosmetic(True)
         painter.setPen(pen)
-
         y = top
         while y <= bottom:
             x = left
@@ -127,13 +143,19 @@ class BoardCanvas(QGraphicsView):
             painter.drawLine(QPointF(x - cross, y), QPointF(x + cross, y))
             painter.drawLine(QPointF(x, y - cross), QPointF(x, y + cross))
 
+        if self._ghost_line_start and self._ghost_line_end:
+            gp = QPen(QColor(*Colors.GHOST_LINE), 0)
+            gp.setCosmetic(True)
+            gp.setStyle(Qt.PenStyle.DashLine)
+            painter.setPen(gp)
+            painter.drawLine(self._ghost_line_start, self._ghost_line_end)
+
     def wheelEvent(self, event: QWheelEvent):
         if event.angleDelta().y() > 0:
             if self.zoom_index < len(self.zoom_steps) - 1:
                 self.zoom_index += 1
         elif self.zoom_index > 0:
             self.zoom_index -= 1
-
         new_zoom = self.zoom_steps[self.zoom_index]
         factor = (self.base_scale * new_zoom) / self.transform().m11()
         self.scale(factor, factor)
@@ -147,6 +169,34 @@ class BoardCanvas(QGraphicsView):
             self.viewport().setCursor(Qt.CursorShape.ClosedHandCursor)
             event.accept()
             return
+        if event.button() == Qt.MouseButton.RightButton:
+            self.canvas_right_clicked.emit()
+            event.accept()
+            return
+        if event.button() == Qt.MouseButton.LeftButton:
+            # Если текущий dragMode — RubberBand (режим выделения) — пусть Qt сам обрабатывает
+            if self.dragMode() == QGraphicsView.DragMode.RubberBandDrag:
+                items = self.items(event.position().toPoint())
+                selectable = [it for it in items if it.flags() & QGraphicsItem.GraphicsItemFlag.ItemIsSelectable]
+                if selectable and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+                    selectable[0].setSelected(not selectable[0].isSelected())
+                    event.accept()
+                    return
+                if not selectable:
+                    scene_pos = self.mapToScene(event.position().toPoint())
+                    snapped = self.snap_to_grid(scene_pos.x(), scene_pos.y())
+                    self.canvas_clicked.emit(snapped.x(), snapped.y())
+                super().mousePressEvent(event)
+                return
+            # Иначе — рисование: клик по пустому месту
+            items = self.items(event.position().toPoint())
+            selectable = [it for it in items if it.flags() & QGraphicsItem.GraphicsItemFlag.ItemIsSelectable]
+            if not selectable:
+                scene_pos = self.mapToScene(event.position().toPoint())
+                snapped = self.snap_to_grid(scene_pos.x(), scene_pos.y())
+                self.canvas_clicked.emit(snapped.x(), snapped.y())
+                event.accept()
+                return
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
@@ -166,7 +216,6 @@ class BoardCanvas(QGraphicsView):
             self.verticalScrollBar().setValue(self.verticalScrollBar().value() - delta.y())
             event.accept()
             return
-
         scene_pos = self.mapToScene(event.position().toPoint())
         snapped = self.snap_to_grid(scene_pos.x(), scene_pos.y())
         self._snap_pos = QPointF(snapped.x(), snapped.y())
@@ -186,14 +235,12 @@ class BoardCanvas(QGraphicsView):
             dx += 1
         if dx == 0 and dy == 0:
             return
-
         self._scroll_acc_x += dx * self.pan_speed_px
         self._scroll_acc_y += dy * self.pan_speed_px
         ix = int(self._scroll_acc_x)
         iy = int(self._scroll_acc_y)
         self._scroll_acc_x -= ix
         self._scroll_acc_y -= iy
-
         if ix or iy:
             self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + ix)
             self.verticalScrollBar().setValue(self.verticalScrollBar().value() + iy)

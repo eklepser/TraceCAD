@@ -7,7 +7,6 @@ from footprint_editor.core.models import Footprint
 
 
 POWER_NET_NAMES = {"GND", "VCC", "VDD", "VSS", "+5V", "+3V3", "+3.3V", "-5V", "-12V", "+12V"}
-
 GND_NET_NAMES = {"GND"}
 
 
@@ -21,6 +20,18 @@ def is_gnd_net(name: str) -> bool:
     if not name:
         return False
     return name.upper() in {n.upper() for n in GND_NET_NAMES}
+
+
+def _deepcopy_no_graphics(self, memo):
+    cls = self.__class__
+    result = cls.__new__(cls)
+    memo[id(self)] = result
+    for k, v in self.__dict__.items():
+        if k == 'graphics_item':
+            setattr(result, k, None)
+        else:
+            setattr(result, k, copy.deepcopy(v, memo))
+    return result
 
 
 @dataclass
@@ -49,6 +60,9 @@ class BoardModule:
     uid: int = 0
     graphics_item: object = None
 
+    def __deepcopy__(self, memo):
+        return _deepcopy_no_graphics(self, memo)
+
     def get_pad_absolute(self, pad_number: str):
         pad = None
         for p in self.footprint.pads:
@@ -57,11 +71,9 @@ class BoardModule:
                 break
         if pad is None:
             return None
-
         rad = math.radians(self.angle)
         cos_a = math.cos(rad)
         sin_a = math.sin(rad)
-
         lx = pad.x
         ly = pad.y
         gx = self.x + lx * cos_a - ly * sin_a
@@ -73,9 +85,73 @@ class BoardModule:
 
 
 @dataclass
+class BoardLine:
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+    layer: str = "Edge.Cuts"
+    width: float = 0.15
+    uid: int = 0
+    graphics_item: object = None
+
+    def __deepcopy__(self, memo):
+        return _deepcopy_no_graphics(self, memo)
+
+
+@dataclass
+class BoardCircle:
+    x: float
+    y: float
+    radius: float
+    layer: str = "Edge.Cuts"
+    width: float = 0.15
+    uid: int = 0
+    graphics_item: object = None
+
+    def __deepcopy__(self, memo):
+        return _deepcopy_no_graphics(self, memo)
+
+
+@dataclass
+class BoardArc:
+    x: float
+    y: float
+    sx: float
+    sy: float
+    angle: float = 90.0
+    layer: str = "Edge.Cuts"
+    width: float = 0.15
+    uid: int = 0
+    graphics_item: object = None
+
+    def __deepcopy__(self, memo):
+        return _deepcopy_no_graphics(self, memo)
+
+
+@dataclass
+class BoardText:
+    x: float
+    y: float
+    text: str = "Text"
+    size: float = 1.0
+    layer: str = "Edge.Cuts"
+    visible: bool = True
+    uid: int = 0
+    graphics_item: object = None
+
+    def __deepcopy__(self, memo):
+        return _deepcopy_no_graphics(self, memo)
+
+
+@dataclass
 class Board:
     name: str = "Untitled"
     modules: List[BoardModule] = field(default_factory=list)
+    lines: List[BoardLine] = field(default_factory=list)
+    circles: List[BoardCircle] = field(default_factory=list)
+    arcs: List[BoardArc] = field(default_factory=list)
+    texts: List[BoardText] = field(default_factory=list)
     nets: Dict[int, Net] = field(default_factory=dict)
     filename: Optional[str] = None
 
@@ -109,8 +185,34 @@ class Board:
                 if pos is None:
                     continue
                 result.setdefault(pad_net.net_code, []).append((module, pad_number, pos))
-
         for code in result:
             result[code].sort(key=lambda x: (x[0].reference, x[1]))
-
         return result
+
+    def all_references(self):
+        return {m.reference for m in self.modules}
+
+    def auto_reference(self, prefix: str = "REF") -> str:
+        existing = self.all_references()
+        i = 1
+        while True:
+            name = f"{prefix}{i}"
+            if name not in existing:
+                return name
+            i += 1
+
+    def find_pad_at(self, scene_x: float, scene_y: float, tolerance: float):
+        best = None
+        best_dist = tolerance
+        for module in self.modules:
+            for pad in module.footprint.pads:
+                pos = module.get_pad_absolute(pad.number)
+                if pos is None:
+                    continue
+                dx = scene_x - pos[0]
+                dy = scene_y - pos[1]
+                dist = math.hypot(dx, dy)
+                if dist <= best_dist:
+                    best_dist = dist
+                    best = (module, pad.number)
+        return best
