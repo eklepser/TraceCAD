@@ -22,6 +22,7 @@ class BoardCanvas(QGraphicsView):
         self._pan_start = None
         self.show_grid = True
         self.show_snap = True
+        self.show_values = False
         self._highlight_pad_pos = None
         self._highlight_pad_radius = 0.0
 
@@ -89,6 +90,15 @@ class BoardCanvas(QGraphicsView):
         self.show_snap = show
         if not show:
             self._snap_pos = None
+        self.viewport().update()
+
+    def set_show_values(self, show):
+        self.show_values = show
+        for item in self.scene.items():
+            try:
+                item.update()
+            except RuntimeError:
+                pass
         self.viewport().update()
 
     def set_highlight_pad(self, pos, radius):

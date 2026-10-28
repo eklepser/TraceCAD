@@ -34,7 +34,7 @@ def _module_block(module, board):
     lines = [
         f"$MODULE {fp.name}",
         f"Po {mm_to_kicad(module.x)} {mm_to_kicad(module.y)} "
-        f"{int(round(module.angle * 10))} 15 00000000 00000000 ~~",
+        f"{int(round(-module.angle * 10))} 15 00000000 00000000 ~~",
         f"Li {fp.name}",
         "Sc 00000000",
         "AR",
@@ -51,7 +51,7 @@ def _module_block(module, board):
         size_k = mm_to_kicad(text.size)
         vis = 'V' if text.visible else 'I'
         lid = layer_to_id(text.layer)
-        lines.append(f'T{idx} {x_k} {y_k} {size_k} {size_k} 0 120 N {vis} {lid} N "{value}"')
+        lines.append(f'T{idx} {x_k} {y_k} {size_k} {size_k} {int(round(-text.angle * 10))} 120 N {vis} {lid} N "{value}"')
     for line in fp.lines:
         lid = layer_to_id(line.layer)
         lines.append(

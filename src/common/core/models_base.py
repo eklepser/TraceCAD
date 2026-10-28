@@ -126,6 +126,7 @@ class BaseText(BaseObject):
 
 @dataclass
 class Text(BaseText):
+    angle: float = 0.0
     text_type: TextType = TextType.NORMAL
 
 

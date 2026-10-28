@@ -214,7 +214,7 @@ def parse_module(name: str, body: str, uid: int) -> Optional[BoardModule]:
 
     module = BoardModule(
         footprint=fp, reference=reference, value=value,
-        x=x, y=y, angle=angle, layer="F.Cu", uid=uid,
+        x=x, y=y, angle=-angle, layer="F.Cu", uid=uid,
     )
 
     for pad_match in re.finditer(r'\$PAD(.*?)\$EndPAD', body, re.DOTALL):
@@ -238,6 +238,7 @@ def _parse_text_line(text_str: str, text_type: TextType) -> Text:
     h = kicad_to_mm(params[3]) if len(params) > 3 else w
     size = max(w, h) if max(w, h) > 0 else 1.0
     visible = 'I' not in params[4:8]
+    angle = -float(params[4]) / 10.0 if len(params) > 4 else 0.0
     layer = "F.SilkS"
     for tok in params:
         try:
@@ -250,7 +251,7 @@ def _parse_text_line(text_str: str, text_type: TextType) -> Text:
     return Text(
         x=x, y=y, text=text, size=size,
         visible=visible, text_type=text_type, locked=True,
-        layer=layer,
+        layer=layer, angle=angle,
     )
 
 

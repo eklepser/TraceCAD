@@ -1,11 +1,11 @@
 from PySide6.QtWidgets import QGraphicsItem, QStyle
-from PySide6.QtGui import QPen, QBrush, QColor, QPainterPath
+from PySide6.QtGui import QPen, QBrush, QColor, QPainterPath, QTransform
 from PySide6.QtCore import QRectF, QPointF, Qt
 
 from constants import Colors, Sizes
 from common.arc_geometry import arc_sample_points
 from common.graphics.text_path import build_text_path
-from pbe_editor.core.models import PadShape, PadType
+from pbe_editor.core.models import PadShape, PadType, TextType
 
 
 STANDARD_COLOR = (180, 160, 80)
@@ -30,6 +30,14 @@ class BoardModuleGraphicsItem(QGraphicsItem):
         self._is_drag_leader = False
         self._group_drag_start = {}
 
+    def _show_values(self):
+        return bool(getattr(self.canvas, 'show_values', False))
+
+    def _text_visible(self, text):
+        if text.text_type == TextType.VALUE:
+            return self._show_values()
+        return text.visible
+
     def boundingRect(self):
         fp = self.module.footprint
         xs = []
@@ -49,6 +57,11 @@ class BoardModuleGraphicsItem(QGraphicsItem):
             for px, py in arc_sample_points(arc.x, arc.y, arc.sx, arc.sy, arc.angle, 32):
                 xs.append(px)
                 ys.append(py)
+        for text in fp.texts:
+            if self._text_visible(text):
+                bounds = self._text_path(text).boundingRect()
+                xs.extend([bounds.left(), bounds.right()])
+                ys.extend([bounds.top(), bounds.bottom()])
         if not xs:
             return QRectF(-10, -10, 20, 20)
         left = min(xs); right = max(xs); top = min(ys); bottom = max(ys)
@@ -115,21 +128,34 @@ class BoardModuleGraphicsItem(QGraphicsItem):
                 text_path = build_text_path(pad.number, target_h, bold=True, center=True)
                 painter.save()
                 painter.translate(pad.x, pad.y)
+                painter.rotate(-self.module.angle)
                 painter.setPen(Qt.PenStyle.NoPen)
                 painter.setBrush(QColor(*Colors.PAD_NUMBER))
                 painter.drawPath(text_path)
                 painter.restore()
-        if self.module.reference:
-            ref_path = build_text_path(self.module.reference, 1.5, bold=True, center=True)
-            if not ref_path.isEmpty():
-                bounds = self.boundingRect()
-                ref_y = bounds.top() + 0.5
-                painter.save()
-                painter.translate(0.0, ref_y)
-                painter.setPen(Qt.PenStyle.NoPen)
-                painter.setBrush(QColor(150, 220, 150))
-                painter.drawPath(ref_path)
-                painter.restore()
+        for text in fp.texts:
+            if not self._text_visible(text):
+                continue
+            path = self._text_path(text)
+            painter.setPen(Qt.PenStyle.NoPen)
+            if selected:
+                painter.setBrush(QColor(*Colors.SELECTED))
+            elif text.text_type == TextType.REFERENCE:
+                painter.setBrush(QColor(*Colors.REFERENCE))
+            elif text.text_type == TextType.VALUE:
+                painter.setBrush(QColor(*Colors.VALUE))
+            else:
+                painter.setBrush(QColor(*(Colors.TEXT_VISIBLE if text.visible else Colors.TEXT_HIDDEN)))
+            painter.drawPath(path)
+
+    def _text_path(self, text):
+        value = (self.module.reference if text.text_type == TextType.REFERENCE else
+                 self.module.value if text.text_type == TextType.VALUE else text.text)
+        path = build_text_path(value, text.size, bold=True, center=True)
+        transform = QTransform()
+        transform.translate(text.x, text.y)
+        transform.rotate(text.angle - self.module.angle)
+        return transform.map(path)
 
     def _collect_selected_modules(self):
         self._group_drag_start = {}

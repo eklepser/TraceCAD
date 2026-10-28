@@ -3,7 +3,7 @@ from PySide6.QtCore import QEvent, Qt
 from constants import (
     PAN_KEYS,
     VK_ESCAPE, VK_DELETE, VK_F1, VK_F2, VK_F3, VK_F11, VK_G,
-    VK_R, VK_L,
+    VK_R, VK_L, VK_O,
 )
 
 
@@ -13,6 +13,10 @@ class KeyboardService:
             self.exit_to_select_mode()
             return True
         vk = event.nativeVirtualKey()
+        if vk == VK_O:
+            self.act_show_values.setChecked(not self.act_show_values.isChecked())
+            self.toggle_values()
+            return True
         if vk == VK_DELETE:
             self.commands.delete_selected()
             return True

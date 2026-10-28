@@ -139,11 +139,17 @@ class UiSetupService:
         edit_menu.addAction(act_delete)
 
         view_menu = menubar.addMenu("Вид")
-        self.act_show_ratsnest = QAction("Связи на плате", self, checkable=True)
+        self.act_show_ratsnest = QAction("Показать связи", self, checkable=True)
         self.act_show_ratsnest.setChecked(True)
         self.act_show_ratsnest.setShortcut("L")
         self.act_show_ratsnest.triggered.connect(self.on_toggle_ratsnest)
         view_menu.addAction(self.act_show_ratsnest)
+
+        self.act_show_values = QAction("Показать значения", self, checkable=True)
+        self.act_show_values.setChecked(self.canvas.show_values)
+        self.act_show_values.setShortcut("O")
+        self.act_show_values.triggered.connect(self.toggle_values)
+        view_menu.addAction(self.act_show_values)
 
         act_nets = QAction("Список связей...", self)
         act_nets.triggered.connect(self.on_show_nets)
@@ -265,3 +271,8 @@ class UiSetupService:
         avail = screen.availableGeometry()
         self.setGeometry(avail)
         self.setWindowState(self.windowState() | Qt.WindowState.WindowMaximized)
+
+    def toggle_values(self):
+        self.canvas.set_show_values(self.act_show_values.isChecked())
+        state = "включены" if self.canvas.show_values else "скрыты"
+        self.show_log(f"Значения элементов {state}")
