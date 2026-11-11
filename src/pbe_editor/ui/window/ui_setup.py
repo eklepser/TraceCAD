@@ -138,6 +138,13 @@ class UiSetupService:
         act_delete.triggered.connect(self.commands.delete_selected)
         edit_menu.addAction(act_delete)
 
+        operations_menu = menubar.addMenu("Операции")
+        
+        act_autoplace = QAction("Авторазмещение...", self)
+        act_autoplace.setShortcut("Ctrl+P")
+        act_autoplace.triggered.connect(self.commands.on_autoplace)
+        operations_menu.addAction(act_autoplace)
+
         view_menu = menubar.addMenu("Вид")
         self.act_show_ratsnest = QAction("Показать связи", self, checkable=True)
         self.act_show_ratsnest.setChecked(True)
@@ -154,6 +161,7 @@ class UiSetupService:
         act_nets = QAction("Список связей...", self)
         act_nets.triggered.connect(self.on_show_nets)
         view_menu.addAction(act_nets)
+        
         view_menu.addSeparator()
 
         self.act_show_grid = QAction("Показывать сетку", self, checkable=True)

@@ -280,6 +280,7 @@ class BaseText(BaseObject):
 
 @dataclass
 class Text(BaseText):
+    angle: float = 0.0
     text_type: TextType = TextType.NORMAL
 
 
@@ -1051,6 +1052,7 @@ VK_Y = 0x59
 VK_Z = 0x5A
 VK_G = 0x47
 VK_L = 0x4C
+VK_O = 0x4F
 VK_1 = 0x31
 VK_2 = 0x32
 VK_3 = 0x33
@@ -1199,7 +1201,7 @@ from constants.keys import (
     VK_W, VK_A, VK_S, VK_D,
     VK_ESCAPE, VK_DELETE,
     VK_F1, VK_F2, VK_F3, VK_F11,
-    VK_C, VK_V, VK_R, VK_Y, VK_Z, VK_G, VK_L,
+    VK_C, VK_V, VK_R, VK_Y, VK_Z, VK_G, VK_L, VK_O,
     VK_1, VK_2, VK_3, VK_4, VK_5,
     PAN_KEYS,
 )
@@ -4827,7 +4829,7 @@ def _module_block(module, board):
     lines = [
         f"$MODULE {fp.name}",
         f"Po {mm_to_kicad(module.x)} {mm_to_kicad(module.y)} "
-        f"{int(round(module.angle * 10))} 15 00000000 00000000 ~~",
+        f"{int(round(-module.angle * 10))} 15 00000000 00000000 ~~",
         f"Li {fp.name}",
         "Sc 00000000",
         "AR",
@@ -4844,7 +4846,7 @@ def _module_block(module, board):
         size_k = mm_to_kicad(text.size)
         vis = 'V' if text.visible else 'I'
         lid = layer_to_id(text.layer)
-        lines.append(f'T{idx} {x_k} {y_k} {size_k} {size_k} 0 120 N {vis} {lid} N "{value}"')
+        lines.append(f'T{idx} {x_k} {y_k} {size_k} {size_k} {int(round(-text.angle * 10))} 120 N {vis} {lid} N "{value}"')
     for line in fp.lines:
         lid = layer_to_id(line.layer)
         lines.append(
@@ -5245,7 +5247,7 @@ def parse_module(name: str, body: str, uid: int) -> Optional[BoardModule]:
 
     module = BoardModule(
         footprint=fp, reference=reference, value=value,
-        x=x, y=y, angle=angle, layer="F.Cu", uid=uid,
+        x=x, y=y, angle=-angle, layer="F.Cu", uid=uid,
     )
 
     for pad_match in re.finditer(r'\$PAD(.*?)\$EndPAD', body, re.DOTALL):
@@ -5269,6 +5271,7 @@ def _parse_text_line(text_str: str, text_type: TextType) -> Text:
     h = kicad_to_mm(params[3]) if len(params) > 3 else w
     size = max(w, h) if max(w, h) > 0 else 1.0
     visible = 'I' not in params[4:8]
+    angle = -float(params[4]) / 10.0 if len(params) > 4 else 0.0
     layer = "F.SilkS"
     for tok in params:
         try:
@@ -5281,7 +5284,7 @@ def _parse_text_line(text_str: str, text_type: TextType) -> Text:
     return Text(
         x=x, y=y, text=text, size=size,
         visible=visible, text_type=text_type, locked=True,
-        layer=layer,
+        layer=layer, angle=angle,
     )
 
 
@@ -6771,13 +6774,13 @@ class BoardTextGraphicsItem(QGraphicsItem):
 FILE: D:\Desktop\TraceCAD\src\pbe_editor\graphics\module_item.py
 ============================================================
 from PySide6.QtWidgets import QGraphicsItem, QStyle
-from PySide6.QtGui import QPen, QBrush, QColor, QPainterPath
+from PySide6.QtGui import QPen, QBrush, QColor, QPainterPath, QTransform
 from PySide6.QtCore import QRectF, QPointF, Qt
 
 from constants import Colors, Sizes
 from common.arc_geometry import arc_sample_points
 from common.graphics.text_path import build_text_path
-from pbe_editor.core.models import PadShape, PadType
+from pbe_editor.core.models import PadShape, PadType, TextType
 
 
 STANDARD_COLOR = (180, 160, 80)
@@ -6802,6 +6805,14 @@ class BoardModuleGraphicsItem(QGraphicsItem):
         self._is_drag_leader = False
         self._group_drag_start = {}
 
+    def _show_values(self):
+        return bool(getattr(self.canvas, 'show_values', False))
+
+    def _text_visible(self, text):
+        if text.text_type == TextType.VALUE:
+            return self._show_values()
+        return text.visible
+
     def boundingRect(self):
         fp = self.module.footprint
         xs = []
@@ -6821,6 +6832,11 @@ class BoardModuleGraphicsItem(QGraphicsItem):
             for px, py in arc_sample_points(arc.x, arc.y, arc.sx, arc.sy, arc.angle, 32):
                 xs.append(px)
                 ys.append(py)
+        for text in fp.texts:
+            if self._text_visible(text):
+                bounds = self._text_path(text).boundingRect()
+                xs.extend([bounds.left(), bounds.right()])
+                ys.extend([bounds.top(), bounds.bottom()])
         if not xs:
             return QRectF(-10, -10, 20, 20)
         left = min(xs); right = max(xs); top = min(ys); bottom = max(ys)
@@ -6887,21 +6903,34 @@ class BoardModuleGraphicsItem(QGraphicsItem):
                 text_path = build_text_path(pad.number, target_h, bold=True, center=True)
                 painter.save()
                 painter.translate(pad.x, pad.y)
+                painter.rotate(-self.module.angle)
                 painter.setPen(Qt.PenStyle.NoPen)
                 painter.setBrush(QColor(*Colors.PAD_NUMBER))
                 painter.drawPath(text_path)
                 painter.restore()
-        if self.module.reference:
-            ref_path = build_text_path(self.module.reference, 1.5, bold=True, center=True)
-            if not ref_path.isEmpty():
-                bounds = self.boundingRect()
-                ref_y = bounds.top() + 0.5
-                painter.save()
-                painter.translate(0.0, ref_y)
-                painter.setPen(Qt.PenStyle.NoPen)
-                painter.setBrush(QColor(150, 220, 150))
-                painter.drawPath(ref_path)
-                painter.restore()
+        for text in fp.texts:
+            if not self._text_visible(text):
+                continue
+            path = self._text_path(text)
+            painter.setPen(Qt.PenStyle.NoPen)
+            if selected:
+                painter.setBrush(QColor(*Colors.SELECTED))
+            elif text.text_type == TextType.REFERENCE:
+                painter.setBrush(QColor(*Colors.REFERENCE))
+            elif text.text_type == TextType.VALUE:
+                painter.setBrush(QColor(*Colors.VALUE))
+            else:
+                painter.setBrush(QColor(*(Colors.TEXT_VISIBLE if text.visible else Colors.TEXT_HIDDEN)))
+            painter.drawPath(path)
+
+    def _text_path(self, text):
+        value = (self.module.reference if text.text_type == TextType.REFERENCE else
+                 self.module.value if text.text_type == TextType.VALUE else text.text)
+        path = build_text_path(value, text.size, bold=True, center=True)
+        transform = QTransform()
+        transform.translate(text.x, text.y)
+        transform.rotate(text.angle - self.module.angle)
+        return transform.map(path)
 
     def _collect_selected_modules(self):
         self._group_drag_start = {}
@@ -7052,6 +7081,7 @@ class BoardCanvas(QGraphicsView):
         self._pan_start = None
         self.show_grid = True
         self.show_snap = True
+        self.show_values = False
         self._highlight_pad_pos = None
         self._highlight_pad_radius = 0.0
 
@@ -7119,6 +7149,15 @@ class BoardCanvas(QGraphicsView):
         self.show_snap = show
         if not show:
             self._snap_pos = None
+        self.viewport().update()
+
+    def set_show_values(self, show):
+        self.show_values = show
+        for item in self.scene.items():
+            try:
+                item.update()
+            except RuntimeError:
+                pass
         self.viewport().update()
 
     def set_highlight_pad(self, pos, radius):
@@ -9360,7 +9399,7 @@ from PySide6.QtCore import QEvent, Qt
 from constants import (
     PAN_KEYS,
     VK_ESCAPE, VK_DELETE, VK_F1, VK_F2, VK_F3, VK_F11, VK_G,
-    VK_R, VK_L,
+    VK_R, VK_L, VK_O,
 )
 
 
@@ -9370,6 +9409,10 @@ class KeyboardService:
             self.exit_to_select_mode()
             return True
         vk = event.nativeVirtualKey()
+        if vk == VK_O:
+            self.act_show_values.setChecked(not self.act_show_values.isChecked())
+            self.toggle_values()
+            return True
         if vk == VK_DELETE:
             self.commands.delete_selected()
             return True
@@ -9642,11 +9685,17 @@ class UiSetupService:
         edit_menu.addAction(act_delete)
 
         view_menu = menubar.addMenu("Вид")
-        self.act_show_ratsnest = QAction("Связи на плате", self, checkable=True)
+        self.act_show_ratsnest = QAction("Показать связи", self, checkable=True)
         self.act_show_ratsnest.setChecked(True)
         self.act_show_ratsnest.setShortcut("L")
         self.act_show_ratsnest.triggered.connect(self.on_toggle_ratsnest)
         view_menu.addAction(self.act_show_ratsnest)
+
+        self.act_show_values = QAction("Показать значения", self, checkable=True)
+        self.act_show_values.setChecked(self.canvas.show_values)
+        self.act_show_values.setShortcut("O")
+        self.act_show_values.triggered.connect(self.toggle_values)
+        view_menu.addAction(self.act_show_values)
 
         act_nets = QAction("Список связей...", self)
         act_nets.triggered.connect(self.on_show_nets)
@@ -9767,7 +9816,12 @@ class UiSetupService:
             return
         avail = screen.availableGeometry()
         self.setGeometry(avail)
-        self.setWindowState(self.windowState() | Qt.WindowState.WindowMaximized).
+        self.setWindowState(self.windowState() | Qt.WindowState.WindowMaximized)
+
+    def toggle_values(self):
+        self.canvas.set_show_values(self.act_show_values.isChecked())
+        state = "включены" if self.canvas.show_values else "скрыты"
+        self.show_log(f"Значения элементов {state}").
 .
 ============================================================
 FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\window\__init__.py

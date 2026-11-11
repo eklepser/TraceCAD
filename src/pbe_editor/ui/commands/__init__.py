@@ -1,9 +1,10 @@
 from pbe_editor.ui.commands.drawing import DrawingCommandsMixin
 from pbe_editor.ui.commands.editing import EditingCommandsMixin
 from pbe_editor.ui.commands.selection import SelectionCommandsMixin
+from pbe_editor.ui.commands.autoplace import AutoplaceCommandsMixin
 
-
-class CommandHandler(DrawingCommandsMixin, EditingCommandsMixin, SelectionCommandsMixin):
+class CommandHandler(DrawingCommandsMixin, EditingCommandsMixin, 
+                     SelectionCommandsMixin, AutoplaceCommandsMixin):
     def __init__(self, window):
         from PySide6.QtCore import QPointF
         self.w = window
