@@ -37,7 +37,7 @@ class AutoPlaceResultDialog(HeaderlessDialog):
         layout.addWidget(header)
 
         metric_text = "Евклидова" if params.metric.value == "euclidean" else "Ортогональная"
-        mode_text = "Крупнейший" if params.directive_mode.value == "largest" else "Связнейший"
+        mode_text = "Самый крупный" if params.directive_mode.value == "largest" else "Самый связанный"
         pos_text = {
             "center": "Центр",
             "top_left": "Левый верхний",
@@ -120,7 +120,7 @@ class AutoPlaceResultDialog(HeaderlessDialog):
         time_lbl.setStyleSheet("color: #a9b7c6;")
         layout.addWidget(time_lbl)
 
-        threads_lbl = QLabel("Использовано потоков: <b>{0}</b>".format(threads))
+        threads_lbl = QLabel("Использовано потоков: <b>{0}</b>".format(result.threads_used))
         threads_lbl.setStyleSheet("color: #a9b7c6;")
         layout.addWidget(threads_lbl)
 

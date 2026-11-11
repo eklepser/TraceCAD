@@ -2,26 +2,33 @@ import math
 import time
 from dataclasses import dataclass
 from enum import Enum
-from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import Pool
+
+from pbe_editor.core import sequential_algorithm as algo
+
 
 class Metric(Enum):
     EUCLIDEAN = "euclidean"
     MANHATTAN = "manhattan"
 
+
 class DirectiveMode(Enum):
     LARGEST = "largest"
     MOST_CONNECTED = "most_connected"
+
 
 class DirectivePosition(Enum):
     CENTER = "center"
     TOP_LEFT = "top_left"
     BOTTOM_LEFT = "bottom_left"
 
+
 class JMethod(Enum):
     M_331 = "3.3.1"
     M_333 = "3.3.3"
     M_335 = "3.3.5"
     M_336 = "3.3.6"
+
 
 @dataclass
 class PlacementParams:
@@ -32,6 +39,8 @@ class PlacementParams:
     j_method: JMethod = JMethod.M_335
     directive_mode: DirectiveMode = DirectiveMode.LARGEST
     directive_position: DirectivePosition = DirectivePosition.CENTER
+    threads: int = 1
+
 
 @dataclass
 class PlacementResult:
@@ -42,6 +51,21 @@ class PlacementResult:
     wire_euclidean: float
     wire_manhattan: float
     directive_ref: str = ""
+    threads_used: int = 1
+
+
+def _J_task(args):
+    c, c_331, jm, i, placed, unplaced, n = args
+    return i, algo.calc_J(c, c_331, jm, i, placed, unplaced, n)
+
+
+def _F_task(args):
+    conn_row, candidates, placed_positions, metric_name = args
+    return [
+        (gx, gy, algo.pick_best_position((gx, gy), placed_positions, metric_name))
+        for gx, gy in candidates
+    ]
+
 
 def _arc_points(cx, cy, sx, sy, angle_deg, segments=16):
     r = math.hypot(sx - cx, sy - cy)
@@ -55,6 +79,7 @@ def _arc_points(cx, cy, sx, sy, angle_deg, segments=16):
         a = a1 + t * sweep
         pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
     return pts
+
 
 def _get_local_bbox(module):
     fp = module.footprint
@@ -80,6 +105,7 @@ def _get_local_bbox(module):
     if not xs:
         return (-1.0, -1.0, 1.0, 1.0)
     return (min(xs), min(ys), max(xs), max(ys))
+
 
 def _mst_length(points, metric):
     n = len(points)
@@ -107,6 +133,7 @@ def _mst_length(points, metric):
             if d < min_d[i]:
                 min_d[i] = d
     return total
+
 
 def _get_board_edge_rect(board):
     xs, ys = [], []
@@ -141,56 +168,47 @@ class SequentialPlacer:
         self.snap = snapshot
         self.p = params
         self.n = len(snapshot.modules)
-        
+
         self.edge_rect = snapshot.edge_rect
         self.inner_rect = (self.edge_rect[0] + params.A, self.edge_rect[1] + params.A,
                            self.edge_rect[2] - params.A, self.edge_rect[3] - params.A)
-        
+
         if self.inner_rect[0] >= self.inner_rect[2] or self.inner_rect[1] >= self.inner_rect[3]:
             raise ValueError("Параметр A слишком велик для данной платы.")
-        
+
         self.bboxes = [m['bbox'] for m in snapshot.modules]
         self.positions = {}
         self.placed = set()
         self.unplaced = set(range(self.n))
-        
-        self.c, self.c_331 = self._build_connectivity()
 
-    def _build_connectivity(self):
-        nets_by_mod = [set() for _ in range(self.n)]
-        for i, mod in enumerate(self.snap.modules):
-            for pad_num, pad_net in mod['pad_nets'].items():
-                if pad_net.net_code > 0:
-                    nets_by_mod[i].add(pad_net.net_code)
-                    
-        net_sizes = {}
-        for nets in nets_by_mod:
-            for net in nets:
-                net_sizes[net] = net_sizes.get(net, 0) + 1
-                
-        lmbda = 2 
-        c = [[0.0] * self.n for _ in range(self.n)]
-        c_331 = [[0.0] * self.n for _ in range(self.n)]
-        
-        for i in range(self.n):
-            for j in range(i + 1, self.n):
-                common = nets_by_mod[i] & nets_by_mod[j]
-                if common:
-                    c[i][j] = c[j][i] = float(len(common))
-                    c_331[i][j] = c_331[j][i] = sum((net_sizes[code] + lmbda) / net_sizes[code] for code in common)
-        return c, c_331
+        self.c, self.c_331 = algo.compute_connectivity_matrix(snapshot)
+
+        area = (self.inner_rect[2] - self.inner_rect[0]) * (self.inner_rect[3] - self.inner_rect[1])
+        cell_count = max(1.0, area / (params.C * params.C))
+        self._work_estimate = cell_count * self.n * self.n
+
+        self._pool = None
+        self.threads_used = 1
+        if params.threads > 1 and self._parallel_worthwhile():
+            try:
+                self._pool = Pool(processes=params.threads)
+                self.threads_used = params.threads
+            except Exception:
+                self._pool = None
+                self.threads_used = 1
+
+    def _parallel_worthwhile(self):
+        return self._work_estimate >= 5_000_000
+
+    def _shutdown_pool(self):
+        if self._pool is not None:
+            self._pool.terminate()
+            self._pool.join()
+            self._pool = None
 
     def _pick_directive(self):
-        scores = []
-        for i in range(self.n):
-            if self.p.directive_mode == DirectiveMode.LARGEST:
-                lb = self.bboxes[i]
-                score = (lb[2] - lb[0]) * (lb[3] - lb[1])
-            else:
-                score = sum(self.c[i])
-            scores.append((i, score))
-        scores.sort(key=lambda x: x[1], reverse=True)
-        return scores[0][0]
+        mode = "largest" if self.p.directive_mode == DirectiveMode.LARGEST else "most_connected"
+        return algo.pick_directive_element(self.bboxes, self.c, mode, self.p.directive_position.value)
 
     def _get_directive_pos(self, i):
         lb = self.bboxes[i]
@@ -214,10 +232,8 @@ class SequentialPlacer:
         ix_hi = math.floor((self.inner_rect[2] - lb[2]) / g + 1e-9)
         iy_lo = math.ceil((self.inner_rect[1] - lb[1]) / g - 1e-9)
         iy_hi = math.floor((self.inner_rect[3] - lb[3]) / g + 1e-9)
-        
         if ix_lo > ix_hi or iy_lo > iy_hi:
             return None
-            
         ix = max(ix_lo, min(ix_hi, round(gx / g)))
         iy = max(iy_lo, min(iy_hi, round(gy / g)))
         return (ix * g, iy * g)
@@ -232,7 +248,7 @@ class SequentialPlacer:
                 continue
             ob = self._get_box(j, *self.positions[j])
             if (box[0] < ob[2] + self.p.B and box[2] > ob[0] - self.p.B and
-                box[1] < ob[3] + self.p.B and box[3] > ob[1] - self.p.B):
+                    box[1] < ob[3] + self.p.B and box[3] > ob[1] - self.p.B):
                 return True
         return False
 
@@ -244,47 +260,57 @@ class SequentialPlacer:
         if not self.placed:
             pos = self._snap_to_grid(i, *self._get_directive_pos(i))
             return [pos] if pos else []
-            
         g = self.p.C
         candidates = []
-        for ix in range(math.ceil(self.inner_rect[0] / g), math.floor(self.inner_rect[2] / g) + 1):
-            for iy in range(math.ceil(self.inner_rect[1] / g), math.floor(self.inner_rect[3] / g) + 1):
+        ix_range = range(int(math.ceil(self.inner_rect[0] / g)), int(math.floor(self.inner_rect[2] / g)) + 1)
+        iy_range = range(int(math.ceil(self.inner_rect[1] / g)), int(math.floor(self.inner_rect[3] / g)) + 1)
+        for ix in ix_range:
+            for iy in iy_range:
                 gx, gy = ix * g, iy * g
                 box = self._get_box(i, gx, gy)
                 if self._within_board(box) and not self._collides(box, i):
                     candidates.append((gx, gy))
         return candidates
 
-    def _calc_J(self, i):
-        if self.p.j_method == JMethod.M_331:
-            return max([self.c_331[i][j] for j in self.placed] + [0.0])
-        elif self.p.j_method == JMethod.M_333:
-            return sum(self.c[i][j] for j in self.placed)
-        elif self.p.j_method == JMethod.M_335:
-            placed = sum(self.c[i][j] for j in self.placed)
-            unplaced = sum(self.c[i][j] for j in self.unplaced)
-            return placed - unplaced
-        elif self.p.j_method == JMethod.M_336:
-            placed = sum(self.c[i][j] for j in self.placed)
-            total = sum(self.c[i][j] for j in range(self.n) if j != i)
-            return (placed / total) if total > 0 else 0.0
-        return 0.0
+    def _get_placed_positions(self, conn_row):
+        return [(self.positions[j][0], self.positions[j][1], conn_row[j]) for j in self.placed]
 
-    def _calc_F(self, i, pos):
-        gx, gy = pos
-        total = 0.0
+    def _compute_J_scores(self):
+        items = list(self.unplaced)
+        if not items:
+            return {}
+        jm = self.p.j_method.value
+        if self._pool is None or len(items) < 4:
+            return {i: algo.calc_J(self.c, self.c_331, jm, i, self.placed, self.unplaced, self.n)
+                    for i in items}
+        jobs = [(self.c, self.c_331, jm, i, self.placed, self.unplaced, self.n) for i in items]
+        chunk = max(1, len(jobs) // (self.p.threads * 4))
+        results = self._pool.map(_J_task, jobs, chunksize=chunk)
+        return dict(results)
+
+    def _compute_F_scores(self, best_i, cands):
+        if not cands:
+            return []
         conn = self.c_331 if self.p.j_method == JMethod.M_331 else self.c
-        for j in self.placed:
-            w = conn[i][j]
-            if w == 0:
-                continue
-            jx, jy = self.positions[j]
-            if self.p.metric == Metric.MANHATTAN:
-                d = abs(gx - jx) + abs(gy - jy)
-            else:
-                d = math.hypot(gx - jx, gy - jy)
-            total += w * d
-        return total
+        conn_row = conn[best_i]
+        placed_positions = self._get_placed_positions(conn_row)
+        metric_name = "manhattan" if self.p.metric == Metric.MANHATTAN else "euclidean"
+        work = len(cands) * max(1, len(placed_positions))
+        if self._pool is None or work < 2000:
+            return [
+                (p, algo.pick_best_position(p, placed_positions, metric_name))
+                for p in cands
+            ]
+        n_chunks = self.p.threads * 4
+        chunk_size = max(1, (len(cands) + n_chunks - 1) // n_chunks)
+        chunks = [cands[k:k + chunk_size] for k in range(0, len(cands), chunk_size)]
+        jobs = [(conn_row, ch, placed_positions, metric_name) for ch in chunks]
+        results = self._pool.map(_F_task, jobs, chunksize=1)
+        out = []
+        for ch in results:
+            for gx, gy, v in ch:
+                out.append(((gx, gy), v))
+        return out
 
     def _calc_total_wire(self, metric):
         centers = [self.positions.get(i, (self.snap.modules[i]['x'], self.snap.modules[i]['y'])) for i in range(self.n)]
@@ -306,48 +332,44 @@ class SequentialPlacer:
     def run(self):
         start_time = time.perf_counter()
         if self.n == 0:
-            return PlacementResult({}, 0.0, 0, 0, 0.0, 0.0, "")
-            
-        idx = self._pick_directive()
-        pos = self._snap_to_grid(idx, *self._get_directive_pos(idx))
-        if pos is None:
-            ref = self.snap.modules[idx]['reference']
-            raise RuntimeError(f"Корпус {ref} не помещается на плату.")
-            
-        self.positions[idx] = pos
-        self.placed.add(idx)
-        self.unplaced.discard(idx)
+            return PlacementResult({}, 0.0, 0, 0, 0.0, 0.0, "", self.threads_used)
+        try:
+            idx = self._pick_directive()
+            pos = self._snap_to_grid(idx, *self._get_directive_pos(idx))
+            if pos is None:
+                ref = self.snap.modules[idx]['reference']
+                raise RuntimeError(f"Корпус {ref} не помещается на плату.")
+            self.positions[idx] = pos
+            self.placed.add(idx)
+            self.unplaced.discard(idx)
 
-        while self.unplaced:
-            j_scores = {i: self._calc_J(i) for i in self.unplaced}
-            best_i = max(j_scores, key=lambda x: (j_scores[x], -x))
-            
-            cands = self._get_candidates(best_i)
-            if not cands:
-                ref = self.snap.modules[best_i]['reference']
-                raise RuntimeError(f"Корпус {ref} не помещается на плату с заданными зазорами.")
-                
-            f_scores = [(p, self._calc_F(best_i, p)) for p in cands]
-            best_pos = min(f_scores, key=lambda x: (x[1], x[0][1], x[0][0]))[0]
-            
-            self.positions[best_i] = best_pos
-            self.placed.add(best_i)
-            self.unplaced.discard(best_i)
+            while self.unplaced:
+                j_scores = self._compute_J_scores()
+                best_i = max(j_scores, key=lambda x: (j_scores[x], -x))
+
+                cands = self._get_candidates(best_i)
+                if not cands:
+                    ref = self.snap.modules[best_i]['reference']
+                    raise RuntimeError(f"Корпус {ref} не помещается на плату с заданными зазорами.")
+
+                f_scores = self._compute_F_scores(best_i, cands)
+                best_pos = min(f_scores, key=lambda x: (x[1], x[0][1], x[0][0]))[0]
+
+                self.positions[best_i] = best_pos
+                self.placed.add(best_i)
+                self.unplaced.discard(best_i)
+        finally:
+            self._shutdown_pool()
 
         duration = time.perf_counter() - start_time
         w_euc = self._calc_total_wire(Metric.EUCLIDEAN)
         w_man = self._calc_total_wire(Metric.MANHATTAN)
         conn_count = sum(len(v) - 1 for v in self._get_nets().values() if len(v) >= 2)
-        
+
         return PlacementResult(
             self.positions, duration, self.n, conn_count, w_euc, w_man,
-            self.snap.modules[idx]['reference']
+            self.snap.modules[idx]['reference'], self.threads_used
         )
-
-
-def _worker(args):
-    snapshot, params = args
-    return SequentialPlacer(snapshot, params).run()
 
 
 def _snapshot_wire_lengths(snapshot):
@@ -364,15 +386,7 @@ def run_auto_placement(board, params, threads=1):
     snapshot = _BoardSnapshot(board)
     before_euc, before_man = _snapshot_wire_lengths(snapshot)
 
-    if threads <= 1:
-        result = SequentialPlacer(snapshot, params).run()
-    else:
-        jobs = [(snapshot, params) for _ in range(threads)]
-        results = []
-        with ProcessPoolExecutor(max_workers=threads) as pool:
-            futures = [pool.submit(_worker, job) for job in jobs]
-            for fut in futures:
-                results.append(fut.result())
-        result = min(results, key=lambda r: r.wire_euclidean)
+    params.threads = threads
+    result = SequentialPlacer(snapshot, params).run()
 
     return result, before_euc, before_man

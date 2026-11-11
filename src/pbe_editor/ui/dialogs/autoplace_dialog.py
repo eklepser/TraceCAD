@@ -1,7 +1,6 @@
 from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
                                QSpinBox, QDoubleSpinBox, QPushButton, QFormLayout,
                                QGroupBox, QListView)
-from PySide6.QtCore import Qt
 from constants import Styles
 from common.ui.dialogs.headerless_dialog import HeaderlessDialog
 from common.ui.qss import inline_combo_qss
@@ -18,14 +17,10 @@ LAYER_LIST_QSS = (
 )
 
 
-def _styled_combo(items, current_data=None):
+def _styled_combo(items):
     combo = QComboBox()
     for label, data in items:
         combo.addItem(label, data)
-    if current_data is not None:
-        idx = combo.findData(current_data)
-        if idx >= 0:
-            combo.setCurrentIndex(idx)
     view = QListView()
     view.setStyleSheet(LAYER_LIST_QSS)
     combo.setView(view)
@@ -108,8 +103,8 @@ class AutoPlaceDialog(HeaderlessDialog):
 
         self.cb_pos = _styled_combo(
             [("По центру", DirectivePosition.CENTER),
-             ("Левый верхний", DirectivePosition.TOP_LEFT),
-             ("Левый нижний", DirectivePosition.BOTTOM_LEFT)]
+             ("Левый верхний", DirectivePosition.BOTTOM_LEFT),
+             ("Левый нижний", DirectivePosition.TOP_LEFT)]
         )
         form_algo.addRow("Позиция фиксации:", self.cb_pos)
 
@@ -117,7 +112,7 @@ class AutoPlaceDialog(HeaderlessDialog):
         self.sb_threads.setRange(1, 16)
         self.sb_threads.setValue(1)
         self.sb_threads.setStyleSheet(Styles.INPUT_BG)
-        form_algo.addRow("Использовано потоков:", self.sb_threads)
+        form_algo.addRow("Использовать потоков:", self.sb_threads)
 
         right_col.addWidget(group_algo)
 

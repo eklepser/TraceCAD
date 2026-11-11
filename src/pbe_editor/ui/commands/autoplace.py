@@ -74,7 +74,7 @@ class AutoplaceCommandsMixin:
             self.w.show_log("Авторазмещение выполнено")
 
             result_dlg = AutoPlaceResultDialog(
-                result, params, threads, before_euc, before_man, self.w
+                result, params, result.threads_used, before_euc, before_man, self.w
             )
             result_dlg.exec()
 
