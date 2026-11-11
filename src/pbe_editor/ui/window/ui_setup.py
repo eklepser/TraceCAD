@@ -144,6 +144,11 @@ class UiSetupService:
         act_autoplace.setShortcut("Ctrl+P")
         act_autoplace.triggered.connect(self.commands.on_autoplace)
         operations_menu.addAction(act_autoplace)
+        
+        act_reset = QAction("Сбросить размещение", self)
+        act_reset.setShortcut("Ctrl+R")
+        act_reset.triggered.connect(self.commands.on_reset_placement)
+        operations_menu.addAction(act_reset)
 
         view_menu = menubar.addMenu("Вид")
         self.act_show_ratsnest = QAction("Показать связи", self, checkable=True)

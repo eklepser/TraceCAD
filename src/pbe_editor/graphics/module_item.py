@@ -154,7 +154,6 @@ class BoardModuleGraphicsItem(QGraphicsItem):
         path = build_text_path(value, text.size, bold=True, center=True)
         transform = QTransform()
         transform.translate(text.x, text.y)
-        transform.rotate(text.angle - self.module.angle)
         return transform.map(path)
 
     def _collect_selected_modules(self):

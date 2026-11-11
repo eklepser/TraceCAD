@@ -108,42 +108,58 @@ def _mst_length(points, metric):
                 min_d[i] = d
     return total
 
+def _get_board_edge_rect(board):
+    xs, ys = [], []
+    for line in board.lines:
+        if line.layer == "Edge.Cuts":
+            xs.extend([line.x1, line.x2])
+            ys.extend([line.y1, line.y2])
+    if not xs:
+        raise ValueError("На плате отсутствует контур Edge.Cuts. Нарисуйте границы платы.")
+    if max(xs) - min(xs) <= 0 or max(ys) - min(ys) <= 0:
+        raise ValueError("Границы платы нулевого размера.")
+    return (min(xs), min(ys), max(xs), max(ys))
+
+
+class _BoardSnapshot:
+    def __init__(self, board):
+        self.edge_rect = _get_board_edge_rect(board)
+        self.modules = []
+        for m in board.modules:
+            self.modules.append({
+                'uid': m.uid,
+                'reference': m.reference,
+                'x': m.x,
+                'y': m.y,
+                'pad_nets': dict(m.pad_nets),
+                'bbox': _get_local_bbox(m),
+            })
+
+
 class SequentialPlacer:
-    def __init__(self, board, params):
-        self.board = board
+    def __init__(self, snapshot, params):
+        self.snap = snapshot
         self.p = params
-        self.n = len(board.modules)
+        self.n = len(snapshot.modules)
         
-        self.edge_rect = self._get_board_bounds()
+        self.edge_rect = snapshot.edge_rect
         self.inner_rect = (self.edge_rect[0] + params.A, self.edge_rect[1] + params.A,
                            self.edge_rect[2] - params.A, self.edge_rect[3] - params.A)
         
         if self.inner_rect[0] >= self.inner_rect[2] or self.inner_rect[1] >= self.inner_rect[3]:
             raise ValueError("Параметр A слишком велик для данной платы.")
         
-        self.bboxes = [_get_local_bbox(m) for m in board.modules]
+        self.bboxes = [m['bbox'] for m in snapshot.modules]
         self.positions = {}
         self.placed = set()
         self.unplaced = set(range(self.n))
         
         self.c, self.c_331 = self._build_connectivity()
 
-    def _get_board_bounds(self):
-        xs, ys = [], []
-        for line in self.board.lines:
-            if line.layer == "Edge.Cuts":
-                xs.extend([line.x1, line.x2])
-                ys.extend([line.y1, line.y2])
-        if not xs:
-            raise ValueError("На плате отсутствует контур Edge.Cuts. Нарисуйте границы платы.")
-        if max(xs) - min(xs) <= 0 or max(ys) - min(ys) <= 0:
-            raise ValueError("Границы платы нулевого размера.")
-        return (min(xs), min(ys), max(xs), max(ys))
-
     def _build_connectivity(self):
         nets_by_mod = [set() for _ in range(self.n)]
-        for i, mod in enumerate(self.board.modules):
-            for pad_num, pad_net in mod.pad_nets.items():
+        for i, mod in enumerate(self.snap.modules):
+            for pad_num, pad_net in mod['pad_nets'].items():
                 if pad_net.net_code > 0:
                     nets_by_mod[i].add(pad_net.net_code)
                     
@@ -229,7 +245,6 @@ class SequentialPlacer:
             pos = self._snap_to_grid(i, *self._get_directive_pos(i))
             return [pos] if pos else []
             
-        lb = self.bboxes[i]
         g = self.p.C
         candidates = []
         for ix in range(math.ceil(self.inner_rect[0] / g), math.floor(self.inner_rect[2] / g) + 1):
@@ -272,7 +287,7 @@ class SequentialPlacer:
         return total
 
     def _calc_total_wire(self, metric):
-        centers = [self.positions.get(i, (self.board.modules[i].x, self.board.modules[i].y)) for i in range(self.n)]
+        centers = [self.positions.get(i, (self.snap.modules[i]['x'], self.snap.modules[i]['y'])) for i in range(self.n)]
         total = 0.0
         for idxs in self._get_nets().values():
             if len(idxs) >= 2:
@@ -282,8 +297,8 @@ class SequentialPlacer:
 
     def _get_nets(self):
         nets = {}
-        for i, mod in enumerate(self.board.modules):
-            for pad_num, pad_net in mod.pad_nets.items():
+        for i, mod in enumerate(self.snap.modules):
+            for pad_num, pad_net in mod['pad_nets'].items():
                 if pad_net.net_code > 0:
                     nets.setdefault(pad_net.net_code, set()).add(i)
         return nets
@@ -296,7 +311,8 @@ class SequentialPlacer:
         idx = self._pick_directive()
         pos = self._snap_to_grid(idx, *self._get_directive_pos(idx))
         if pos is None:
-            raise RuntimeError(f"Корпус {self.board.modules[idx].reference} не помещается на плату.")
+            ref = self.snap.modules[idx]['reference']
+            raise RuntimeError(f"Корпус {ref} не помещается на плату.")
             
         self.positions[idx] = pos
         self.placed.add(idx)
@@ -308,7 +324,8 @@ class SequentialPlacer:
             
             cands = self._get_candidates(best_i)
             if not cands:
-                raise RuntimeError(f"Корпус {self.board.modules[best_i].reference} не помещается на плату с заданными зазорами.")
+                ref = self.snap.modules[best_i]['reference']
+                raise RuntimeError(f"Корпус {ref} не помещается на плату с заданными зазорами.")
                 
             f_scores = [(p, self._calc_F(best_i, p)) for p in cands]
             best_pos = min(f_scores, key=lambda x: (x[1], x[0][1], x[0][0]))[0]
@@ -322,19 +339,40 @@ class SequentialPlacer:
         w_man = self._calc_total_wire(Metric.MANHATTAN)
         conn_count = sum(len(v) - 1 for v in self._get_nets().values() if len(v) >= 2)
         
-        return PlacementResult(self.positions, duration, self.n, conn_count, w_euc, w_man, self.board.modules[idx].reference)
+        return PlacementResult(
+            self.positions, duration, self.n, conn_count, w_euc, w_man,
+            self.snap.modules[idx]['reference']
+        )
 
-def _worker(job):
-    board, params = job
-    return SequentialPlacer(board, params).run()
+
+def _worker(args):
+    snapshot, params = args
+    return SequentialPlacer(snapshot, params).run()
+
+
+def _snapshot_wire_lengths(snapshot):
+    placer = SequentialPlacer.__new__(SequentialPlacer)
+    placer.snap = snapshot
+    placer.n = len(snapshot.modules)
+    placer.positions = {}
+    placer.placed = set()
+    placer.unplaced = set(range(placer.n))
+    return placer._calc_total_wire(Metric.EUCLIDEAN), placer._calc_total_wire(Metric.MANHATTAN)
+
 
 def run_auto_placement(board, params, threads=1):
+    snapshot = _BoardSnapshot(board)
+    before_euc, before_man = _snapshot_wire_lengths(snapshot)
+
     if threads <= 1:
-        return SequentialPlacer(board, params).run()
-    jobs = [(board, params) for _ in range(threads)]
-    results = []
-    with ProcessPoolExecutor(max_workers=threads) as pool:
-        futures = [pool.submit(_worker, job) for job in jobs]
-        for fut in futures:
-            results.append(fut.result())
-    return min(results, key=lambda r: r.wire_euclidean)
+        result = SequentialPlacer(snapshot, params).run()
+    else:
+        jobs = [(snapshot, params) for _ in range(threads)]
+        results = []
+        with ProcessPoolExecutor(max_workers=threads) as pool:
+            futures = [pool.submit(_worker, job) for job in jobs]
+            for fut in futures:
+                results.append(fut.result())
+        result = min(results, key=lambda r: r.wire_euclidean)
+
+    return result, before_euc, before_man

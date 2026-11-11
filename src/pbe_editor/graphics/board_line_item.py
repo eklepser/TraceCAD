@@ -2,10 +2,8 @@ from PySide6.QtWidgets import QGraphicsItem, QStyle
 from PySide6.QtGui import QPen, QColor, QPainterPath, QPainterPathStroker, QBrush
 from PySide6.QtCore import QLineF, QRectF, QPointF, Qt
 
-from constants import Colors, Sizes
+from constants import Colors
 from constants.board_settings import LAYER_COLORS
-from common.arc_geometry import arc_sample_points
-from common.graphics.text_path import build_text_path
 
 
 def _layer_color(layer):
@@ -33,23 +31,17 @@ class BoardLineGraphicsItem(QGraphicsItem):
 
         self._active_handle = None
         self._hover_handle = None
-        self._drag_start_scene = None
-        self._drag_start_point = None
 
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
-        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges, True)
         self.setAcceptHoverEvents(True)
         self.setZValue(2)
-        self.setPos(line.x1, line.y1)
-
-    def _local_points(self):
-        return [QPointF(0.0, 0.0),
-                QPointF(self.model.x2 - self.model.x1,
-                        self.model.y2 - self.model.y1)]
+        self.setPos(0.0, 0.0)
 
     def get_handles(self):
-        return self._local_points()
+        return [QPointF(self.model.x1, self.model.y1),
+                QPointF(self.model.x2, self.model.y2)]
 
     def _hit_test_handle(self, scene_pos):
         if not self.isSelected():
@@ -60,10 +52,9 @@ class BoardLineGraphicsItem(QGraphicsItem):
         radius = self.HANDLE_RADIUS_PX * 3.0 / scale
         best_idx = None
         best_dist = float('inf')
-        for i, local_pt in enumerate(self.get_handles()):
-            scene_pt = self.mapToScene(local_pt)
-            dx = scene_pos.x() - scene_pt.x()
-            dy = scene_pos.y() - scene_pt.y()
+        for i, pt in enumerate(self.get_handles()):
+            dx = scene_pos.x() - pt.x()
+            dy = scene_pos.y() - pt.y()
             dist = (dx * dx + dy * dy) ** 0.5
             if dist < radius and dist < best_dist:
                 best_idx = i
@@ -72,14 +63,15 @@ class BoardLineGraphicsItem(QGraphicsItem):
 
     def boundingRect(self):
         w = self.model.width + 0.5
-        x2 = self.model.x2 - self.model.x1
-        y2 = self.model.y2 - self.model.y1
-        return QRectF(QPointF(0.0, 0.0), QPointF(x2, y2)).normalized().adjusted(-w, -w, w, w)
+        rect = QRectF(self.model.x1, self.model.y1,
+                      self.model.x2 - self.model.x1,
+                      self.model.y2 - self.model.y1).normalized()
+        return rect.adjusted(-w, -w, w, w)
 
     def shape(self):
         path = QPainterPath()
-        path.moveTo(0.0, 0.0)
-        path.lineTo(self.model.x2 - self.model.x1, self.model.y2 - self.model.y1)
+        path.moveTo(self.model.x1, self.model.y1)
+        path.lineTo(self.model.x2, self.model.y2)
         stroker = QPainterPathStroker()
         stroker.setWidth(max(0.4, self.model.width * 2.0))
         return stroker.createStroke(path)
@@ -91,9 +83,8 @@ class BoardLineGraphicsItem(QGraphicsItem):
         pen.setCosmetic(False)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         painter.setPen(pen)
-        painter.drawLine(QLineF(0.0, 0.0,
-                                self.model.x2 - self.model.x1,
-                                self.model.y2 - self.model.y1))
+        painter.drawLine(QLineF(self.model.x1, self.model.y1,
+                                self.model.x2, self.model.y2))
 
         if selected:
             scale = self.canvas.transform().m11() if self.canvas else 1.0
@@ -146,18 +137,10 @@ class BoardLineGraphicsItem(QGraphicsItem):
             handle_idx = self._hit_test_handle(scene_pos)
             if handle_idx is not None:
                 self._active_handle = handle_idx
-                self._drag_start_scene = scene_pos
-                local_pt = self.get_handles()[handle_idx]
-                self._drag_start_point = (local_pt.x(), local_pt.y())
                 self.update()
                 event.accept()
                 return
-            super().mousePressEvent(event)
-            if self.isSelected():
-                self._drag_start_scene = scene_pos
-                self._drag_start_point = (self.pos().x(), self.pos().y())
-        else:
-            super().mousePressEvent(event)
+        super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
         if self._active_handle is not None and (event.buttons() & Qt.MouseButton.LeftButton):
@@ -165,17 +148,14 @@ class BoardLineGraphicsItem(QGraphicsItem):
             grid = self.canvas.grid_size
             sx = _snap(current.x(), grid)
             sy = _snap(current.y(), grid)
-            m = self.model
             if self._active_handle == 0:
-                m.x1 = sx
-                m.y1 = sy
-                self.prepareGeometryChange()
-                self.update()
-            elif self._active_handle == 1:
-                m.x2 = sx
-                m.y2 = sy
-                self.prepareGeometryChange()
-                self.update()
+                self.model.x1 = sx
+                self.model.y1 = sy
+            else:
+                self.model.x2 = sx
+                self.model.y2 = sy
+            self.prepareGeometryChange()
+            self.update()
             event.accept()
             return
         super().mouseMoveEvent(event)
@@ -183,34 +163,12 @@ class BoardLineGraphicsItem(QGraphicsItem):
     def mouseReleaseEvent(self, event):
         if self._active_handle is not None:
             self._active_handle = None
-            self._drag_start_scene = None
-            self._drag_start_point = None
             self.update()
             if hasattr(self.canvas, 'content_changed'):
                 self.canvas.content_changed.emit()
             event.accept()
             return
         super().mouseReleaseEvent(event)
-
-    def itemChange(self, change, value):
-        if change == QGraphicsItem.GraphicsItemChange.ItemPositionChange:
-            if getattr(self, '_active_handle', None) is not None:
-                return value
-            grid = self.canvas.grid_size
-            return QPointF(_snap(value.x(), grid), _snap(value.y(), grid))
-        if change == QGraphicsItem.GraphicsItemChange.ItemPositionHasChanged:
-            if getattr(self, '_active_handle', None) is not None:
-                return super().itemChange(change, value)
-            dx = value.x() - self.model.x1
-            dy = value.y() - self.model.y1
-            self.model.x1 = value.x()
-            self.model.y1 = value.y()
-            self.model.x2 += dx
-            self.model.y2 += dy
-            self.prepareGeometryChange()
-        if change == QGraphicsItem.GraphicsItemChange.ItemSelectedHasChanged:
-            self.update()
-        return super().itemChange(change, value)
 
 
 class BoardCircleGraphicsItem(QGraphicsItem):
