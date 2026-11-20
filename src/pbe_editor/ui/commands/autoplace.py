@@ -22,15 +22,15 @@ class AutoplaceCommandsMixin:
                     item.update()
 
     def _restore_initial_positions(self, initial_positions):
-        for i, (x, y) in initial_positions.items():
+        for i, (x, y, angle) in initial_positions.items():
             module = self.w.board.modules[i]
             module.x = x
             module.y = y
-            module.angle = 0.0
+            module.angle = angle
             item = self.w.manager.items.get(module.uid)
             if item:
                 item.setPos(module.x, module.y)
-                item.setRotation(0.0)
+                item.setRotation(angle)
                 item.prepareGeometryChange()
                 item.update()
         self.w.manager.rebuild_ratsnest()
@@ -46,7 +46,7 @@ class AutoplaceCommandsMixin:
                                 "На плате не нарисован контур (Edge.Cuts). Авторазмещение невозможно.")
             return
 
-        initial_positions = {i: (m.x, m.y) for i, m in enumerate(self.w.board.modules)}
+        initial_positions = {i: (m.x, m.y, m.angle) for i, m in enumerate(self.w.board.modules)}
 
         dlg = AutoPlaceDialog(self.w, self._last_params, self._last_threads)
 

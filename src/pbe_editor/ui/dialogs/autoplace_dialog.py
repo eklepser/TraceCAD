@@ -103,8 +103,8 @@ class AutoPlaceDialog(HeaderlessDialog):
 
         self.cb_pos = _styled_combo(
             [("По центру", DirectivePosition.CENTER),
-             ("Левый верхний", DirectivePosition.BOTTOM_LEFT),
-             ("Левый нижний", DirectivePosition.TOP_LEFT)]
+             ("Левый верхний", DirectivePosition.TOP_LEFT),
+             ("Левый нижний", DirectivePosition.BOTTOM_LEFT)]
         )
         form_algo.addRow("Позиция фиксации:", self.cb_pos)
 

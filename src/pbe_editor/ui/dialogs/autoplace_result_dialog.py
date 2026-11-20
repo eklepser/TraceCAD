@@ -45,6 +45,13 @@ class AutoPlaceResultDialog(HeaderlessDialog):
         }.get(params.directive_position.value, "-")
         method_text = J_METHOD_LABELS.get(params.j_method, params.j_method.value)
 
+        board_lbl = QLabel(
+            "Ширина платы: <b>{0:.2f} мм</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+            "Длина платы: <b>{1:.2f} мм</b>".format(result.board_width, result.board_length)
+        )
+        board_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(board_lbl)
+
         scheme_lbl = QLabel(
             "Корпусов: <b>{0}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
             "Связей: <b>{1}</b>".format(result.num_footprints, result.num_connections)

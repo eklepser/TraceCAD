@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from multiprocessing import Pool
 
+from common.core.models_base import TextType
 from pbe_editor.core import sequential_algorithm as algo
 
 
@@ -52,6 +53,8 @@ class PlacementResult:
     wire_manhattan: float
     directive_ref: str = ""
     threads_used: int = 1
+    board_width: float = 0.0
+    board_length: float = 0.0
 
 
 def _J_task(args):
@@ -60,9 +63,10 @@ def _J_task(args):
 
 
 def _F_task(args):
-    conn_row, candidates, placed_positions, metric_name = args
+    conn_row, candidates, offset, placed_positions, metric_name = args
+    ox, oy = offset
     return [
-        (gx, gy, algo.pick_best_position((gx, gy), placed_positions, metric_name))
+        (gx, gy, algo.pick_best_position((gx + ox, gy + oy), placed_positions, metric_name))
         for gx, gy in candidates
     ]
 
@@ -79,6 +83,15 @@ def _arc_points(cx, cy, sx, sy, angle_deg, segments=16):
         a = a1 + t * sweep
         pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
     return pts
+
+
+def _rotate_offset(dx, dy, angle_deg):
+    if not angle_deg:
+        return (dx, dy)
+    rad = math.radians(angle_deg)
+    cos_a = math.cos(rad)
+    sin_a = math.sin(rad)
+    return (dx * cos_a - dy * sin_a, dx * sin_a + dy * cos_a)
 
 
 def _get_local_bbox(module):
@@ -98,7 +111,7 @@ def _get_local_bbox(module):
             xs.append(px)
             ys.append(py)
     for text in fp.texts:
-        if getattr(text, 'text_type', None) == 0:
+        if getattr(text, 'text_type', None) in (TextType.REFERENCE, TextType.VALUE, 0):
             continue
         xs.append(text.x)
         ys.append(text.y)
@@ -153,13 +166,17 @@ class _BoardSnapshot:
         self.edge_rect = _get_board_edge_rect(board)
         self.modules = []
         for m in board.modules:
+            bbox = _get_local_bbox(m)
             self.modules.append({
                 'uid': m.uid,
                 'reference': m.reference,
                 'x': m.x,
                 'y': m.y,
+                'angle': m.angle,
                 'pad_nets': dict(m.pad_nets),
-                'bbox': _get_local_bbox(m),
+                'pads': {pad.number: (pad.x, pad.y) for pad in m.footprint.pads},
+                'bbox': bbox,
+                'center_offset': ((bbox[0] + bbox[2]) / 2.0, (bbox[1] + bbox[3]) / 2.0),
             })
 
 
@@ -177,6 +194,7 @@ class SequentialPlacer:
             raise ValueError("Параметр A слишком велик для данной платы.")
 
         self.bboxes = [m['bbox'] for m in snapshot.modules]
+        self.center_offsets = [m['center_offset'] for m in snapshot.modules]
         self.positions = {}
         self.placed = set()
         self.unplaced = set(range(self.n))
@@ -218,12 +236,12 @@ class SequentialPlacer:
             return (cx - (lb[0] + lb[2]) / 2, cy - (lb[1] + lb[3]) / 2)
         elif self.p.directive_position == DirectivePosition.TOP_LEFT:
             ix = self.inner_rect[0]
-            iy = self.inner_rect[3]
-            return (ix - lb[0], iy - lb[3])
-        else:
-            ix = self.inner_rect[0]
             iy = self.inner_rect[1]
             return (ix - lb[0], iy - lb[1])
+        else:
+            ix = self.inner_rect[0]
+            iy = self.inner_rect[3]
+            return (ix - lb[0], iy - lb[3])
 
     def _snap_to_grid(self, i, gx, gy):
         lb = self.bboxes[i]
@@ -273,7 +291,12 @@ class SequentialPlacer:
         return candidates
 
     def _get_placed_positions(self, conn_row):
-        return [(self.positions[j][0], self.positions[j][1], conn_row[j]) for j in self.placed]
+        result = []
+        for j in self.placed:
+            px, py = self.positions[j]
+            ox, oy = self.center_offsets[j]
+            result.append((px + ox, py + oy, conn_row[j]))
+        return result
 
     def _compute_J_scores(self):
         items = list(self.unplaced)
@@ -295,16 +318,18 @@ class SequentialPlacer:
         conn_row = conn[best_i]
         placed_positions = self._get_placed_positions(conn_row)
         metric_name = "manhattan" if self.p.metric == Metric.MANHATTAN else "euclidean"
+        offset = self.center_offsets[best_i]
+        ox, oy = offset
         work = len(cands) * max(1, len(placed_positions))
         if self._pool is None or work < 2000:
             return [
-                (p, algo.pick_best_position(p, placed_positions, metric_name))
-                for p in cands
+                ((gx, gy), algo.pick_best_position((gx + ox, gy + oy), placed_positions, metric_name))
+                for gx, gy in cands
             ]
         n_chunks = self.p.threads * 4
         chunk_size = max(1, (len(cands) + n_chunks - 1) // n_chunks)
         chunks = [cands[k:k + chunk_size] for k in range(0, len(cands), chunk_size)]
-        jobs = [(conn_row, ch, placed_positions, metric_name) for ch in chunks]
+        jobs = [(conn_row, ch, offset, placed_positions, metric_name) for ch in chunks]
         results = self._pool.map(_F_task, jobs, chunksize=1)
         out = []
         for ch in results:
@@ -312,27 +337,46 @@ class SequentialPlacer:
                 out.append(((gx, gy), v))
         return out
 
+    def _get_pad_abs(self, i, pad_num):
+        mod = self.snap.modules[i]
+        lx, ly = mod['pads'][pad_num]
+        if i in self.positions:
+            gx, gy = self.positions[i]
+            return (gx + lx, gy + ly)
+        rx, ry = _rotate_offset(lx, ly, mod.get('angle', 0.0))
+        return (mod['x'] + rx, mod['y'] + ry)
+
     def _calc_total_wire(self, metric):
-        centers = [self.positions.get(i, (self.snap.modules[i]['x'], self.snap.modules[i]['y'])) for i in range(self.n)]
         total = 0.0
-        for idxs in self._get_nets().values():
-            if len(idxs) >= 2:
-                pts = [centers[i] for i in idxs]
+        for pins in self._get_net_pins().values():
+            if len(pins) >= 2:
+                pts = [self._get_pad_abs(i, pad_num) for _, pad_num, i in pins]
                 total += _mst_length(pts, metric)
         return total
 
-    def _get_nets(self):
+    def _get_net_pins(self):
         nets = {}
         for i, mod in enumerate(self.snap.modules):
+            pads = mod['pads']
             for pad_num, pad_net in mod['pad_nets'].items():
-                if pad_net.net_code > 0:
-                    nets.setdefault(pad_net.net_code, set()).add(i)
+                if pad_net.net_code <= 0 or not pad_net.net_name:
+                    continue
+                if pad_num not in pads:
+                    continue
+                nets.setdefault(pad_net.net_code, []).append((mod['reference'], pad_num, i))
+        for code in nets:
+            nets[code].sort(key=lambda x: (x[0], x[1]))
         return nets
 
     def run(self):
         start_time = time.perf_counter()
+        board_width = self.edge_rect[2] - self.edge_rect[0]
+        board_length = self.edge_rect[3] - self.edge_rect[1]
         if self.n == 0:
-            return PlacementResult({}, 0.0, 0, 0, 0.0, 0.0, "", self.threads_used)
+            return PlacementResult(
+                {}, 0.0, 0, 0, 0.0, 0.0, "", self.threads_used,
+                board_width, board_length,
+            )
         try:
             idx = self._pick_directive()
             pos = self._snap_to_grid(idx, *self._get_directive_pos(idx))
@@ -364,11 +408,12 @@ class SequentialPlacer:
         duration = time.perf_counter() - start_time
         w_euc = self._calc_total_wire(Metric.EUCLIDEAN)
         w_man = self._calc_total_wire(Metric.MANHATTAN)
-        conn_count = sum(len(v) - 1 for v in self._get_nets().values() if len(v) >= 2)
+        conn_count = sum(len(v) - 1 for v in self._get_net_pins().values() if len(v) >= 2)
 
         return PlacementResult(
             self.positions, duration, self.n, conn_count, w_euc, w_man,
-            self.snap.modules[idx]['reference'], self.threads_used
+            self.snap.modules[idx]['reference'], self.threads_used,
+            board_width, board_length,
         )
 
 
