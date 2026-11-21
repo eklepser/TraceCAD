@@ -5,7 +5,7 @@ from constants import Styles
 from common.ui.dialogs.headerless_dialog import HeaderlessDialog
 from common.ui.qss import inline_combo_qss
 from pbe_editor.core.autoplacer import (
-    PlacementParams, Metric, DirectiveMode, DirectivePosition, JMethod
+    PlacementParams, Metric, DirectiveMode, DirectivePosition, JMethod, OptimizationMode
 )
 
 LAYER_LIST_QSS = (
@@ -114,6 +114,15 @@ class AutoPlaceDialog(HeaderlessDialog):
         self.sb_threads.setStyleSheet(Styles.INPUT_BG)
         form_algo.addRow("Использовать потоков:", self.sb_threads)
 
+        self.cb_opt_mode = _styled_combo(
+            [("Без оптимизации", OptimizationMode.NONE),
+             ("d = C", OptimizationMode.D_C),
+             ("d = C/2", OptimizationMode.D_C2),
+             ("d = C/4", OptimizationMode.D_C4)]
+        )
+        self.cb_opt_mode.setCurrentIndex(2)
+        form_algo.addRow("Локальная оптимизация:", self.cb_opt_mode)
+
         right_col.addWidget(group_algo)
 
         columns.addLayout(left_col, 1)
@@ -157,6 +166,10 @@ class AutoPlaceDialog(HeaderlessDialog):
         if idx >= 0:
             self.cb_pos.setCurrentIndex(idx)
 
+        idx = self.cb_opt_mode.findData(p.optimization_mode)
+        if idx >= 0:
+            self.cb_opt_mode.setCurrentIndex(idx)
+
     def get_params(self) -> PlacementParams:
         return PlacementParams(
             A=self.sb_A.value(),
@@ -165,7 +178,8 @@ class AutoPlaceDialog(HeaderlessDialog):
             metric=self.cb_metric.currentData(),
             j_method=self.cb_j.currentData(),
             directive_mode=self.cb_mode.currentData(),
-            directive_position=self.cb_pos.currentData()
+            directive_position=self.cb_pos.currentData(),
+            optimization_mode=self.cb_opt_mode.currentData(),
         )
 
     def get_threads(self) -> int:

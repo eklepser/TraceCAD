@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QTableWidget,
 from constants import Styles
 from common.ui.dialogs.headerless_dialog import HeaderlessDialog
 from common.ui.qss import TABLE_QSS
-from pbe_editor.core.autoplacer import JMethod
+from pbe_editor.core.autoplacer import JMethod, OptimizationMode
 
 
 J_METHOD_LABELS = {
@@ -11,6 +11,13 @@ J_METHOD_LABELS = {
     JMethod.M_333: "3.3.3 (Сумма связей)",
     JMethod.M_335: "3.3.5 (Разность связей)",
     JMethod.M_336: "3.3.6 (Отн. связность)",
+}
+
+OPT_MODE_LABELS = {
+    OptimizationMode.NONE: "Без оптимизации",
+    OptimizationMode.D_C: "d = C",
+    OptimizationMode.D_C2: "d = C/2",
+    OptimizationMode.D_C4: "d = C/4",
 }
 
 
@@ -21,7 +28,8 @@ class AutoPlaceResultDialog(HeaderlessDialog):
     def __init__(self, result, params, threads,
                  initial_wire_euc, initial_wire_man, parent=None):
         super().__init__(parent, title="Результаты авторазмещения")
-        self.setMinimumSize(700, 540)
+        has_opt = params.optimization_mode != OptimizationMode.NONE
+        self.setMinimumSize(720 if has_opt else 620, 580)
 
         self._result = result
         self._params = params
@@ -44,6 +52,7 @@ class AutoPlaceResultDialog(HeaderlessDialog):
             "bottom_left": "Левый нижний",
         }.get(params.directive_position.value, "-")
         method_text = J_METHOD_LABELS.get(params.j_method, params.j_method.value)
+        opt_text = OPT_MODE_LABELS.get(params.optimization_mode, params.optimization_mode.value)
 
         board_lbl = QLabel(
             "Ширина платы: <b>{0:.2f} мм</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
@@ -71,7 +80,10 @@ class AutoPlaceResultDialog(HeaderlessDialog):
         metric_lbl.setStyleSheet("color: #a9b7c6;")
         layout.addWidget(metric_lbl)
 
-        method_lbl = QLabel("Способ расчета оценки: <b>{0}</b>".format(method_text))
+        method_lbl = QLabel(
+            "Способ расчета оценки: <b>{0}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+            "Локальная оптимизация: <b>{1}</b>".format(method_text, opt_text)
+        )
         method_lbl.setStyleSheet("color: #a9b7c6;")
         layout.addWidget(method_lbl)
 
@@ -87,45 +99,69 @@ class AutoPlaceResultDialog(HeaderlessDialog):
         spacer_top.setFixedHeight(8)
         layout.addWidget(spacer_top)
 
-        self.table = QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(
-            ["Показатель", "До размещения", "После размещения", "Сравнение"]
-        )
+        if has_opt:
+            headers = ["Показатель", "До размещения", "После размещения", "После оптимизации"]
+        else:
+            headers = ["Показатель", "До размещения", "После размещения"]
+
+        self.table = QTableWidget(0, len(headers))
+        self.table.setHorizontalHeaderLabels(headers)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
-        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
+        for col in range(1, len(headers)):
+            self.table.horizontalHeader().setSectionResizeMode(col, QHeaderView.ResizeMode.Stretch)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.verticalHeader().setVisible(False)
         self.table.setStyleSheet(TABLE_QSS)
         layout.addWidget(self.table)
 
-        rows = [
-            ("Длина по Евклиду, мм",
-             f"{initial_wire_euc:.2f}",
-             f"{result.wire_euclidean:.2f}",
-             self._delta(initial_wire_euc, result.wire_euclidean)),
-            ("Длина по Манхэттену, мм",
-             f"{initial_wire_man:.2f}",
-             f"{result.wire_manhattan:.2f}",
-             self._delta(initial_wire_man, result.wire_manhattan)),
-        ]
+        if has_opt:
+            rows = [
+                ("Длина по Евклиду, мм",
+                 f"{initial_wire_euc:.2f}",
+                 self._pct_cell(initial_wire_euc, result.seq_wire_euclidean),
+                 self._pct_cell(result.seq_wire_euclidean, result.wire_euclidean)),
+                ("Длина по Манхэттену, мм",
+                 f"{initial_wire_man:.2f}",
+                 self._pct_cell(initial_wire_man, result.seq_wire_manhattan),
+                 self._pct_cell(result.seq_wire_manhattan, result.wire_manhattan)),
+            ]
+        else:
+            rows = [
+                ("Длина по Евклиду, мм",
+                 f"{initial_wire_euc:.2f}",
+                 self._pct_cell(initial_wire_euc, result.wire_euclidean)),
+                ("Длина по Манхэттену, мм",
+                 f"{initial_wire_man:.2f}",
+                 self._pct_cell(initial_wire_man, result.wire_manhattan)),
+            ]
 
         self.table.setRowCount(len(rows))
-        for i, (k, before, after, cmp) in enumerate(rows):
-            self.table.setItem(i, 0, QTableWidgetItem(k))
-            self.table.setItem(i, 1, QTableWidgetItem(before))
-            self.table.setItem(i, 2, QTableWidgetItem(after))
-            self.table.setItem(i, 3, QTableWidgetItem(cmp))
+        for i, row in enumerate(rows):
+            for j, val in enumerate(row):
+                self.table.setItem(i, j, QTableWidgetItem(val))
 
         spacer_bottom = QWidget()
         spacer_bottom.setFixedHeight(6)
         layout.addWidget(spacer_bottom)
 
-        time_lbl = QLabel("Время размещения: <b>{0:.1f} мс</b>".format(result.time_seconds * 1000))
-        time_lbl.setStyleSheet("color: #a9b7c6;")
-        layout.addWidget(time_lbl)
+        seq_time_lbl = QLabel(
+            "Время последовательного размещения: <b>{0:.1f} мс</b>".format(result.seq_time_seconds * 1000)
+        )
+        seq_time_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(seq_time_lbl)
+
+        opt_time_lbl = QLabel(
+            "Время локальной оптимизации: <b>{0:.1f} мс</b>".format(result.opt_time_seconds * 1000)
+        )
+        opt_time_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(opt_time_lbl)
+
+        total_time_lbl = QLabel(
+            "Общее время: <b>{0:.1f} мс</b>".format(result.time_seconds * 1000)
+        )
+        total_time_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(total_time_lbl)
 
         threads_lbl = QLabel("Использовано потоков: <b>{0}</b>".format(result.threads_used))
         threads_lbl.setStyleSheet("color: #a9b7c6;")
@@ -146,12 +182,11 @@ class AutoPlaceResultDialog(HeaderlessDialog):
         btns.addWidget(self.btn_ok)
         layout.addLayout(btns)
 
-    def _delta(self, before, after):
+    def _pct_cell(self, before, after):
         if before <= 0:
-            return "-"
-        diff = after - before
-        pct = diff / before * 100
-        return f"{diff:+.2f} ({pct:+.1f} %)"
+            return f"{after:.2f}"
+        pct = (after - before) / before * 100
+        return f"{after:.2f} ({pct:+.1f} %)"
 
     def _on_repeat(self):
         self._code = self.RESULT_REPEAT

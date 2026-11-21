@@ -31,6 +31,13 @@ class JMethod(Enum):
     M_336 = "3.3.6"
 
 
+class OptimizationMode(Enum):
+    NONE = "none"
+    D_C = "c"
+    D_C2 = "c2"
+    D_C4 = "c4"
+
+
 @dataclass
 class PlacementParams:
     A: float = 2.0
@@ -41,6 +48,7 @@ class PlacementParams:
     directive_mode: DirectiveMode = DirectiveMode.LARGEST
     directive_position: DirectivePosition = DirectivePosition.CENTER
     threads: int = 1
+    optimization_mode: OptimizationMode = OptimizationMode.D_C2
 
 
 @dataclass
@@ -55,6 +63,10 @@ class PlacementResult:
     threads_used: int = 1
     board_width: float = 0.0
     board_length: float = 0.0
+    seq_wire_euclidean: float = 0.0
+    seq_wire_manhattan: float = 0.0
+    seq_time_seconds: float = 0.0
+    opt_time_seconds: float = 0.0
 
 
 def _J_task(args):
@@ -368,16 +380,83 @@ class SequentialPlacer:
             nets[code].sort(key=lambda x: (x[0], x[1]))
         return nets
 
+    def _opt_step(self):
+        if self.p.optimization_mode == OptimizationMode.D_C:
+            return self.p.C
+        if self.p.optimization_mode == OptimizationMode.D_C2:
+            return self.p.C / 2.0
+        if self.p.optimization_mode == OptimizationMode.D_C4:
+            return self.p.C / 4.0
+        return 0.0
+
+    def _run_extra_optimization(self):
+        d = self._opt_step()
+        if d <= 0:
+            return
+        net_pins = self._get_net_pins()
+        active_nets = {code: pins for code, pins in net_pins.items() if len(pins) >= 2}
+        if not active_nets:
+            return
+
+        mod_nets = [[] for _ in range(self.n)]
+        net_lengths = {}
+        for code, pins in active_nets.items():
+            pts = [self._get_pad_abs(m_idx, pad_num) for _, pad_num, m_idx in pins]
+            net_lengths[code] = _mst_length(pts, self.p.metric)
+            seen = set()
+            for _, _, m_idx in pins:
+                if m_idx not in seen:
+                    seen.add(m_idx)
+                    mod_nets[m_idx].append(code)
+
+        directions = ((d, 0.0), (-d, 0.0), (0.0, d), (0.0, -d))
+        for _ in range(500):
+            improved = False
+            for i in range(self.n):
+                incident = mod_nets[i]
+                if not incident:
+                    continue
+                cur_x, cur_y = self.positions[i]
+                cur_sub = sum(net_lengths[code] for code in incident)
+
+                for dx, dy in directions:
+                    while True:
+                        nx = round((cur_x + dx) / d) * d
+                        ny = round((cur_y + dy) / d) * d
+                        box = self._get_box(i, nx, ny)
+                        if not self._within_board(box) or self._collides(box, i):
+                            break
+                        self.positions[i] = (nx, ny)
+                        cand_lens = {}
+                        cand_sub = 0.0
+                        for code in incident:
+                            pts = [self._get_pad_abs(m_idx, pad_num) for _, pad_num, m_idx in active_nets[code]]
+                            nl = _mst_length(pts, self.p.metric)
+                            cand_lens[code] = nl
+                            cand_sub += nl
+                        if cand_sub < cur_sub - 1e-9:
+                            cur_x, cur_y = nx, ny
+                            cur_sub = cand_sub
+                            for code, nl in cand_lens.items():
+                                net_lengths[code] = nl
+                            improved = True
+                        else:
+                            self.positions[i] = (cur_x, cur_y)
+                            break
+
+            if not improved:
+                break
+
     def run(self):
-        start_time = time.perf_counter()
         board_width = self.edge_rect[2] - self.edge_rect[0]
         board_length = self.edge_rect[3] - self.edge_rect[1]
         if self.n == 0:
             return PlacementResult(
                 {}, 0.0, 0, 0, 0.0, 0.0, "", self.threads_used,
-                board_width, board_length,
+                board_width, board_length, 0.0, 0.0, 0.0, 0.0,
             )
         try:
+            seq_start = time.perf_counter()
             idx = self._pick_directive()
             pos = self._snap_to_grid(idx, *self._get_directive_pos(idx))
             if pos is None:
@@ -402,18 +481,33 @@ class SequentialPlacer:
                 self.positions[best_i] = best_pos
                 self.placed.add(best_i)
                 self.unplaced.discard(best_i)
+
+            seq_duration = time.perf_counter() - seq_start
+
+            seq_w_euc = self._calc_total_wire(Metric.EUCLIDEAN)
+            seq_w_man = self._calc_total_wire(Metric.MANHATTAN)
+
+            if self.p.optimization_mode != OptimizationMode.NONE:
+                opt_start = time.perf_counter()
+                self._run_extra_optimization()
+                opt_duration = time.perf_counter() - opt_start
+                w_euc = self._calc_total_wire(Metric.EUCLIDEAN)
+                w_man = self._calc_total_wire(Metric.MANHATTAN)
+            else:
+                opt_duration = 0.0
+                w_euc = seq_w_euc
+                w_man = seq_w_man
         finally:
             self._shutdown_pool()
 
-        duration = time.perf_counter() - start_time
-        w_euc = self._calc_total_wire(Metric.EUCLIDEAN)
-        w_man = self._calc_total_wire(Metric.MANHATTAN)
+        total_duration = seq_duration + opt_duration
         conn_count = sum(len(v) - 1 for v in self._get_net_pins().values() if len(v) >= 2)
 
         return PlacementResult(
-            self.positions, duration, self.n, conn_count, w_euc, w_man,
+            self.positions, total_duration, self.n, conn_count, w_euc, w_man,
             self.snap.modules[idx]['reference'], self.threads_used,
-            board_width, board_length,
+            board_width, board_length, seq_w_euc, seq_w_man,
+            seq_duration, opt_duration,
         )
 
 
