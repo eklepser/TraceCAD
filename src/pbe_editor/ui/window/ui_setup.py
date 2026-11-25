@@ -1,16 +1,15 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QListWidget, QComboBox, QToolBar, QStatusBar,
-                               QDockWidget, QApplication, QMenuBar, QDialog)
+                               QDockWidget, QApplication, QMenuBar)
 from PySide6.QtGui import QAction, QActionGroup, QGuiApplication
 from PySide6.QtCore import Qt
 
 from constants import Styles, GRID_SERIES, GRID_SERIES_LABEL
 from common.ui.panels.aux_bar import AuxBar
-from common.ui.dialogs.libraries_dialog import LibrariesManagerDialog
 from pbe_editor.core.board_manager import BoardManager
 from pbe_editor.ui.board_canvas import BoardCanvas
 from pbe_editor.ui.panels.board_right_panel import BoardRightPanel
-from pbe_editor.ui.panels.drawing_tool_bar import BoardDrawingToolBar, BoardTool
+from pbe_editor.ui.panels.drawing_tool_bar import BoardTool
 from pbe_editor.ui.dialogs.nets_dialog import NetsDialog
 
 
@@ -32,6 +31,7 @@ class UiSetupService:
         self.aux_bar.select_requested.connect(lambda: self.set_tool(BoardTool.SELECT))
         self.aux_bar.delete_requested.connect(self.commands.delete_selected)
 
+        from pbe_editor.ui.panels.drawing_tool_bar import BoardDrawingToolBar
         self.tool_bar = BoardDrawingToolBar()
         self.tool_bar.tool_selected.connect(self.set_tool)
 
@@ -139,12 +139,17 @@ class UiSetupService:
         edit_menu.addAction(act_delete)
 
         operations_menu = menubar.addMenu("Операции")
-        
-        act_autoplace = QAction("Авторазмещение...", self)
-        act_autoplace.setShortcut("Ctrl+P")
-        act_autoplace.triggered.connect(self.commands.on_autoplace)
-        operations_menu.addAction(act_autoplace)
-        
+
+        act_autoplace_seq = QAction("Авторазмещение (последовательный алгоритм)", self)
+        act_autoplace_seq.setShortcut("Ctrl+O")
+        act_autoplace_seq.triggered.connect(self.commands.on_autoplace)
+        operations_menu.addAction(act_autoplace_seq)
+
+        act_autoplace_pair = QAction("Авторазмещение (парные перестановки)", self)
+        act_autoplace_pair.setShortcut("Ctrl+P")
+        act_autoplace_pair.triggered.connect(self.commands.on_pairwise_autoplace)
+        operations_menu.addAction(act_autoplace_pair)
+
         act_reset = QAction("Сбросить размещение", self)
         act_reset.setShortcut("Ctrl+R")
         act_reset.triggered.connect(self.commands.on_reset_placement)
@@ -166,7 +171,7 @@ class UiSetupService:
         act_nets = QAction("Список связей...", self)
         act_nets.triggered.connect(self.on_show_nets)
         view_menu.addAction(act_nets)
-        
+
         view_menu.addSeparator()
 
         self.act_show_grid = QAction("Показывать сетку", self, checkable=True)

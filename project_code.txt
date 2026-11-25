@@ -1,6 +1,6 @@
 
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\arc_geometry.py
+FILE: D:\Desktop\TraceCAD\src\common\arc_geometry.py
 ============================================================
 import math
 
@@ -27,12 +27,12 @@ def arc_sample_points(cx, cy, sx, sy, angle_deg, segments=64):
     return pts
 
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\__init__.py
+FILE: D:\Desktop\TraceCAD\src\common\__init__.py
 ============================================================
 
 
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\core\models_base.py
+FILE: D:\Desktop\TraceCAD\src\common\core\models_base.py
 ============================================================
 from dataclasses import dataclass, field
 from enum import Enum
@@ -178,7 +178,7 @@ class Footprint:
     texts: List[Text] = field(default_factory=list).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\core\__init__.py
+FILE: D:\Desktop\TraceCAD\src\common\core\__init__.py
 ============================================================
 from common.core.models_base import (
     PadShape, PadType, TextType, new_uid,
@@ -188,7 +188,7 @@ from common.core.models_base import (
 ).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\graphics\text_path.py
+FILE: D:\Desktop\TraceCAD\src\common\graphics\text_path.py
 ============================================================
 from PySide6.QtGui import QFont, QPainterPath, QTransform
 
@@ -214,12 +214,12 @@ def build_text_path(text, target_height, bold=False, center=False):
     return path.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\graphics\__init__.py
+FILE: D:\Desktop\TraceCAD\src\common\graphics\__init__.py
 ============================================================
 .
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\ui\qss.py
+FILE: D:\Desktop\TraceCAD\src\common\ui\qss.py
 ============================================================
 CHECKBOX_QSS = (
     "QCheckBox { color: #a9b7c6; spacing: 8px; background: transparent; }"
@@ -292,12 +292,12 @@ def inline_combo_qss():
     ).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\ui\__init__.py
+FILE: D:\Desktop\TraceCAD\src\common\ui\__init__.py
 ============================================================
 .
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\ui\dialogs\arc_dialog.py
+FILE: D:\Desktop\TraceCAD\src\common\ui\dialogs\arc_dialog.py
 ============================================================
 from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                                QLineEdit, QPushButton)
@@ -363,7 +363,7 @@ class ArcDialog(HeaderlessDialog):
             return 90.0.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\ui\dialogs\custom_question_dialog.py
+FILE: D:\Desktop\TraceCAD\src\common\ui\dialogs\custom_question_dialog.py
 ============================================================
 from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QPushButton
 from constants import Styles
@@ -413,7 +413,7 @@ class CustomQuestionDialog(HeaderlessDialog):
         layout.addLayout(btns).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\ui\dialogs\headerless_dialog.py
+FILE: D:\Desktop\TraceCAD\src\common\ui\dialogs\headerless_dialog.py
 ============================================================
 from PySide6.QtWidgets import QDialog
 from PySide6.QtCore import Qt
@@ -447,7 +447,7 @@ class HeaderlessDialog(QDialog):
         super().mouseReleaseEvent(event).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\ui\dialogs\libraries_dialog.py
+FILE: D:\Desktop\TraceCAD\src\common\ui\dialogs\libraries_dialog.py
 ============================================================
 from pathlib import Path
 
@@ -539,7 +539,7 @@ class LibrariesManagerDialog(HeaderlessDialog):
         return list(self.library_paths).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\ui\dialogs\text_dialog.py
+FILE: D:\Desktop\TraceCAD\src\common\ui\dialogs\text_dialog.py
 ============================================================
 from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                                QLineEdit, QCheckBox, QPushButton)
@@ -632,12 +632,12 @@ class TextDialog(HeaderlessDialog):
         return self.visible_check.isChecked().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\ui\dialogs\__init__.py
+FILE: D:\Desktop\TraceCAD\src\common\ui\dialogs\__init__.py
 ============================================================
 .
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\ui\panels\aux_bar.py
+FILE: D:\Desktop\TraceCAD\src\common\ui\panels\aux_bar.py
 ============================================================
 from pathlib import Path
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton
@@ -744,12 +744,12 @@ class AuxBar(QWidget):
         self.set_delete_enabled(self.btn_delete.isEnabled()).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\ui\panels\__init__.py
+FILE: D:\Desktop\TraceCAD\src\common\ui\panels\__init__.py
 ============================================================
 from common.ui.panels.aux_bar import AuxBar.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\ui\widgets\numeric_line_edit.py
+FILE: D:\Desktop\TraceCAD\src\common\ui\widgets\numeric_line_edit.py
 ============================================================
 from PySide6.QtWidgets import QLineEdit
 from PySide6.QtGui import QDoubleValidator
@@ -789,12 +789,12 @@ class NumericLineEdit(QLineEdit):
         self.setText(self._format(value)).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\common\ui\widgets\__init__.py
+FILE: D:\Desktop\TraceCAD\src\common\ui\widgets\__init__.py
 ============================================================
 from common.ui.widgets.numeric_line_edit import NumericLineEdit.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\constants\board_settings.py
+FILE: D:\Desktop\TraceCAD\src\constants\board_settings.py
 ============================================================
 SETTINGS_KEY_BRD_LIBS = "library_paths"
 SETTINGS_KEY_BRD_LAST = "brd_last_file"
@@ -856,7 +856,7 @@ DEFAULT_LINE_LAYER = "Edge.Cuts"
 DEFAULT_LINE_WIDTH = 0.381.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\constants\colors.py
+FILE: D:\Desktop\TraceCAD\src\constants\colors.py
 ============================================================
 class Colors:
     GRID = (80, 80, 80)
@@ -891,7 +891,7 @@ DARK_COLORS = {
 }.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\constants\grid.py
+FILE: D:\Desktop\TraceCAD\src\constants\grid.py
 ============================================================
 class Steps:
     ZOOM = [0.1, 0.25, 0.5, 0.75, 1.0, 2.0, 4.0, 8.0]
@@ -914,7 +914,7 @@ GRID_SERIES = {
 GRID_SERIES_LABEL = {"1x": "1x", "1.27x": "1.27x"}.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\constants\keys.py
+FILE: D:\Desktop\TraceCAD\src\constants\keys.py
 ============================================================
 VK_W = 0x57
 VK_A = 0x41
@@ -944,7 +944,7 @@ VK_5 = 0x35
 PAN_KEYS = (VK_W, VK_A, VK_S, VK_D).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\constants\settings.py
+FILE: D:\Desktop\TraceCAD\src\constants\settings.py
 ============================================================
 SETTINGS_ORG = "TraceCAD"
 SETTINGS_APP = "TraceCAD"
@@ -959,7 +959,7 @@ RIGHT_PANEL_MIN_WIDTH = 260
 RIGHT_PANEL_MAX_WIDTH = 320.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\constants\sizes.py
+FILE: D:\Desktop\TraceCAD\src\constants\sizes.py
 ============================================================
 class Sizes:
     BASE_SCALE = 50.0
@@ -973,7 +973,7 @@ class Sizes:
     DEFAULT_LINE_WIDTH = 0.381.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\constants\styles.py
+FILE: D:\Desktop\TraceCAD\src\constants\styles.py
 ============================================================
 class Styles:
     DIALOG_BG = ""
@@ -1124,7 +1124,7 @@ def inline_combo_qss():
     ).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\constants\tools.py
+FILE: D:\Desktop\TraceCAD\src\constants\tools.py
 ============================================================
 class Tool:
     SELECT = "select"
@@ -1135,7 +1135,7 @@ class Tool:
     ADD_TEXT = "add_text".
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\constants\__init__.py
+FILE: D:\Desktop\TraceCAD\src\constants\__init__.py
 ============================================================
 from constants.keys import (
     VK_W, VK_A, VK_S, VK_D,
@@ -1169,7 +1169,7 @@ def apply_theme():
 apply_theme().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\core\history.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\core\history.py
 ============================================================
 import copy
 from footprint_editor.core.models import Footprint
@@ -1218,7 +1218,7 @@ class History:
         return copy.deepcopy(self._current).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\core\manager.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\core\manager.py
 ============================================================
 from PySide6.QtWidgets import QGraphicsItem
 from footprint_editor.graphics.factory import GraphicsFactory
@@ -1261,7 +1261,7 @@ class FootprintManager:
         return str(max(numbers) + 1) if numbers else "1".
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\core\models.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\core\models.py
 ============================================================
 from common.core.models_base import (
     Footprint, Pad, Line, Circle, Arc, Text,
@@ -1282,7 +1282,7 @@ __all__ = [
 ].
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\core\__init__.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\core\__init__.py
 ============================================================
 from footprint_editor.core.models import (
     Footprint, Pad, Line, Circle, Arc, Text,
@@ -1292,7 +1292,7 @@ from footprint_editor.core.models import (
 ).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\graphics\arc_item.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\graphics\arc_item.py
 ============================================================
 from PySide6.QtWidgets import QStyle
 from PySide6.QtGui import QPen, QColor, QPainterPath, QPainterPathStroker
@@ -1366,7 +1366,7 @@ class ArcGraphicsItem(BaseGraphicsItem):
         self.update().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\graphics\base.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\graphics\base.py
 ============================================================
 from PySide6.QtWidgets import QGraphicsItem
 from PySide6.QtCore import Qt, QPointF
@@ -1535,7 +1535,7 @@ class BaseGraphicsItem(QGraphicsItem):
         raise NotImplementedError.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\graphics\circle_item.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\graphics\circle_item.py
 ============================================================
 from PySide6.QtWidgets import QStyle
 from PySide6.QtGui import QPen, QColor, QPainterPath, QPainterPathStroker
@@ -1588,7 +1588,7 @@ class CircleGraphicsItem(BaseGraphicsItem):
         self.update().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\graphics\factory.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\graphics\factory.py
 ============================================================
 from footprint_editor.core.models import Pad, Line, Circle, Arc, Text
 from footprint_editor.graphics.pad_item import PadGraphicsItem
@@ -1614,7 +1614,7 @@ class GraphicsFactory:
         raise ValueError(f"Unknown model type: {type(model)}").
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\graphics\line_item.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\graphics\line_item.py
 ============================================================
 from PySide6.QtWidgets import QGraphicsItem, QStyle
 from PySide6.QtGui import QPen, QColor, QPainterPath, QPainterPathStroker, QBrush
@@ -1735,7 +1735,7 @@ class LineGraphicsItem(BaseGraphicsItem):
         self.update().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\graphics\pad_item.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\graphics\pad_item.py
 ============================================================
 from PySide6.QtWidgets import QStyle
 from PySide6.QtGui import QColor
@@ -1819,7 +1819,7 @@ class PadGraphicsItem(BaseGraphicsItem):
         self.setPos(self.model.x, self.model.y).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\graphics\text_item.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\graphics\text_item.py
 ============================================================
 from PySide6.QtWidgets import QStyle
 from PySide6.QtGui import QColor
@@ -1883,7 +1883,7 @@ class TextGraphicsItem(BaseGraphicsItem):
         self.update().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\canvas.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\canvas.py
 ============================================================
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem
 from PySide6.QtCore import Qt, QPointF, Signal, QTimer
@@ -2155,7 +2155,7 @@ class FootprintCanvas(QGraphicsView):
             self.verticalScrollBar().setValue(self.verticalScrollBar().value() + iy).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\main_window.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\main_window.py
 ============================================================
 from PySide6.QtWidgets import (QMainWindow, QDockWidget, QWidget, QLabel, QToolBar,
                                QStatusBar, QComboBox, QApplication, QVBoxLayout, QMenuBar)
@@ -2539,7 +2539,7 @@ class FootprintEditorWindow(
         self.commands.reload_current_library().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\overlays.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\overlays.py
 ============================================================
 from PySide6.QtCore import Qt, QPointF
 from PySide6.QtGui import QPen, QColor, QPainterPath
@@ -2664,7 +2664,7 @@ def draw_ghost_text(painter, pos, text, size, visible):
     painter.restore().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\shortcuts.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\shortcuts.py
 ============================================================
 from PySide6.QtWidgets import QApplication, QLineEdit, QDoubleSpinBox
 from PySide6.QtCore import QObject, QEvent, Qt
@@ -2688,7 +2688,7 @@ class GlobalKeyFilter(QObject):
         return super().eventFilter(obj, event).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\commands\drawing.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\commands\drawing.py
 ============================================================
 import math
 from PySide6.QtWidgets import QDialog
@@ -2842,7 +2842,7 @@ class DrawingCommandsMixin:
         self.w.canvas.clear_ghost_text().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\commands\editing.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\commands\editing.py
 ============================================================
 import copy
 from footprint_editor.core.models import new_uid
@@ -2959,7 +2959,7 @@ class EditingCommandsMixin:
         self.w.show_log("элементы повёрнуты на 90°").
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\commands\libraries.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\commands\libraries.py
 ============================================================
 import copy
 import re
@@ -3283,7 +3283,7 @@ class LibrariesMixin:
         Path(path).write_text(content, encoding='utf-8').
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\commands\module_files.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\commands\module_files.py
 ============================================================
 import copy
 from pathlib import Path
@@ -3359,7 +3359,7 @@ class ModuleFilesMixin:
             QMessageBox.critical(self.w, "Ошибка", f"Не удалось открыть файл: {e}").
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\commands\_shared.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\commands\_shared.py
 ============================================================
 from footprint_editor.core.models import Pad, Line, Circle, Arc, Text
 
@@ -3460,7 +3460,7 @@ def remove_from_footprint(fp, model):
             return.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\commands\__init__.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\commands\__init__.py
 ============================================================
 from footprint_editor.ui.commands.drawing import DrawingCommandsMixin
 from footprint_editor.ui.commands.editing import EditingCommandsMixin
@@ -3477,7 +3477,7 @@ class CommandHandler(DrawingCommandsMixin, EditingCommandsMixin,
         self._current_mouse_pos = QPointF(0, 0).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\dialogs\input_dialog.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\dialogs\input_dialog.py
 ============================================================
 from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                                QLineEdit, QPushButton)
@@ -3526,7 +3526,7 @@ class InputDialog(HeaderlessDialog):
         return self.input.text().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\panels\drawing_tool_bar.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\panels\drawing_tool_bar.py
 ============================================================
 from pathlib import Path
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton
@@ -3618,7 +3618,7 @@ class DrawingToolBar(QWidget):
         self._update_styles().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\panels\layers_table.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\panels\layers_table.py
 ============================================================
 from PySide6.QtWidgets import QWidget, QGridLayout, QCheckBox
 from PySide6.QtCore import Signal
@@ -3726,7 +3726,7 @@ class LayersTable(QWidget):
         self.layers_changed.emit(self.selected_layers()).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\panels\library_panel.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\panels\library_panel.py
 ============================================================
 from pathlib import Path
 
@@ -3882,7 +3882,7 @@ class LibraryPanel(QWidget):
         self.module_list_widget.clearSelection().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\panels\properties_panel.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\panels\properties_panel.py
 ============================================================
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QHBoxLayout, QLabel,
                                QComboBox, QLineEdit, QCheckBox,
@@ -4271,7 +4271,7 @@ class PropertiesPanel(QWidget):
             obj.layer = layers[0].
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\panels\right_panel.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\panels\right_panel.py
 ============================================================
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 from footprint_editor.ui.panels.properties_panel import PropertiesPanel
@@ -4299,7 +4299,7 @@ class RightPanel(QWidget):
         self.properties_panel.apply_theme().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\window\grid.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\window\grid.py
 ============================================================
 from constants import GRID_SERIES, GRID_SERIES_LABEL
 
@@ -4353,7 +4353,7 @@ class GridService:
         self.zoom_label.setText(f" {int(zoom * 100)}% ").
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\window\history.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\window\history.py
 ============================================================
 class HistoryService:
     def commit_history(self, *_args):
@@ -4398,7 +4398,7 @@ class HistoryService:
         self.aux_bar.set_redo_enabled(self.history.can_redo()).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\window\module_lifecycle.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\window\module_lifecycle.py
 ============================================================
 from datetime import datetime
 from pathlib import Path
@@ -4468,7 +4468,7 @@ class ModuleLifecycleService:
             i += 1.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\window\session.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\window\session.py
 ============================================================
 from pathlib import Path
 from constants import (
@@ -4552,7 +4552,7 @@ class SessionService:
         super().closeEvent(event).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\window\shortcuts.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\window\shortcuts.py
 ============================================================
 from PySide6.QtCore import QEvent, Qt
 from PySide6.QtWidgets import QGraphicsView
@@ -4659,14 +4659,14 @@ class KeyboardService:
         self.show_log(f"Инструмент: {Tool.SELECT}").
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\window\status.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\window\status.py
 ============================================================
 class StatusService:
     def show_log(self, text):
         self.log_label.setText(text).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\window\tools.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\window\tools.py
 ============================================================
 from PySide6.QtWidgets import QGraphicsView
 from constants import Tool
@@ -4720,7 +4720,7 @@ class ToolsService:
         self._reset_drawing_state().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\footprint_editor\ui\window\__init__.py
+FILE: D:\Desktop\TraceCAD\src\footprint_editor\ui\window\__init__.py
 ============================================================
 from footprint_editor.ui.window.session import SessionService
 from footprint_editor.ui.window.history import HistoryService
@@ -4731,7 +4731,7 @@ from footprint_editor.ui.window.status import StatusService
 from footprint_editor.ui.window.shortcuts import KeyboardService.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\kicad\brd_exporter.py
+FILE: D:\Desktop\TraceCAD\src\kicad\brd_exporter.py
 ============================================================
 from datetime import datetime
 
@@ -4969,7 +4969,7 @@ def build_brd_text(board):
     return "\n".join(lines).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\kicad\brd_importer.py
+FILE: D:\Desktop\TraceCAD\src\kicad\brd_importer.py
 ============================================================
 import re
 import math
@@ -5273,7 +5273,7 @@ def _parse_pad(pad_body: str):
     return pad, pad_net.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\kicad\common_layers.py
+FILE: D:\Desktop\TraceCAD\src\kicad\common_layers.py
 ============================================================
 KICAD_LAYER_TO_INTERNAL = {
     "F.Cu": "F.Cu", "B.Cu": "B.Cu", "*.Cu": "F.Cu",
@@ -5322,7 +5322,7 @@ def layer_to_id(layer):
     return LAYER_ID.get(layer, 21).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\kicad\mod_exporter.py
+FILE: D:\Desktop\TraceCAD\src\kicad\mod_exporter.py
 ============================================================
 from common.core.models_base import PadShape, PadType, TextType
 from kicad.units import mm_to_kicad
@@ -5440,7 +5440,7 @@ def build_kicad_module_text(fp):
     return "\n".join(lines).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\kicad\mod_importer.py
+FILE: D:\Desktop\TraceCAD\src\kicad\mod_importer.py
 ============================================================
 import re
 import math
@@ -5667,7 +5667,7 @@ def parse_pad(pad_body):
     ).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\kicad\pbe_layers.py
+FILE: D:\Desktop\TraceCAD\src\kicad\pbe_layers.py
 ============================================================
 KICAD_LAYER_TO_INTERNAL = {
     "F.Cu": "F.Cu", "B.Cu": "B.Cu", "*.Cu": "F.Cu",
@@ -5788,7 +5788,7 @@ def drawseg_layer_to_id(layer):
     return DRAWSEG_LAYER_ID.get(layer, 28).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\kicad\units.py
+FILE: D:\Desktop\TraceCAD\src\kicad\units.py
 ============================================================
 KICAD_UNIT_MM = 0.00254
 
@@ -5801,12 +5801,12 @@ def mm_to_kicad(value):
     return int(round(float(value) / KICAD_UNIT_MM)).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\kicad\__init__.py
+FILE: D:\Desktop\TraceCAD\src\kicad\__init__.py
 ============================================================
 from kicad.units import kicad_to_mm, mm_to_kicad, KICAD_UNIT_MM.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\core\autoplacer.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\core\autoplacer.py
 ============================================================
 import math
 import time
@@ -5814,6 +5814,7 @@ from dataclasses import dataclass
 from enum import Enum
 from multiprocessing import Pool
 
+from common.core.models_base import TextType
 from pbe_editor.core import sequential_algorithm as algo
 
 
@@ -5840,6 +5841,13 @@ class JMethod(Enum):
     M_336 = "3.3.6"
 
 
+class OptimizationMode(Enum):
+    NONE = "none"
+    D_C = "c"
+    D_C2 = "c2"
+    D_C4 = "c4"
+
+
 @dataclass
 class PlacementParams:
     A: float = 2.0
@@ -5850,6 +5858,7 @@ class PlacementParams:
     directive_mode: DirectiveMode = DirectiveMode.LARGEST
     directive_position: DirectivePosition = DirectivePosition.CENTER
     threads: int = 1
+    optimization_mode: OptimizationMode = OptimizationMode.D_C2
 
 
 @dataclass
@@ -5862,6 +5871,12 @@ class PlacementResult:
     wire_manhattan: float
     directive_ref: str = ""
     threads_used: int = 1
+    board_width: float = 0.0
+    board_length: float = 0.0
+    seq_wire_euclidean: float = 0.0
+    seq_wire_manhattan: float = 0.0
+    seq_time_seconds: float = 0.0
+    opt_time_seconds: float = 0.0
 
 
 def _J_task(args):
@@ -5870,9 +5885,10 @@ def _J_task(args):
 
 
 def _F_task(args):
-    conn_row, candidates, placed_positions, metric_name = args
+    conn_row, candidates, offset, placed_positions, metric_name = args
+    ox, oy = offset
     return [
-        (gx, gy, algo.pick_best_position((gx, gy), placed_positions, metric_name))
+        (gx, gy, algo.pick_best_position((gx + ox, gy + oy), placed_positions, metric_name))
         for gx, gy in candidates
     ]
 
@@ -5889,6 +5905,15 @@ def _arc_points(cx, cy, sx, sy, angle_deg, segments=16):
         a = a1 + t * sweep
         pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
     return pts
+
+
+def _rotate_offset(dx, dy, angle_deg):
+    if not angle_deg:
+        return (dx, dy)
+    rad = math.radians(angle_deg)
+    cos_a = math.cos(rad)
+    sin_a = math.sin(rad)
+    return (dx * cos_a - dy * sin_a, dx * sin_a + dy * cos_a)
 
 
 def _get_local_bbox(module):
@@ -5908,7 +5933,7 @@ def _get_local_bbox(module):
             xs.append(px)
             ys.append(py)
     for text in fp.texts:
-        if getattr(text, 'text_type', None) == 0:
+        if getattr(text, 'text_type', None) in (TextType.REFERENCE, TextType.VALUE, 0):
             continue
         xs.append(text.x)
         ys.append(text.y)
@@ -5963,13 +5988,17 @@ class _BoardSnapshot:
         self.edge_rect = _get_board_edge_rect(board)
         self.modules = []
         for m in board.modules:
+            bbox = _get_local_bbox(m)
             self.modules.append({
                 'uid': m.uid,
                 'reference': m.reference,
                 'x': m.x,
                 'y': m.y,
+                'angle': m.angle,
                 'pad_nets': dict(m.pad_nets),
-                'bbox': _get_local_bbox(m),
+                'pads': {pad.number: (pad.x, pad.y) for pad in m.footprint.pads},
+                'bbox': bbox,
+                'center_offset': ((bbox[0] + bbox[2]) / 2.0, (bbox[1] + bbox[3]) / 2.0),
             })
 
 
@@ -5987,6 +6016,7 @@ class SequentialPlacer:
             raise ValueError("Параметр A слишком велик для данной платы.")
 
         self.bboxes = [m['bbox'] for m in snapshot.modules]
+        self.center_offsets = [m['center_offset'] for m in snapshot.modules]
         self.positions = {}
         self.placed = set()
         self.unplaced = set(range(self.n))
@@ -6028,12 +6058,12 @@ class SequentialPlacer:
             return (cx - (lb[0] + lb[2]) / 2, cy - (lb[1] + lb[3]) / 2)
         elif self.p.directive_position == DirectivePosition.TOP_LEFT:
             ix = self.inner_rect[0]
-            iy = self.inner_rect[3]
-            return (ix - lb[0], iy - lb[3])
-        else:
-            ix = self.inner_rect[0]
             iy = self.inner_rect[1]
             return (ix - lb[0], iy - lb[1])
+        else:
+            ix = self.inner_rect[0]
+            iy = self.inner_rect[3]
+            return (ix - lb[0], iy - lb[3])
 
     def _snap_to_grid(self, i, gx, gy):
         lb = self.bboxes[i]
@@ -6083,7 +6113,12 @@ class SequentialPlacer:
         return candidates
 
     def _get_placed_positions(self, conn_row):
-        return [(self.positions[j][0], self.positions[j][1], conn_row[j]) for j in self.placed]
+        result = []
+        for j in self.placed:
+            px, py = self.positions[j]
+            ox, oy = self.center_offsets[j]
+            result.append((px + ox, py + oy, conn_row[j]))
+        return result
 
     def _compute_J_scores(self):
         items = list(self.unplaced)
@@ -6105,16 +6140,18 @@ class SequentialPlacer:
         conn_row = conn[best_i]
         placed_positions = self._get_placed_positions(conn_row)
         metric_name = "manhattan" if self.p.metric == Metric.MANHATTAN else "euclidean"
+        offset = self.center_offsets[best_i]
+        ox, oy = offset
         work = len(cands) * max(1, len(placed_positions))
         if self._pool is None or work < 2000:
             return [
-                (p, algo.pick_best_position(p, placed_positions, metric_name))
-                for p in cands
+                ((gx, gy), algo.pick_best_position((gx + ox, gy + oy), placed_positions, metric_name))
+                for gx, gy in cands
             ]
         n_chunks = self.p.threads * 4
         chunk_size = max(1, (len(cands) + n_chunks - 1) // n_chunks)
         chunks = [cands[k:k + chunk_size] for k in range(0, len(cands), chunk_size)]
-        jobs = [(conn_row, ch, placed_positions, metric_name) for ch in chunks]
+        jobs = [(conn_row, ch, offset, placed_positions, metric_name) for ch in chunks]
         results = self._pool.map(_F_task, jobs, chunksize=1)
         out = []
         for ch in results:
@@ -6122,28 +6159,114 @@ class SequentialPlacer:
                 out.append(((gx, gy), v))
         return out
 
+    def _get_pad_abs(self, i, pad_num):
+        mod = self.snap.modules[i]
+        lx, ly = mod['pads'][pad_num]
+        if i in self.positions:
+            gx, gy = self.positions[i]
+            return (gx + lx, gy + ly)
+        rx, ry = _rotate_offset(lx, ly, mod.get('angle', 0.0))
+        return (mod['x'] + rx, mod['y'] + ry)
+
     def _calc_total_wire(self, metric):
-        centers = [self.positions.get(i, (self.snap.modules[i]['x'], self.snap.modules[i]['y'])) for i in range(self.n)]
         total = 0.0
-        for idxs in self._get_nets().values():
-            if len(idxs) >= 2:
-                pts = [centers[i] for i in idxs]
+        for pins in self._get_net_pins().values():
+            if len(pins) >= 2:
+                pts = [self._get_pad_abs(i, pad_num) for _, pad_num, i in pins]
                 total += _mst_length(pts, metric)
         return total
 
-    def _get_nets(self):
+    def _get_net_pins(self):
         nets = {}
         for i, mod in enumerate(self.snap.modules):
+            pads = mod['pads']
             for pad_num, pad_net in mod['pad_nets'].items():
-                if pad_net.net_code > 0:
-                    nets.setdefault(pad_net.net_code, set()).add(i)
+                if pad_net.net_code <= 0 or not pad_net.net_name:
+                    continue
+                if pad_num not in pads:
+                    continue
+                nets.setdefault(pad_net.net_code, []).append((mod['reference'], pad_num, i))
+        for code in nets:
+            nets[code].sort(key=lambda x: (x[0], x[1]))
         return nets
 
+    def _opt_step(self):
+        if self.p.optimization_mode == OptimizationMode.D_C:
+            return self.p.C
+        if self.p.optimization_mode == OptimizationMode.D_C2:
+            return self.p.C / 2.0
+        if self.p.optimization_mode == OptimizationMode.D_C4:
+            return self.p.C / 4.0
+        return 0.0
+
+    def _run_extra_optimization(self):
+        d = self._opt_step()
+        if d <= 0:
+            return
+        net_pins = self._get_net_pins()
+        active_nets = {code: pins for code, pins in net_pins.items() if len(pins) >= 2}
+        if not active_nets:
+            return
+
+        mod_nets = [[] for _ in range(self.n)]
+        net_lengths = {}
+        for code, pins in active_nets.items():
+            pts = [self._get_pad_abs(m_idx, pad_num) for _, pad_num, m_idx in pins]
+            net_lengths[code] = _mst_length(pts, self.p.metric)
+            seen = set()
+            for _, _, m_idx in pins:
+                if m_idx not in seen:
+                    seen.add(m_idx)
+                    mod_nets[m_idx].append(code)
+
+        directions = ((d, 0.0), (-d, 0.0), (0.0, d), (0.0, -d))
+        for _ in range(500):
+            improved = False
+            for i in range(self.n):
+                incident = mod_nets[i]
+                if not incident:
+                    continue
+                cur_x, cur_y = self.positions[i]
+                cur_sub = sum(net_lengths[code] for code in incident)
+
+                for dx, dy in directions:
+                    while True:
+                        nx = round((cur_x + dx) / d) * d
+                        ny = round((cur_y + dy) / d) * d
+                        box = self._get_box(i, nx, ny)
+                        if not self._within_board(box) or self._collides(box, i):
+                            break
+                        self.positions[i] = (nx, ny)
+                        cand_lens = {}
+                        cand_sub = 0.0
+                        for code in incident:
+                            pts = [self._get_pad_abs(m_idx, pad_num) for _, pad_num, m_idx in active_nets[code]]
+                            nl = _mst_length(pts, self.p.metric)
+                            cand_lens[code] = nl
+                            cand_sub += nl
+                        if cand_sub < cur_sub - 1e-9:
+                            cur_x, cur_y = nx, ny
+                            cur_sub = cand_sub
+                            for code, nl in cand_lens.items():
+                                net_lengths[code] = nl
+                            improved = True
+                        else:
+                            self.positions[i] = (cur_x, cur_y)
+                            break
+
+            if not improved:
+                break
+
     def run(self):
-        start_time = time.perf_counter()
+        board_width = self.edge_rect[2] - self.edge_rect[0]
+        board_length = self.edge_rect[3] - self.edge_rect[1]
         if self.n == 0:
-            return PlacementResult({}, 0.0, 0, 0, 0.0, 0.0, "", self.threads_used)
+            return PlacementResult(
+                {}, 0.0, 0, 0, 0.0, 0.0, "", self.threads_used,
+                board_width, board_length, 0.0, 0.0, 0.0, 0.0,
+            )
         try:
+            seq_start = time.perf_counter()
             idx = self._pick_directive()
             pos = self._snap_to_grid(idx, *self._get_directive_pos(idx))
             if pos is None:
@@ -6168,17 +6291,33 @@ class SequentialPlacer:
                 self.positions[best_i] = best_pos
                 self.placed.add(best_i)
                 self.unplaced.discard(best_i)
+
+            seq_duration = time.perf_counter() - seq_start
+
+            seq_w_euc = self._calc_total_wire(Metric.EUCLIDEAN)
+            seq_w_man = self._calc_total_wire(Metric.MANHATTAN)
+
+            if self.p.optimization_mode != OptimizationMode.NONE:
+                opt_start = time.perf_counter()
+                self._run_extra_optimization()
+                opt_duration = time.perf_counter() - opt_start
+                w_euc = self._calc_total_wire(Metric.EUCLIDEAN)
+                w_man = self._calc_total_wire(Metric.MANHATTAN)
+            else:
+                opt_duration = 0.0
+                w_euc = seq_w_euc
+                w_man = seq_w_man
         finally:
             self._shutdown_pool()
 
-        duration = time.perf_counter() - start_time
-        w_euc = self._calc_total_wire(Metric.EUCLIDEAN)
-        w_man = self._calc_total_wire(Metric.MANHATTAN)
-        conn_count = sum(len(v) - 1 for v in self._get_nets().values() if len(v) >= 2)
+        total_duration = seq_duration + opt_duration
+        conn_count = sum(len(v) - 1 for v in self._get_net_pins().values() if len(v) >= 2)
 
         return PlacementResult(
-            self.positions, duration, self.n, conn_count, w_euc, w_man,
-            self.snap.modules[idx]['reference'], self.threads_used
+            self.positions, total_duration, self.n, conn_count, w_euc, w_man,
+            self.snap.modules[idx]['reference'], self.threads_used,
+            board_width, board_length, seq_w_euc, seq_w_man,
+            seq_duration, opt_duration,
         )
 
 
@@ -6202,7 +6341,7 @@ def run_auto_placement(board, params, threads=1):
     return result, before_euc, before_man.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\core\board_manager.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\core\board_manager.py
 ============================================================
 from PySide6.QtCore import QPointF
 
@@ -6341,7 +6480,7 @@ class BoardManager:
         self.rebuild_ratsnest().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\core\board_models.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\core\board_models.py
 ============================================================
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
@@ -6585,7 +6724,7 @@ class Board:
         return best.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\core\models.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\core\models.py
 ============================================================
 from common.core.models_base import (
     Footprint, Pad, Line, Circle, Arc, Text,
@@ -6606,7 +6745,7 @@ __all__ = [
 ].
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\core\netlist_parser.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\core\netlist_parser.py
 ============================================================
 import re
 from dataclasses import dataclass, field
@@ -6677,7 +6816,646 @@ def parse_netlist_content(content: str) -> List[NetlistComponent]:
     return components.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\core\ratsnest_mst.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\core\pairwise_placer.py
+============================================================
+import math
+import random
+import time
+from dataclasses import dataclass
+from enum import Enum
+
+from common.core.models_base import TextType
+from pbe_editor.core import pairwise_algorithm as algo
+from pbe_editor.core.autoplacer import (
+    Metric,
+    OptimizationMode,
+    _BoardSnapshot,
+    _mst_length,
+    _rotate_offset,
+    _snapshot_wire_lengths,
+)
+
+
+class PairwiseAlgoVersion(Enum):
+    SAPRYKIN = "saprykin"
+    SELYUTIN = "selyutin"
+
+
+class PairwiseDirectiveMode(Enum):
+    NONE = "none"
+    LARGEST = "largest"
+    MOST_CONNECTED = "most_connected"
+
+
+@dataclass
+class PairwiseParams:
+    A: float = 2.0
+    B: float = 2.0
+    C: float = 1.25
+    algo_version: PairwiseAlgoVersion = PairwiseAlgoVersion.SAPRYKIN
+    metric: Metric = Metric.EUCLIDEAN
+    directive_mode: PairwiseDirectiveMode = PairwiseDirectiveMode.NONE
+    optimization_mode: OptimizationMode = OptimizationMode.D_C2
+
+
+@dataclass
+class PairwiseResult:
+    positions: dict[int, tuple[float, float]]
+    time_seconds: float
+    num_footprints: int
+    num_connections: int
+    wire_euclidean: float
+    wire_manhattan: float
+    directive_ref: str = ""
+    board_width: float = 0.0
+    board_length: float = 0.0
+    pair_wire_euclidean: float = 0.0
+    pair_wire_manhattan: float = 0.0
+    pair_time_seconds: float = 0.0
+    opt_time_seconds: float = 0.0
+    shifted_count: int = 0
+
+
+class PairwisePlacer:
+    def __init__(self, snapshot, params):
+        self.snap = snapshot
+        self.p = params
+        self.n = len(snapshot.modules)
+
+        self.edge_rect = snapshot.edge_rect
+        self.inner_rect = (
+            self.edge_rect[0] + params.A,
+            self.edge_rect[1] + params.A,
+            self.edge_rect[2] - params.A,
+            self.edge_rect[3] - params.A,
+        )
+
+        if self.inner_rect[0] >= self.inner_rect[2] or self.inner_rect[1] >= self.inner_rect[3]:
+            raise ValueError("Параметр A слишком велик для данной платы.")
+
+        self.bboxes = [m['bbox'] for m in snapshot.modules]
+        self.center_offsets = [m['center_offset'] for m in snapshot.modules]
+        self.positions = {}
+        self.shifted_count = 0
+
+        self.c = algo.calc_connectivity_matrix(snapshot)
+
+    def _get_box(self, i, gx, gy):
+        lb = self.bboxes[i]
+        return (gx + lb[0], gy + lb[1], gx + lb[2], gy + lb[3])
+
+    def _within_board(self, box):
+        return (
+            box[0] >= self.inner_rect[0] - 1e-9
+            and box[1] >= self.inner_rect[1] - 1e-9
+            and box[2] <= self.inner_rect[2] + 1e-9
+            and box[3] <= self.inner_rect[3] + 1e-9
+        )
+
+    def _collides_with(self, box, placed_dict, exclude=-1):
+        for j, (px, py) in placed_dict.items():
+            if j == exclude:
+                continue
+            ob = self._get_box(j, px, py)
+            if (
+                box[0] < ob[2] + self.p.B - 1e-9
+                and box[2] > ob[0] - self.p.B + 1e-9
+                and box[1] < ob[3] + self.p.B - 1e-9
+                and box[3] > ob[1] - self.p.B + 1e-9
+            ):
+                return True
+        return False
+
+    def _clamp_to_inner(self, i, gx, gy):
+        lb = self.bboxes[i]
+        min_gx = self.inner_rect[0] - lb[0]
+        max_gx = self.inner_rect[2] - lb[2]
+        min_gy = self.inner_rect[1] - lb[1]
+        max_gy = self.inner_rect[3] - lb[3]
+        if min_gx > max_gx + 1e-9 or min_gy > max_gy + 1e-9:
+            ref = self.snap.modules[i]['reference']
+            raise RuntimeError(f"Корпус {ref} не помещается на плату с заданным отступом A.")
+        nx = max(min_gx, min(max_gx, gx))
+        ny = max(min_gy, min(max_gy, gy))
+        return (nx, ny)
+
+    def _snap_near(self, i, gx, gy):
+        lb = self.bboxes[i]
+        g = self.p.C
+        ix_lo = math.ceil((self.inner_rect[0] - lb[0]) / g - 1e-9)
+        ix_hi = math.floor((self.inner_rect[2] - lb[2]) / g + 1e-9)
+        iy_lo = math.ceil((self.inner_rect[1] - lb[1]) / g - 1e-9)
+        iy_hi = math.floor((self.inner_rect[3] - lb[3]) / g + 1e-9)
+        if ix_lo > ix_hi or iy_lo > iy_hi:
+            return None
+        ix = max(ix_lo, min(ix_hi, round(gx / g)))
+        iy = max(iy_lo, min(iy_hi, round(gy / g)))
+        return (ix * g, iy * g)
+
+    def _prepare_initial_positions(self):
+        shifted = 0
+        raw_pos = {}
+        for i, mod in enumerate(self.snap.modules):
+            ox, oy = mod['x'], mod['y']
+            box = self._get_box(i, ox, oy)
+            if not self._within_board(box):
+                nx, ny = self._clamp_to_inner(i, ox, oy)
+                raw_pos[i] = (nx, ny)
+                shifted += 1
+            else:
+                raw_pos[i] = (ox, oy)
+        self.shifted_count = shifted
+        return raw_pos
+
+    def _build_regular_slots(self, raw_pos, fixed_elem):
+        max_w = max((b[2] - b[0]) for b in self.bboxes)
+        max_h = max((b[3] - b[1]) for b in self.bboxes)
+
+        g = self.p.C
+        step_x = max(g, math.ceil((max_w + self.p.B) / g - 1e-9) * g)
+        step_y = max(g, math.ceil((max_h + self.p.B) / g - 1e-9) * g)
+
+        usable_w = self.inner_rect[2] - self.inner_rect[0]
+        usable_h = self.inner_rect[3] - self.inner_rect[1]
+
+        cols = max(1, int(math.floor((usable_w - max_w) / step_x + 1e-9)) + 1)
+        rows = max(1, int(math.floor((usable_h - max_h) / step_y + 1e-9)) + 1)
+
+        if cols * rows < self.n:
+            step_x = max(g * 0.25, (usable_w - max_w) / max(1, math.ceil(math.sqrt(self.n)) - 1))
+            step_y = max(g * 0.25, (usable_h - max_h) / max(1, math.ceil(math.sqrt(self.n)) - 1))
+            cols = max(1, int(math.floor((usable_w - max_w) / step_x + 1e-9)) + 1)
+            rows = max(1, int(math.floor((usable_h - max_h) / step_y + 1e-9)) + 1)
+
+        total_grid_w = max_w + (cols - 1) * step_x
+        total_grid_h = max_h + (rows - 1) * step_y
+        start_x = self.inner_rect[0] + max(0.0, (usable_w - total_grid_w) / 2.0) + max_w / 2.0
+        start_y = self.inner_rect[1] + max(0.0, (usable_h - total_grid_h) / 2.0) + max_h / 2.0
+
+        slot_centers = []
+        for r in range(rows):
+            for col in range(cols):
+                slot_centers.append((start_x + col * step_x, start_y + r * step_y))
+
+        if len(slot_centers) < self.n:
+            raise RuntimeError("Недостаточно установочных позиций на плате для размещения всех элементов.")
+
+        elem_centers = {}
+        for i in range(self.n):
+            px, py = raw_pos[i]
+            cx, cy = self.center_offsets[i]
+            elem_centers[i] = (px + cx, py + cy)
+
+        assignment = [-1] * len(slot_centers)
+        used_slots = set()
+
+        order = list(range(self.n))
+        if fixed_elem is not None:
+            order.remove(fixed_elem)
+            order.insert(0, fixed_elem)
+
+        for e in order:
+            ecx, ecy = elem_centers[e]
+            best_s = min(
+                (s for s in range(len(slot_centers)) if s not in used_slots),
+                key=lambda s: (math.hypot(slot_centers[s][0] - ecx, slot_centers[s][1] - ecy), s),
+            )
+            assignment[best_s] = e
+            used_slots.add(best_s)
+
+        active_slots = sorted(used_slots)
+        if len(slot_centers) > self.n:
+            extra_limit = min(len(slot_centers), self.n + max(4, self.n // 2))
+            remaining = [s for s in range(len(slot_centers)) if s not in used_slots]
+            active_slots.extend(remaining[: max(0, extra_limit - len(active_slots))])
+
+        compact_centers = [slot_centers[s] for s in active_slots]
+        compact_assignment = [assignment[s] for s in active_slots]
+        return compact_centers, compact_assignment
+
+    def _apply_assignment(self, slot_centers, assignment, fixed_elem, raw_pos):
+        placed = {}
+        if fixed_elem is not None:
+            fx, fy = raw_pos[fixed_elem]
+            snapped = self._snap_near(fixed_elem, fx, fy)
+            placed[fixed_elem] = snapped if snapped is not None else (fx, fy)
+
+        for s_idx, elem in enumerate(assignment):
+            if elem < 0 or elem == fixed_elem:
+                continue
+            scx, scy = slot_centers[s_idx]
+            ox, oy = self.center_offsets[elem]
+            gx, gy = self._clamp_to_inner(elem, scx - ox, scy - oy)
+            snapped = self._snap_near(elem, gx, gy)
+            cand = snapped if snapped is not None else (gx, gy)
+            box = self._get_box(elem, *cand)
+            if self._within_board(box) and not self._collides_with(box, placed):
+                placed[elem] = cand
+            else:
+                placed[elem] = self._find_nearest_free(elem, gx, gy, placed)
+
+        self.positions = placed
+
+    def _find_nearest_free(self, i, target_x, target_y, placed):
+        g = max(0.25, self.p.C / 2.0)
+        ix_lo = math.ceil((self.inner_rect[0] - self.bboxes[i][0]) / g - 1e-9)
+        ix_hi = math.floor((self.inner_rect[2] - self.bboxes[i][2]) / g + 1e-9)
+        iy_lo = math.ceil((self.inner_rect[1] - self.bboxes[i][1]) / g - 1e-9)
+        iy_hi = math.floor((self.inner_rect[3] - self.bboxes[i][3]) / g + 1e-9)
+
+        best_pos = None
+        best_dist = float('inf')
+        for ix in range(ix_lo, ix_hi + 1):
+            gx = ix * g
+            for iy in range(iy_lo, iy_hi + 1):
+                gy = iy * g
+                box = self._get_box(i, gx, gy)
+                if self._within_board(box) and not self._collides_with(box, placed):
+                    d = math.hypot(gx - target_x, gy - target_y)
+                    if d < best_dist:
+                        best_dist = d
+                        best_pos = (gx, gy)
+        if best_pos is None:
+            ref = self.snap.modules[i]['reference']
+            raise RuntimeError(f"Не удалось разместить корпус {ref} без пересечений с заданным зазором B.")
+        return best_pos
+
+    def _get_pad_abs(self, i, pad_num):
+        mod = self.snap.modules[i]
+        lx, ly = mod['pads'][pad_num]
+        if i in self.positions:
+            gx, gy = self.positions[i]
+            return (gx + lx, gy + ly)
+        rx, ry = _rotate_offset(lx, ly, mod.get('angle', 0.0))
+        return (mod['x'] + rx, mod['y'] + ry)
+
+    def _get_net_pins(self):
+        nets = {}
+        for i, mod in enumerate(self.snap.modules):
+            pads = mod['pads']
+            for pad_num, pad_net in mod['pad_nets'].items():
+                if pad_net.net_code <= 0 or not pad_net.net_name:
+                    continue
+                if pad_num not in pads:
+                    continue
+                nets.setdefault(pad_net.net_code, []).append((mod['reference'], pad_num, i))
+        for code in nets:
+            nets[code].sort(key=lambda x: (x[0], x[1]))
+        return nets
+
+    def _calc_total_wire(self, metric):
+        total = 0.0
+        for pins in self._get_net_pins().values():
+            if len(pins) >= 2:
+                pts = [self._get_pad_abs(i, pad_num) for _, pad_num, i in pins]
+                total += _mst_length(pts, metric)
+        return total
+
+    def _opt_step(self):
+        if self.p.optimization_mode == OptimizationMode.D_C:
+            return self.p.C
+        if self.p.optimization_mode == OptimizationMode.D_C2:
+            return self.p.C / 2.0
+        if self.p.optimization_mode == OptimizationMode.D_C4:
+            return self.p.C / 4.0
+        return 0.0
+
+    def _run_extra_optimization(self, fixed_elem):
+        d = self._opt_step()
+        if d <= 0:
+            return
+        net_pins = self._get_net_pins()
+        active_nets = {code: pins for code, pins in net_pins.items() if len(pins) >= 2}
+        if not active_nets:
+            return
+
+        mod_nets = [[] for _ in range(self.n)]
+        net_lengths = {}
+        for code, pins in active_nets.items():
+            pts = [self._get_pad_abs(m_idx, pad_num) for _, pad_num, m_idx in pins]
+            net_lengths[code] = _mst_length(pts, self.p.metric)
+            seen = set()
+            for _, _, m_idx in pins:
+                if m_idx not in seen:
+                    seen.add(m_idx)
+                    mod_nets[m_idx].append(code)
+
+        directions = ((d, 0.0), (-d, 0.0), (0.0, d), (0.0, -d))
+        for _ in range(500):
+            improved = False
+            for i in range(self.n):
+                if fixed_elem is not None and i == fixed_elem:
+                    continue
+                incident = mod_nets[i]
+                if not incident:
+                    continue
+                cur_x, cur_y = self.positions[i]
+                cur_sub = sum(net_lengths[code] for code in incident)
+
+                for dx, dy in directions:
+                    while True:
+                        nx = round((cur_x + dx) / d) * d
+                        ny = round((cur_y + dy) / d) * d
+                        box = self._get_box(i, nx, ny)
+                        if not self._within_board(box) or self._collides_with(box, self.positions, i):
+                            break
+                        self.positions[i] = (nx, ny)
+                        cand_lens = {}
+                        cand_sub = 0.0
+                        for code in incident:
+                            pts = [self._get_pad_abs(m_idx, pad_num) for _, pad_num, m_idx in active_nets[code]]
+                            nl = _mst_length(pts, self.p.metric)
+                            cand_lens[code] = nl
+                            cand_sub += nl
+                        if cand_sub < cur_sub - 1e-9:
+                            cur_x, cur_y = nx, ny
+                            cur_sub = cand_sub
+                            for code, nl in cand_lens.items():
+                                net_lengths[code] = nl
+                            improved = True
+                        else:
+                            self.positions[i] = (cur_x, cur_y)
+                            break
+
+            if not improved:
+                break
+
+    def run(self):
+        board_width = self.edge_rect[2] - self.edge_rect[0]
+        board_length = self.edge_rect[3] - self.edge_rect[1]
+        if self.n == 0:
+            return PairwiseResult(
+                {}, 0.0, 0, 0, 0.0, 0.0, "",
+                board_width, board_length, 0.0, 0.0, 0.0, 0.0, 0,
+            )
+
+        pair_start = time.perf_counter()
+
+        raw_pos = self._prepare_initial_positions()
+        fixed_elem = algo.pick_directive_element(self.bboxes, self.c, self.p.directive_mode.value)
+        slot_centers, assignment = self._build_regular_slots(raw_pos, fixed_elem)
+
+        metric_name = "manhattan" if self.p.metric == Metric.MANHATTAN else "euclidean"
+        if self.p.algo_version == PairwiseAlgoVersion.SAPRYKIN:
+            final_assignment = algo.solve_saprykin(
+                self.c, slot_centers, assignment, fixed_elem, metric_name
+            )
+        else:
+            final_assignment = algo.solve_selyutin(
+                self.c, slot_centers, assignment, fixed_elem, metric_name
+            )
+
+        self._apply_assignment(slot_centers, final_assignment, fixed_elem, raw_pos)
+
+        pair_duration = time.perf_counter() - pair_start
+
+        pair_w_euc = self._calc_total_wire(Metric.EUCLIDEAN)
+        pair_w_man = self._calc_total_wire(Metric.MANHATTAN)
+
+        if self.p.optimization_mode != OptimizationMode.NONE:
+            opt_start = time.perf_counter()
+            self._run_extra_optimization(fixed_elem)
+            opt_duration = time.perf_counter() - opt_start
+            w_euc = self._calc_total_wire(Metric.EUCLIDEAN)
+            w_man = self._calc_total_wire(Metric.MANHATTAN)
+        else:
+            opt_duration = 0.0
+            w_euc = pair_w_euc
+            w_man = pair_w_man
+
+        total_duration = pair_duration + opt_duration
+        conn_count = sum(len(v) - 1 for v in self._get_net_pins().values() if len(v) >= 2)
+        directive_ref = self.snap.modules[fixed_elem]['reference'] if fixed_elem is not None else ""
+
+        return PairwiseResult(
+            self.positions,
+            total_duration,
+            self.n,
+            conn_count,
+            w_euc,
+            w_man,
+            directive_ref,
+            board_width,
+            board_length,
+            pair_w_euc,
+            pair_w_man,
+            pair_duration,
+            opt_duration,
+            self.shifted_count,
+        )
+
+
+def run_pairwise_placement(board, params):
+    snapshot = _BoardSnapshot(board)
+    before_euc, before_man = _snapshot_wire_lengths(snapshot)
+    result = PairwisePlacer(snapshot, params).run()
+    return result, before_euc, before_man.
+.
+============================================================
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\core\paiwise_algorithm.py
+============================================================
+import math
+import random
+
+
+def calc_connectivity_matrix(snapshot):
+    n = len(snapshot.modules)
+    c = [[0.0] * n for _ in range(n)]
+    nets = {}
+    for i, mod in enumerate(snapshot.modules):
+        for pad_net in mod['pad_nets'].values():
+            if pad_net.net_code <= 0 or not pad_net.net_name:
+                continue
+            nets.setdefault(pad_net.net_code, set()).add(i)
+    for mod_set in nets.values():
+        m_list = list(mod_set)
+        for idx1 in range(len(m_list)):
+            for idx2 in range(idx1 + 1, len(m_list)):
+                u, v = m_list[idx1], m_list[idx2]
+                c[u][v] += 1.0
+                c[v][u] += 1.0
+    return c
+
+
+def pick_directive_element(bboxes, c, mode):
+    if mode == "none":
+        return None
+    n = len(bboxes)
+    if n == 0:
+        return None
+    if mode == "largest":
+        return max(
+            range(n),
+            key=lambda i: ((bboxes[i][2] - bboxes[i][0]) * (bboxes[i][3] - bboxes[i][1]), -i),
+        )
+    return max(range(n), key=lambda i: (sum(c[i]), -i))
+
+
+def distance(p1, p2, metric_name):
+    dx = abs(p1[0] - p2[0])
+    dy = abs(p1[1] - p2[1])
+    if metric_name == "manhattan":
+        return dx + dy
+    return math.hypot(dx, dy)
+
+
+def _node_distances(nodes, metric_name):
+    m = len(nodes)
+    d = [[0.0] * m for _ in range(m)]
+    for i in range(m):
+        for j in range(i + 1, m):
+            dist = distance(nodes[i], nodes[j], metric_name)
+            d[i][j] = dist
+            d[j][i] = dist
+    return d
+
+
+def solve_saprykin(c, nodes, assignment, fixed_elem, metric_name, max_iters=200):
+    n = len(c)
+    m = len(nodes)
+    d_mat = _node_distances(nodes, metric_name)
+
+    r = [[0.0] * m for _ in range(m)]
+    for u in range(m):
+        eu = assignment[u]
+        if eu < 0:
+            continue
+        for v in range(u + 1, m):
+            ev = assignment[v]
+            if ev < 0:
+                continue
+            val = c[eu][ev]
+            r[u][v] = val
+            r[v][u] = val
+
+    p = [[0.0] * m for _ in range(m)]
+    for i in range(m):
+        for j in range(m):
+            s = 0.0
+            for k in range(m):
+                s += r[i][k] * d_mat[j][k]
+            p[i][j] = s
+
+    for _ in range(max_iters):
+        candidates = []
+        for i in range(m):
+            if fixed_elem is not None and assignment[i] == fixed_elem:
+                continue
+            for j in range(i + 1, m):
+                if fixed_elem is not None and assignment[j] == fixed_elem:
+                    continue
+                if assignment[i] < 0 and assignment[j] < 0:
+                    continue
+                q_ij = (p[i][j] - p[i][i]) + (p[j][i] - p[j][j])
+                dl_ij = 2.0 * r[i][j] * d_mat[i][j] + q_ij
+                if dl_ij < -1e-9:
+                    candidates.append((dl_ij, i, j))
+
+        if not candidates:
+            break
+
+        candidates.sort(key=lambda x: (x[0], x[1], x[2]))
+
+        selected = []
+        used_nodes = set()
+        for dl_ij, i, j in candidates:
+            if i in used_nodes or j in used_nodes:
+                continue
+            if any(r[i][u] > 0 or r[i][v] > 0 or r[j][u] > 0 or r[j][v] > 0 for u, v in selected):
+                continue
+            selected.append((i, j))
+            used_nodes.add(i)
+            used_nodes.add(j)
+
+        if not selected:
+            break
+
+        for i, j in selected:
+            assignment[i], assignment[j] = assignment[j], assignment[i]
+            for k in range(m):
+                r[i][k], r[j][k] = r[j][k], r[i][k]
+            for k in range(m):
+                r[k][i], r[k][j] = r[k][j], r[k][i]
+
+        for i in range(m):
+            for j in range(m):
+                s = 0.0
+                for k in range(m):
+                    s += r[i][k] * d_mat[j][k]
+                p[i][j] = s
+
+    return assignment
+
+
+def solve_selyutin(c, nodes, assignment, fixed_elem, metric_name, max_iters=200):
+    n = len(c)
+    m = len(nodes)
+    d_mat = _node_distances(nodes, metric_name)
+
+    elem_to_node = [-1] * n
+    for u, e in enumerate(assignment):
+        if e >= 0:
+            elem_to_node[e] = u
+
+    order = sorted(range(n), key=lambda e: (-sum(c[e]), e))
+
+    for _ in range(max_iters):
+        improved_any = False
+        for idx_k, ei in enumerate(order):
+            if fixed_elem is not None and ei == fixed_elem:
+                continue
+            h = elem_to_node[ei]
+
+            best_df = 0.0
+            best_target_node = -1
+
+            for idx_m in range(idx_k + 1, n):
+                ej = order[idx_m]
+                if fixed_elem is not None and ej == fixed_elem:
+                    continue
+                k = elem_to_node[ej]
+
+                df = 0.0
+                for s in range(n):
+                    if s == ei or s == ej:
+                        continue
+                    ps = elem_to_node[s]
+                    df += (c[ei][s] - c[ej][s]) * (d_mat[h][ps] - d_mat[k][ps])
+
+                if df > best_df + 1e-9:
+                    best_df = df
+                    best_target_node = k
+
+            for u in range(m):
+                if assignment[u] != -1:
+                    continue
+                df = 0.0
+                for s in range(n):
+                    if s == ei:
+                        continue
+                    ps = elem_to_node[s]
+                    df += c[ei][s] * (d_mat[h][ps] - d_mat[u][ps])
+                if df > best_df + 1e-9:
+                    best_df = df
+                    best_target_node = u
+
+            if best_target_node != -1:
+                k = best_target_node
+                ej = assignment[k]
+                assignment[h] = ej
+                assignment[k] = ei
+                elem_to_node[ei] = k
+                if ej >= 0:
+                    elem_to_node[ej] = h
+                improved_any = True
+
+        if not improved_any:
+            break
+
+    return assignment.
+.
+============================================================
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\core\ratsnest_mst.py
 ============================================================
 import math
 
@@ -6725,7 +7503,7 @@ def build_mst_edges(points):
     return edges.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\core\sequential_algorithm.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\core\sequential_algorithm.py
 ============================================================
 class JMethod:
     M_331 = "3.3.1"
@@ -6900,12 +7678,12 @@ def pick_directive_element(bboxes, c, mode, directive_position):
     return scores[0][0].
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\core\__init__.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\core\__init__.py
 ============================================================
 .
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\graphics\board_line_item.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\graphics\board_line_item.py
 ============================================================
 from PySide6.QtWidgets import QGraphicsItem, QStyle
 from PySide6.QtGui import QPen, QColor, QPainterPath, QPainterPathStroker, QBrush
@@ -7240,7 +8018,7 @@ class BoardTextGraphicsItem(QGraphicsItem):
         return super().itemChange(change, value).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\graphics\module_item.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\graphics\module_item.py
 ============================================================
 from PySide6.QtWidgets import QGraphicsItem, QStyle
 from PySide6.QtGui import QPen, QBrush, QColor, QPainterPath, QTransform
@@ -7464,7 +8242,7 @@ class BoardModuleGraphicsItem(QGraphicsItem):
         return super().itemChange(change, value).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\graphics\ratsnest_item.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\graphics\ratsnest_item.py
 ============================================================
 from PySide6.QtWidgets import QGraphicsItem, QStyle
 from PySide6.QtGui import QPen, QColor, QPainterPath, QPainterPathStroker
@@ -7523,7 +8301,7 @@ class RatsnestGraphicsItem(QGraphicsItem):
         painter.drawLine(QLineF(self.p1, self.p2)).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\board_canvas.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\board_canvas.py
 ============================================================
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem
 from PySide6.QtCore import Qt, QPointF, Signal, QTimer
@@ -7890,7 +8668,7 @@ class BoardCanvas(QGraphicsView):
             self.verticalScrollBar().setValue(self.verticalScrollBar().value() + iy).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\board_window.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\board_window.py
 ============================================================
 from PySide6.QtWidgets import QMainWindow
 from PySide6.QtCore import QPointF
@@ -7970,7 +8748,7 @@ class BoardEditorWindow(
         self._restore_last_board().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\commands\autoplace.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\commands\autoplace.py
 ============================================================
 from PySide6.QtWidgets import QMessageBox
 from pbe_editor.ui.dialogs.autoplace_dialog import AutoPlaceDialog
@@ -7996,15 +8774,15 @@ class AutoplaceCommandsMixin:
                     item.update()
 
     def _restore_initial_positions(self, initial_positions):
-        for i, (x, y) in initial_positions.items():
+        for i, (x, y, angle) in initial_positions.items():
             module = self.w.board.modules[i]
             module.x = x
             module.y = y
-            module.angle = 0.0
+            module.angle = angle
             item = self.w.manager.items.get(module.uid)
             if item:
                 item.setPos(module.x, module.y)
-                item.setRotation(0.0)
+                item.setRotation(angle)
                 item.prepareGeometryChange()
                 item.update()
         self.w.manager.rebuild_ratsnest()
@@ -8020,7 +8798,7 @@ class AutoplaceCommandsMixin:
                                 "На плате не нарисован контур (Edge.Cuts). Авторазмещение невозможно.")
             return
 
-        initial_positions = {i: (m.x, m.y) for i, m in enumerate(self.w.board.modules)}
+        initial_positions = {i: (m.x, m.y, m.angle) for i, m in enumerate(self.w.board.modules)}
 
         dlg = AutoPlaceDialog(self.w, self._last_params, self._last_threads)
 
@@ -8078,7 +8856,7 @@ class AutoplaceCommandsMixin:
         self.w.show_log("Размещение сброшено: все элементы в (0, 0)").
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\commands\drawing.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\commands\drawing.py
 ============================================================
 import copy
 from PySide6.QtCore import QPointF
@@ -8359,7 +9137,7 @@ class DrawingCommandsMixin:
         self.w.show_log(f"Связь {net_name}: {m1.reference}.{p1} ↔ {module.reference}.{pad_number}").
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\commands\editing.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\commands\editing.py
 ============================================================
 import copy
 
@@ -8553,7 +9331,7 @@ class EditingCommandsMixin:
         self.w.show_log(f"Вставлено: {len(self._clipboard)} элементов").
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\commands\selection.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\commands\selection.py
 ============================================================
 from pbe_editor.graphics.module_item import BoardModuleGraphicsItem
 from pbe_editor.graphics.board_line_item import (
@@ -8604,7 +9382,7 @@ class SelectionCommandsMixin:
                 self.w.canvas.centerOn(item).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\commands\_shared.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\commands\_shared.py
 ============================================================
 from pbe_editor.core.board_models import (
     BoardModule, BoardLine, BoardCircle, BoardArc, BoardText,
@@ -8667,7 +9445,7 @@ def auto_reference_for(board, fp_name):
     return board.auto_reference(prefix_from_footprint_name(fp_name)).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\commands\__init__.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\commands\__init__.py
 ============================================================
 from pbe_editor.ui.commands.drawing import DrawingCommandsMixin
 from pbe_editor.ui.commands.editing import EditingCommandsMixin
@@ -8684,7 +9462,7 @@ class CommandHandler(DrawingCommandsMixin, EditingCommandsMixin,
         AutoplaceCommandsMixin.__init__(self).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\dialogs\autoplace_dialog.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\dialogs\autoplace_dialog.py
 ============================================================
 from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
                                QSpinBox, QDoubleSpinBox, QPushButton, QFormLayout,
@@ -8693,7 +9471,7 @@ from constants import Styles
 from common.ui.dialogs.headerless_dialog import HeaderlessDialog
 from common.ui.qss import inline_combo_qss
 from pbe_editor.core.autoplacer import (
-    PlacementParams, Metric, DirectiveMode, DirectivePosition, JMethod
+    PlacementParams, Metric, DirectiveMode, DirectivePosition, JMethod, OptimizationMode
 )
 
 LAYER_LIST_QSS = (
@@ -8791,8 +9569,8 @@ class AutoPlaceDialog(HeaderlessDialog):
 
         self.cb_pos = _styled_combo(
             [("По центру", DirectivePosition.CENTER),
-             ("Левый верхний", DirectivePosition.BOTTOM_LEFT),
-             ("Левый нижний", DirectivePosition.TOP_LEFT)]
+             ("Левый верхний", DirectivePosition.TOP_LEFT),
+             ("Левый нижний", DirectivePosition.BOTTOM_LEFT)]
         )
         form_algo.addRow("Позиция фиксации:", self.cb_pos)
 
@@ -8801,6 +9579,15 @@ class AutoPlaceDialog(HeaderlessDialog):
         self.sb_threads.setValue(1)
         self.sb_threads.setStyleSheet(Styles.INPUT_BG)
         form_algo.addRow("Использовать потоков:", self.sb_threads)
+
+        self.cb_opt_mode = _styled_combo(
+            [("Без оптимизации", OptimizationMode.NONE),
+             ("d = C", OptimizationMode.D_C),
+             ("d = C/2", OptimizationMode.D_C2),
+             ("d = C/4", OptimizationMode.D_C4)]
+        )
+        self.cb_opt_mode.setCurrentIndex(2)
+        form_algo.addRow("Локальная оптимизация:", self.cb_opt_mode)
 
         right_col.addWidget(group_algo)
 
@@ -8845,6 +9632,10 @@ class AutoPlaceDialog(HeaderlessDialog):
         if idx >= 0:
             self.cb_pos.setCurrentIndex(idx)
 
+        idx = self.cb_opt_mode.findData(p.optimization_mode)
+        if idx >= 0:
+            self.cb_opt_mode.setCurrentIndex(idx)
+
     def get_params(self) -> PlacementParams:
         return PlacementParams(
             A=self.sb_A.value(),
@@ -8853,21 +9644,22 @@ class AutoPlaceDialog(HeaderlessDialog):
             metric=self.cb_metric.currentData(),
             j_method=self.cb_j.currentData(),
             directive_mode=self.cb_mode.currentData(),
-            directive_position=self.cb_pos.currentData()
+            directive_position=self.cb_pos.currentData(),
+            optimization_mode=self.cb_opt_mode.currentData(),
         )
 
     def get_threads(self) -> int:
         return self.sb_threads.value().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\dialogs\autoplace_result_dialog.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\dialogs\autoplace_result_dialog.py
 ============================================================
 from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QTableWidget,
                                QTableWidgetItem, QPushButton, QHeaderView, QWidget)
 from constants import Styles
 from common.ui.dialogs.headerless_dialog import HeaderlessDialog
 from common.ui.qss import TABLE_QSS
-from pbe_editor.core.autoplacer import JMethod
+from pbe_editor.core.autoplacer import JMethod, OptimizationMode
 
 
 J_METHOD_LABELS = {
@@ -8875,6 +9667,13 @@ J_METHOD_LABELS = {
     JMethod.M_333: "3.3.3 (Сумма связей)",
     JMethod.M_335: "3.3.5 (Разность связей)",
     JMethod.M_336: "3.3.6 (Отн. связность)",
+}
+
+OPT_MODE_LABELS = {
+    OptimizationMode.NONE: "Без оптимизации",
+    OptimizationMode.D_C: "d = C",
+    OptimizationMode.D_C2: "d = C/2",
+    OptimizationMode.D_C4: "d = C/4",
 }
 
 
@@ -8885,7 +9684,8 @@ class AutoPlaceResultDialog(HeaderlessDialog):
     def __init__(self, result, params, threads,
                  initial_wire_euc, initial_wire_man, parent=None):
         super().__init__(parent, title="Результаты авторазмещения")
-        self.setMinimumSize(700, 540)
+        has_opt = params.optimization_mode != OptimizationMode.NONE
+        self.setMinimumSize(720 if has_opt else 620, 580)
 
         self._result = result
         self._params = params
@@ -8908,6 +9708,14 @@ class AutoPlaceResultDialog(HeaderlessDialog):
             "bottom_left": "Левый нижний",
         }.get(params.directive_position.value, "-")
         method_text = J_METHOD_LABELS.get(params.j_method, params.j_method.value)
+        opt_text = OPT_MODE_LABELS.get(params.optimization_mode, params.optimization_mode.value)
+
+        board_lbl = QLabel(
+            "Ширина платы: <b>{0:.2f} мм</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+            "Длина платы: <b>{1:.2f} мм</b>".format(result.board_width, result.board_length)
+        )
+        board_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(board_lbl)
 
         scheme_lbl = QLabel(
             "Корпусов: <b>{0}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
@@ -8928,7 +9736,10 @@ class AutoPlaceResultDialog(HeaderlessDialog):
         metric_lbl.setStyleSheet("color: #a9b7c6;")
         layout.addWidget(metric_lbl)
 
-        method_lbl = QLabel("Способ расчета оценки: <b>{0}</b>".format(method_text))
+        method_lbl = QLabel(
+            "Способ расчета оценки: <b>{0}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+            "Локальная оптимизация: <b>{1}</b>".format(method_text, opt_text)
+        )
         method_lbl.setStyleSheet("color: #a9b7c6;")
         layout.addWidget(method_lbl)
 
@@ -8944,45 +9755,69 @@ class AutoPlaceResultDialog(HeaderlessDialog):
         spacer_top.setFixedHeight(8)
         layout.addWidget(spacer_top)
 
-        self.table = QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(
-            ["Показатель", "До размещения", "После размещения", "Сравнение"]
-        )
+        if has_opt:
+            headers = ["Показатель", "До размещения", "После размещения", "После оптимизации"]
+        else:
+            headers = ["Показатель", "До размещения", "После размещения"]
+
+        self.table = QTableWidget(0, len(headers))
+        self.table.setHorizontalHeaderLabels(headers)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
-        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
+        for col in range(1, len(headers)):
+            self.table.horizontalHeader().setSectionResizeMode(col, QHeaderView.ResizeMode.Stretch)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.verticalHeader().setVisible(False)
         self.table.setStyleSheet(TABLE_QSS)
         layout.addWidget(self.table)
 
-        rows = [
-            ("Длина по Евклиду, мм",
-             f"{initial_wire_euc:.2f}",
-             f"{result.wire_euclidean:.2f}",
-             self._delta(initial_wire_euc, result.wire_euclidean)),
-            ("Длина по Манхэттену, мм",
-             f"{initial_wire_man:.2f}",
-             f"{result.wire_manhattan:.2f}",
-             self._delta(initial_wire_man, result.wire_manhattan)),
-        ]
+        if has_opt:
+            rows = [
+                ("Длина по Евклиду, мм",
+                 f"{initial_wire_euc:.2f}",
+                 self._pct_cell(initial_wire_euc, result.seq_wire_euclidean),
+                 self._pct_cell(result.seq_wire_euclidean, result.wire_euclidean)),
+                ("Длина по Манхэттену, мм",
+                 f"{initial_wire_man:.2f}",
+                 self._pct_cell(initial_wire_man, result.seq_wire_manhattan),
+                 self._pct_cell(result.seq_wire_manhattan, result.wire_manhattan)),
+            ]
+        else:
+            rows = [
+                ("Длина по Евклиду, мм",
+                 f"{initial_wire_euc:.2f}",
+                 self._pct_cell(initial_wire_euc, result.wire_euclidean)),
+                ("Длина по Манхэттену, мм",
+                 f"{initial_wire_man:.2f}",
+                 self._pct_cell(initial_wire_man, result.wire_manhattan)),
+            ]
 
         self.table.setRowCount(len(rows))
-        for i, (k, before, after, cmp) in enumerate(rows):
-            self.table.setItem(i, 0, QTableWidgetItem(k))
-            self.table.setItem(i, 1, QTableWidgetItem(before))
-            self.table.setItem(i, 2, QTableWidgetItem(after))
-            self.table.setItem(i, 3, QTableWidgetItem(cmp))
+        for i, row in enumerate(rows):
+            for j, val in enumerate(row):
+                self.table.setItem(i, j, QTableWidgetItem(val))
 
         spacer_bottom = QWidget()
         spacer_bottom.setFixedHeight(6)
         layout.addWidget(spacer_bottom)
 
-        time_lbl = QLabel("Время размещения: <b>{0:.1f} мс</b>".format(result.time_seconds * 1000))
-        time_lbl.setStyleSheet("color: #a9b7c6;")
-        layout.addWidget(time_lbl)
+        seq_time_lbl = QLabel(
+            "Время последовательного размещения: <b>{0:.1f} мс</b>".format(result.seq_time_seconds * 1000)
+        )
+        seq_time_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(seq_time_lbl)
+
+        opt_time_lbl = QLabel(
+            "Время локальной оптимизации: <b>{0:.1f} мс</b>".format(result.opt_time_seconds * 1000)
+        )
+        opt_time_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(opt_time_lbl)
+
+        total_time_lbl = QLabel(
+            "Общее время: <b>{0:.1f} мс</b>".format(result.time_seconds * 1000)
+        )
+        total_time_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(total_time_lbl)
 
         threads_lbl = QLabel("Использовано потоков: <b>{0}</b>".format(result.threads_used))
         threads_lbl.setStyleSheet("color: #a9b7c6;")
@@ -9003,12 +9838,11 @@ class AutoPlaceResultDialog(HeaderlessDialog):
         btns.addWidget(self.btn_ok)
         layout.addLayout(btns)
 
-    def _delta(self, before, after):
+    def _pct_cell(self, before, after):
         if before <= 0:
-            return "-"
-        diff = after - before
-        pct = diff / before * 100
-        return f"{diff:+.2f} ({pct:+.1f} %)"
+            return f"{after:.2f}"
+        pct = (after - before) / before * 100
+        return f"{after:.2f} ({pct:+.1f} %)"
 
     def _on_repeat(self):
         self._code = self.RESULT_REPEAT
@@ -9018,7 +9852,7 @@ class AutoPlaceResultDialog(HeaderlessDialog):
         return self._code.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\dialogs\nets_dialog.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\dialogs\nets_dialog.py
 ============================================================
 from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QTableWidget,
                                QTableWidgetItem, QPushButton, QHeaderView, QLabel)
@@ -9084,7 +9918,403 @@ class NetsDialog(HeaderlessDialog):
             self.table.setItem(row, 2, QTableWidgetItem(pins)).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\panels\board_library_panel.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\dialogs\pairwise_dialog.py
+============================================================
+from PySide6.QtWidgets import (
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QComboBox,
+    QDoubleSpinBox,
+    QPushButton,
+    QFormLayout,
+    QGroupBox,
+    QListView,
+)
+from constants import Styles
+from common.ui.dialogs.headerless_dialog import HeaderlessDialog
+from common.ui.qss import inline_combo_qss
+from pbe_editor.core.autoplacer import Metric, OptimizationMode
+from pbe_editor.core.pairwise_placer import (
+    PairwiseParams,
+    PairwiseAlgoVersion,
+    PairwiseDirectiveMode,
+)
+
+LAYER_LIST_QSS = (
+    "QListView { background-color: #2b2b2b; color: #a9b7c6;"
+    " border: 1px solid #555555; outline: 0; }"
+    "QListView::item { padding: 4px 8px; }"
+    "QListView::item:hover { background-color: #3c3f41; }"
+    "QListView::item:selected { background-color: #365880; color: #ffffff; }"
+)
+
+
+def _styled_combo(items):
+    combo = QComboBox()
+    for label, data in items:
+        combo.addItem(label, data)
+    view = QListView()
+    view.setStyleSheet(LAYER_LIST_QSS)
+    combo.setView(view)
+    combo.setStyleSheet(inline_combo_qss())
+    combo.setMinimumHeight(24)
+    return combo
+
+
+class PairwiseDialog(HeaderlessDialog):
+    def __init__(self, parent=None, initial_params: PairwiseParams = None):
+        super().__init__(parent, title="Авторазмещение (парные перестановки)")
+        self.setMinimumWidth(560)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(10)
+
+        header = QLabel("Авторазмещение методом парных перестановок")
+        header.setStyleSheet(Styles.OBJECT_TITLE)
+        layout.addWidget(header)
+
+        columns = QHBoxLayout()
+        columns.setSpacing(16)
+
+        left_col = QVBoxLayout()
+        right_col = QVBoxLayout()
+
+        group_geom = QGroupBox("Геометрия")
+        group_geom.setStyleSheet(Styles.MAIN_WINDOW)
+        form_geom = QFormLayout(group_geom)
+        form_geom.setSpacing(6)
+
+        self.sb_A = QDoubleSpinBox()
+        self.sb_A.setRange(0.1, 100.0)
+        self.sb_A.setValue(2.0)
+        self.sb_A.setSuffix(" мм")
+        self.sb_A.setStyleSheet(Styles.INPUT_BG)
+        form_geom.addRow("Отступ A:", self.sb_A)
+
+        self.sb_B = QDoubleSpinBox()
+        self.sb_B.setRange(0.1, 100.0)
+        self.sb_B.setValue(2.0)
+        self.sb_B.setSuffix(" мм")
+        self.sb_B.setStyleSheet(Styles.INPUT_BG)
+        form_geom.addRow("Зазор B:", self.sb_B)
+
+        self.sb_C = QDoubleSpinBox()
+        self.sb_C.setRange(0.1, 10.0)
+        self.sb_C.setValue(1.25)
+        self.sb_C.setSuffix(" мм")
+        self.sb_C.setStyleSheet(Styles.INPUT_BG)
+        form_geom.addRow("Шаг сетки C:", self.sb_C)
+
+        left_col.addWidget(group_geom)
+
+        group_algo = QGroupBox("Алгоритм")
+        group_algo.setStyleSheet(Styles.MAIN_WINDOW)
+        form_algo = QFormLayout(group_algo)
+        form_algo.setSpacing(6)
+
+        self.cb_version = _styled_combo(
+            [
+                ("Сапрыкин (матричный)", PairwiseAlgoVersion.SAPRYKIN),
+                ("Селютин (упорядоченный)", PairwiseAlgoVersion.SELYUTIN),
+            ]
+        )
+        form_algo.addRow("Реализация алгоритма:", self.cb_version)
+
+        self.cb_metric = _styled_combo(
+            [
+                ("Обычная (Евклидова)", Metric.EUCLIDEAN),
+                ("Ортогональная", Metric.MANHATTAN),
+            ]
+        )
+        form_algo.addRow("Используемая метрика:", self.cb_metric)
+
+        self.cb_directive = _styled_combo(
+            [
+                ("Отсутствует", PairwiseDirectiveMode.NONE),
+                ("Самый крупный", PairwiseDirectiveMode.LARGEST),
+                ("Самый связанный", PairwiseDirectiveMode.MOST_CONNECTED),
+            ]
+        )
+        form_algo.addRow("Директивный элемент:", self.cb_directive)
+
+        self.cb_opt_mode = _styled_combo(
+            [
+                ("Без оптимизации", OptimizationMode.NONE),
+                ("d = C", OptimizationMode.D_C),
+                ("d = C/2", OptimizationMode.D_C2),
+                ("d = C/4", OptimizationMode.D_C4),
+            ]
+        )
+        self.cb_opt_mode.setCurrentIndex(2)
+        form_algo.addRow("Локальная оптимизация:", self.cb_opt_mode)
+
+        right_col.addWidget(group_algo)
+
+        columns.addLayout(left_col, 1)
+        columns.addLayout(right_col, 1)
+        layout.addLayout(columns)
+
+        btns = QHBoxLayout()
+        btns.addStretch()
+        self.btn_ok = QPushButton("Запустить")
+        self.btn_ok.setStyleSheet(Styles.BUTTON_OK)
+        self.btn_ok.clicked.connect(self.accept)
+        self.btn_cancel = QPushButton("Отмена")
+        self.btn_cancel.setStyleSheet(Styles.BUTTON_CANCEL)
+        self.btn_cancel.clicked.connect(self.reject)
+        btns.addWidget(self.btn_ok)
+        btns.addWidget(self.btn_cancel)
+        layout.addLayout(btns)
+
+        if initial_params:
+            self.set_params(initial_params)
+
+    def set_params(self, p: PairwiseParams):
+        self.sb_A.setValue(p.A)
+        self.sb_B.setValue(p.B)
+        self.sb_C.setValue(p.C)
+
+        idx = self.cb_version.findData(p.algo_version)
+        if idx >= 0:
+            self.cb_version.setCurrentIndex(idx)
+
+        idx = self.cb_metric.findData(p.metric)
+        if idx >= 0:
+            self.cb_metric.setCurrentIndex(idx)
+
+        idx = self.cb_directive.findData(p.directive_mode)
+        if idx >= 0:
+            self.cb_directive.setCurrentIndex(idx)
+
+        idx = self.cb_opt_mode.findData(p.optimization_mode)
+        if idx >= 0:
+            self.cb_opt_mode.setCurrentIndex(idx)
+
+    def get_params(self) -> PairwiseParams:
+        return PairwiseParams(
+            A=self.sb_A.value(),
+            B=self.sb_B.value(),
+            C=self.sb_C.value(),
+            algo_version=self.cb_version.currentData(),
+            metric=self.cb_metric.currentData(),
+            directive_mode=self.cb_directive.currentData(),
+            optimization_mode=self.cb_opt_mode.currentData(),
+        ).
+.
+============================================================
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\dialogs\pairwise_result_dialog.py
+============================================================
+from PySide6.QtWidgets import (
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QTableWidget,
+    QTableWidgetItem,
+    QPushButton,
+    QHeaderView,
+    QWidget,
+)
+from constants import Styles
+from common.ui.dialogs.headerless_dialog import HeaderlessDialog
+from common.ui.qss import TABLE_QSS
+from pbe_editor.core.autoplacer import OptimizationMode
+from pbe_editor.core.pairwise_placer import PairwiseAlgoVersion, PairwiseDirectiveMode
+
+
+VERSION_LABELS = {
+    PairwiseAlgoVersion.SAPRYKIN: "Сапрыкин (матричный)",
+    PairwiseAlgoVersion.SELYUTIN: "Селютин (упорядоченный)",
+}
+
+DIRECTIVE_LABELS = {
+    PairwiseDirectiveMode.NONE: "Отсутствует",
+    PairwiseDirectiveMode.LARGEST: "Самый крупный",
+    PairwiseDirectiveMode.MOST_CONNECTED: "Самый связанный",
+}
+
+OPT_MODE_LABELS = {
+    OptimizationMode.NONE: "Без оптимизации",
+    OptimizationMode.D_C: "d = C",
+    OptimizationMode.D_C2: "d = C/2",
+    OptimizationMode.D_C4: "d = C/4",
+}
+
+
+class PairwiseResultDialog(HeaderlessDialog):
+    RESULT_OK = 1
+    RESULT_REPEAT = 2
+
+    def __init__(self, result, params, initial_wire_euc, initial_wire_man, parent=None):
+        super().__init__(parent, title="Результаты парных перестановок")
+        has_opt = params.optimization_mode != OptimizationMode.NONE
+        self.setMinimumSize(720 if has_opt else 620, 580)
+
+        self._result = result
+        self._params = params
+        self._code = self.RESULT_OK
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(6)
+
+        header = QLabel("Результаты авторазмещения (парные перестановки)")
+        header.setStyleSheet(Styles.OBJECT_TITLE)
+        layout.addWidget(header)
+
+        version_text = VERSION_LABELS.get(params.algo_version, params.algo_version.value)
+        metric_text = "Обычная (Евклидова)" if params.metric.value == "euclidean" else "Ортогональная"
+        dir_text = DIRECTIVE_LABELS.get(params.directive_mode, params.directive_mode.value)
+        opt_text = OPT_MODE_LABELS.get(params.optimization_mode, params.optimization_mode.value)
+
+        board_lbl = QLabel(
+            "Ширина платы: <b>{0:.2f} мм</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+            "Длина платы: <b>{1:.2f} мм</b>".format(result.board_width, result.board_length)
+        )
+        board_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(board_lbl)
+
+        scheme_lbl = QLabel(
+            "Корпусов: <b>{0}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+            "Связей: <b>{1}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+            "Сдвинуто с границы: <b>{2}</b>".format(
+                result.num_footprints, result.num_connections, result.shifted_count
+            )
+        )
+        scheme_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(scheme_lbl)
+
+        geom_lbl = QLabel(
+            "Отступ A: <b>{0:.2f} мм</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+            "Зазор B: <b>{1:.2f} мм</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+            "Шаг сетки C: <b>{2:.2f} мм</b>".format(params.A, params.B, params.C)
+        )
+        geom_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(geom_lbl)
+
+        algo_lbl = QLabel(
+            "Реализация: <b>{0}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+            "Метрика: <b>{1}</b>".format(version_text, metric_text)
+        )
+        algo_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(algo_lbl)
+
+        fix_lbl = QLabel(
+            "Директивный элемент: <b>{0}</b> ({1})&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+            "Локальная оптимизация: <b>{2}</b>".format(
+                dir_text, result.directive_ref or "-", opt_text
+            )
+        )
+        fix_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(fix_lbl)
+
+        spacer_top = QWidget()
+        spacer_top.setFixedHeight(8)
+        layout.addWidget(spacer_top)
+
+        if has_opt:
+            headers = ["Показатель", "До размещения", "После перестановок", "После оптимизации"]
+        else:
+            headers = ["Показатель", "До размещения", "После перестановок"]
+
+        self.table = QTableWidget(0, len(headers))
+        self.table.setHorizontalHeaderLabels(headers)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        for col in range(1, len(headers)):
+            self.table.horizontalHeader().setSectionResizeMode(col, QHeaderView.ResizeMode.Stretch)
+        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setStyleSheet(TABLE_QSS)
+        layout.addWidget(self.table)
+
+        if has_opt:
+            rows = [
+                (
+                    "Длина по Евклиду, мм",
+                    f"{initial_wire_euc:.2f}",
+                    self._pct_cell(initial_wire_euc, result.pair_wire_euclidean),
+                    self._pct_cell(result.pair_wire_euclidean, result.wire_euclidean),
+                ),
+                (
+                    "Длина по Манхэттену, мм",
+                    f"{initial_wire_man:.2f}",
+                    self._pct_cell(initial_wire_man, result.pair_wire_manhattan),
+                    self._pct_cell(result.pair_wire_manhattan, result.wire_manhattan),
+                ),
+            ]
+        else:
+            rows = [
+                (
+                    "Длина по Евклиду, мм",
+                    f"{initial_wire_euc:.2f}",
+                    self._pct_cell(initial_wire_euc, result.wire_euclidean),
+                ),
+                (
+                    "Длина по Манхэттену, мм",
+                    f"{initial_wire_man:.2f}",
+                    self._pct_cell(initial_wire_man, result.wire_manhattan),
+                ),
+            ]
+
+        self.table.setRowCount(len(rows))
+        for i, row in enumerate(rows):
+            for j, val in enumerate(row):
+                self.table.setItem(i, j, QTableWidgetItem(val))
+
+        spacer_bottom = QWidget()
+        spacer_bottom.setFixedHeight(6)
+        layout.addWidget(spacer_bottom)
+
+        pair_time_lbl = QLabel(
+            "Время парных перестановок: <b>{0:.1f} мс</b>".format(result.pair_time_seconds * 1000)
+        )
+        pair_time_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(pair_time_lbl)
+
+        opt_time_lbl = QLabel(
+            "Время локальной оптимизации: <b>{0:.1f} мс</b>".format(result.opt_time_seconds * 1000)
+        )
+        opt_time_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(opt_time_lbl)
+
+        total_time_lbl = QLabel(
+            "Общее время: <b>{0:.1f} мс</b>".format(result.time_seconds * 1000)
+        )
+        total_time_lbl.setStyleSheet("color: #a9b7c6;")
+        layout.addWidget(total_time_lbl)
+
+        btns = QHBoxLayout()
+        btns.addStretch()
+
+        self.btn_repeat = QPushButton("Повторить")
+        self.btn_repeat.setStyleSheet(Styles.BUTTON_CANCEL)
+        self.btn_repeat.clicked.connect(self._on_repeat)
+
+        self.btn_ok = QPushButton("OK")
+        self.btn_ok.setStyleSheet(Styles.BUTTON_OK)
+        self.btn_ok.clicked.connect(self.accept)
+
+        btns.addWidget(self.btn_repeat)
+        btns.addWidget(self.btn_ok)
+        layout.addLayout(btns)
+
+    def _pct_cell(self, before, after):
+        if before <= 0:
+            return f"{after:.2f}"
+        pct = (after - before) / before * 100
+        return f"{after:.2f} ({pct:+.1f} %)"
+
+    def _on_repeat(self):
+        self._code = self.RESULT_REPEAT
+        self.accept()
+
+    def get_code(self):
+        return self._code.
+.
+============================================================
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\panels\board_library_panel.py
 ============================================================
 from pathlib import Path
 
@@ -9222,7 +10452,7 @@ class BoardLibraryPanel(QWidget):
                 return.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\panels\board_properties_panel.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\panels\board_properties_panel.py
 ============================================================
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QHBoxLayout, QLabel,
                                QLineEdit, QComboBox, QListView,
@@ -9753,7 +10983,7 @@ class BoardPropertiesPanel(QWidget):
             obj.prepareGeometryChange(); obj.update().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\panels\board_right_panel.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\panels\board_right_panel.py
 ============================================================
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 
@@ -9781,7 +11011,7 @@ class BoardRightPanel(QWidget):
         self.properties_panel.apply_theme().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\panels\drawing_tool_bar.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\panels\drawing_tool_bar.py
 ============================================================
 from pathlib import Path
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton
@@ -9873,7 +11103,7 @@ class BoardDrawingToolBar(QWidget):
         self._update_styles().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\window\board_files.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\window\board_files.py
 ============================================================
 from pathlib import Path
 
@@ -10001,7 +11231,7 @@ class BoardFilesService:
             QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить: {e}").
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\window\board_state.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\window\board_state.py
 ============================================================
 class BoardStateService:
     def next_module_uid(self):
@@ -10030,7 +11260,7 @@ class BoardStateService:
         return max(t.uid for t in self.board.texts) + 1.
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\window\grid.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\window\grid.py
 ============================================================
 from constants import GRID_SERIES, GRID_SERIES_LABEL
 
@@ -10092,7 +11322,7 @@ class GridService:
         self.zoom_label.setText(f" {int(zoom * 100)}% ").
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\window\history.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\window\history.py
 ============================================================
 import copy
 
@@ -10175,7 +11405,7 @@ class HistoryService:
         self.aux_bar.set_redo_enabled(bool(self._redo_stack)).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\window\libraries.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\window\libraries.py
 ============================================================
 from pathlib import Path
 
@@ -10239,7 +11469,7 @@ class LibrariesService:
         self.show_log(f"Библиотек: {len(self.library_paths)}").
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\window\module_list.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\window\module_list.py
 ============================================================
 class ModuleListService:
     def refresh_module_list(self):
@@ -10251,7 +11481,7 @@ class ModuleListService:
             self.module_list.addItem(item).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\window\session.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\window\session.py
 ============================================================
 from pathlib import Path
 
@@ -10304,7 +11534,7 @@ class SessionService:
         super().closeEvent(event).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\window\shortcuts.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\window\shortcuts.py
 ============================================================
 from PySide6.QtCore import QEvent, Qt
 
@@ -10377,14 +11607,14 @@ class KeyboardService:
         return super().eventFilter(obj, event).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\window\status.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\window\status.py
 ============================================================
 class StatusService:
     def show_log(self, text):
         self.log_label.setText(text).
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\window\tools.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\window\tools.py
 ============================================================
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsView
 
@@ -10454,7 +11684,7 @@ class ToolsService:
         self.canvas.scene.clearSelection().
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\window\ui_setup.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\window\ui_setup.py
 ============================================================
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QListWidget, QComboBox, QToolBar, QStatusBar,
@@ -10749,7 +11979,7 @@ class UiSetupService:
         self.show_log(f"Значения элементов {state}").
 .
 ============================================================
-FILE: C:\Develop\TraceCAD\src\pbe_editor\ui\window\__init__.py
+FILE: D:\Desktop\TraceCAD\src\pbe_editor\ui\window\__init__.py
 ============================================================
 from pbe_editor.ui.window.session import SessionService
 from pbe_editor.ui.window.history import HistoryService
